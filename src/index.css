@@ -99,7 +99,9 @@ button, [role="button"], input[type="button"], input[type="submit"], a {
   }
 }
 
-/* 페이지 진입 fade-in */
+/* 페이지 진입 fade-in — opacity 안전 보장 */
 main > * {
   animation: fadeIn 0.25s ease-out;
+  animation-fill-mode: both;
+  opacity: 1;
 }

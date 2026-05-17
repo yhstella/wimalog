@@ -43,7 +43,12 @@ export default function App() {
     applyTheme();
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
-    seedIfNeeded(1000);
+    // 시드 1000명 생성은 메인 스레드 차단 — 첫 페인트 후 다음 tick에 비동기 실행
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => seedIfNeeded(1000), { timeout: 1500 });
+    } else {
+      setTimeout(() => seedIfNeeded(1000), 0);
+    }
     return unwatch;
   }, []);
 
