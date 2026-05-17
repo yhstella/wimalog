@@ -139,6 +139,11 @@ export function avgLossCurve(filter, weeks = [1, 2, 4, 8, 12, 16, 24, 36, 48]) {
       const v = lossPctAtWeekForCourse(m.course, m.logs, m.user, w);
       if (v != null) vals.push(v);
     }
+    // 상위 25% (감량률 큰 순)
+    const sortedDesc = [...vals].sort((a, b) => b - a);
+    const topNCount = Math.max(1, Math.floor(sortedDesc.length / 4));
+    const topVals = sortedDesc.slice(0, topNCount);
+    const topAvg = topVals.length ? topVals.reduce((s, x) => s + x, 0) / topVals.length : null;
     return {
       week: w,
       n: vals.length,
@@ -146,6 +151,7 @@ export function avgLossCurve(filter, weeks = [1, 2, 4, 8, 12, 16, 24, 36, 48]) {
       median: vals.length ? median(vals) : null,
       p25: vals.length ? quantile(vals, 0.25) : null,
       p75: vals.length ? quantile(vals, 0.75) : null,
+      top25Avg: topAvg,
     };
   });
 }
@@ -702,6 +708,29 @@ export function cohortDietByPhase(filter) {
     mid:      summarize(phases.mid),
     baseline: summarize(phases.baseline),
   };
+}
+
+// 최근 6개월 약별 신규 시작 사용자 (월별)
+export function drugStartTrend(months = 6) {
+  const { courses } = loadAll();
+  const now = new Date(); now.setDate(1); now.setHours(0,0,0,0);
+  const buckets = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now); d.setMonth(d.getMonth() - i);
+    const label = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    buckets.push({ label, monthMs: d.getTime(), counts: {} });
+  }
+  for (const c of courses) {
+    const ms = Date.parse(c.startDate);
+    for (let i = 0; i < buckets.length; i++) {
+      const nextMs = i < buckets.length - 1 ? buckets[i + 1].monthMs : now.getTime() + 31 * 86400000;
+      if (ms >= buckets[i].monthMs && ms < nextMs) {
+        buckets[i].counts[c.medication] = (buckets[i].counts[c.medication] || 0) + 1;
+        break;
+      }
+    }
+  }
+  return buckets;
 }
 
 // 약 사용자 인구통계 (성별/나이대/동반질환 분포)

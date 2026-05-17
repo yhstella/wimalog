@@ -8,6 +8,7 @@ import { Simulator } from './Simulator.jsx';
 import { PollSection } from './Polls.jsx';
 import { PopularTopics } from './PopularTopics.jsx';
 import { EmailWaitlist } from './EmailWaitlist.jsx';
+import { DrugStartTrendChart } from './TrendChart.jsx';
 
 export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
@@ -50,6 +51,9 @@ export function Landing({ navigate, onSignup }) {
 
       {/* 인기 토픽 — 관심 집계 노출 */}
       <PopularTopics navigate={navigate} />
+
+      {/* 약별 시작 추이 */}
+      <DrugStartTrendChart navigate={navigate} />
 
       {/* Quick Polls — 1탭 의견 수집 + 다른 사람들 결과 즉시 보기 */}
       <section className="max-w-2xl mx-auto">

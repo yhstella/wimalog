@@ -95,6 +95,10 @@ export function Statistics({ user, navigate, onSignup }) {
     curve.filter(c => c.avg != null).map(c => ({
       x: c.week, y: -refWeight * c.avg / 100, label: `${c.week}주`,
     })), [curve, refWeight]);
+  const topLineData = useMemo(() =>
+    curve.filter(c => c.top25Avg != null).map(c => ({
+      x: c.week, y: -refWeight * c.top25Avg / 100, label: `${c.week}주`,
+    })), [curve, refWeight]);
 
   const set = (k, v) => setFilter(f => ({ ...f, [k]: v, _similarApplied: false }));
 
@@ -260,6 +264,10 @@ export function Statistics({ user, navigate, onSignup }) {
             series={[
               { name: '코호트 평균', color: '#2E9A58',
                 data: (!user ? lineData.slice(0, 3) : lineData) },
+              ...(user && topLineData.length > 0 ? [{
+                name: '상위 25%', color: '#D97706', dashed: true,
+                data: topLineData,
+              }] : []),
               ...(myPersonalCurve.length > 0 ? [{
                 name: '나', color: '#E11D48',
                 data: myPersonalCurve.map(p => ({
