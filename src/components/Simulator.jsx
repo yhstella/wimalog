@@ -54,26 +54,39 @@ export function Simulator({ onSignup, compact = false }) {
         </div>
       )}
 
-      {/* 예측 결과 */}
+      {/* 예측 결과 — 항상 표시 (좁은 코호트 → 약 전체 → 전체 fallback) */}
       <div className="mt-4 rounded-xl bg-white/15 backdrop-blur p-4 text-center">
         <div className="text-xs opacity-80">비슷한 사용자의 12주 평균</div>
-        {result.lossPct != null ? (
-          <div className="mt-1">
-            <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none animate-celebrate" key={`${result.lossPct.toFixed(1)}`}>
-              −{result.lossPct.toFixed(1)}%
-            </div>
-            <div className="text-base mt-1">
-              약 <b className="tabular-nums">{Math.abs(result.lossKg).toFixed(1)} kg</b> 감량
-              <span className="opacity-70 ml-1">→ {(startWeight + result.lossKg).toFixed(1)} kg</span>
-            </div>
-            {result.fallback && (
-              <div className="text-[10px] opacity-70 mt-1">
-                * BMI/성별/나이 조건은 표본 부족 → {MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '')} 전체 평균 표시
-              </div>
-            )}
+        <div className="mt-1">
+          <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none animate-celebrate" key={`${result.lossPct.toFixed(1)}`}>
+            −{result.lossPct.toFixed(1)}%
           </div>
-        ) : (
-          <div className="text-base mt-2 opacity-70">표본이 부족합니다</div>
+          <div className="text-base mt-1">
+            약 <b className="tabular-nums">{Math.abs(result.lossKg).toFixed(1)} kg</b> 감량
+            <span className="opacity-70 ml-1">→ {(startWeight + result.lossKg).toFixed(1)} kg</span>
+          </div>
+        </div>
+
+        {/* 성공률 — percentage 핵심 표시 */}
+        {result.successRate > 0 && (
+          <div className="mt-3 pt-3 border-t border-white/20">
+            <div className="text-2xl font-extrabold tabular-nums">
+              {Math.round(result.successRate * 100)}%
+            </div>
+            <div className="text-xs opacity-90 mt-0.5">
+              비슷한 조건의 사용자 중 <b>5% 이상</b> 감량한 비율
+            </div>
+          </div>
+        )}
+
+        {/* fallback 안내 — 부드럽게 */}
+        {result.fallback && result.level !== 'none' && (
+          <div className="text-[10px] opacity-70 mt-2">
+            ※ {result.level === 'medOnly'
+                  ? `${MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '')} 사용자 전체 평균 기준`
+                  : '전체 사용자 평균 기준'}
+            {' '}— 본인 조건에 더 가까운 데이터는 가입 후 표시됩니다
+          </div>
         )}
       </div>
 

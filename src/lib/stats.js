@@ -454,31 +454,122 @@ export function reboundByMedication(baseFilter, targetWeek = 24) {
 // ============================================================
 // 시뮬레이터: "나와 비슷한 사람"의 12주 예상 감량률
 // ============================================================
+// 항상 결과를 반환한다 (좁은 코호트 → 약 전체 → 전체 평균 순으로 fallback)
 export function simulateOutcome({ height, startWeight, gender, ageGroup, medication, weeks = 12 }) {
   const b = bmi(startWeight, height);
-  const filter = {};
-  if (medication) filter.medication = medication;
-  if (gender) filter.gender = gender;
-  if (ageGroup) filter.ageGroup = ageGroup;
-  if (b) filter.bmiRange = [Math.max(15, b - 3), Math.min(50, b + 3)];
-  const n = cohortSize(filter);
-  if (n < 3) {
-    // fallback: medication만
-    const fallbackFilter = medication ? { medication } : {};
-    const fbN = cohortSize(fallbackFilter);
-    const fbCurve = avgLossCurve(fallbackFilter, [weeks]);
+  const tightFilter = {};
+  if (medication) tightFilter.medication = medication;
+  if (gender) tightFilter.gender = gender;
+  if (ageGroup) tightFilter.ageGroup = ageGroup;
+  if (b) tightFilter.bmiRange = [Math.max(15, b - 3), Math.min(50, b + 3)];
+
+  const computeFor = (filter, level) => {
+    const curve = avgLossCurve(filter, [weeks]);
+    const point = curve[0];
+    if (point?.avg == null) return null;
+    // 임계 % 이상 감량한 비율
+    const thresholdPct = 5;
+    const matched = matchedCourses(filter);
+    const lossVals = [];
+    for (const m of matched) {
+      const v = lossPctAtWeekForCourse(m.course, m.logs, m.user, weeks);
+      if (v != null) lossVals.push(v);
+    }
+    const successRate = lossVals.length
+      ? lossVals.filter(v => v >= thresholdPct).length / lossVals.length
+      : 0;
     return {
-      n: fbN, fallback: true,
-      lossPct: fbCurve[0]?.avg,
-      lossKg: fbCurve[0]?.avg != null ? (startWeight * fbCurve[0].avg / 100) : null,
+      level,                                         // 'tight' | 'medOnly' | 'overall'
+      lossPct: point.avg,
+      lossKg: startWeight * point.avg / 100,
+      medianPct: point.median,
+      successRate,                                   // 5% 이상 감량 비율
+      thresholdPct,
+      n: point.n,
     };
-  }
-  const curve = avgLossCurve(filter, [weeks]);
-  return {
-    n, fallback: false,
-    lossPct: curve[0]?.avg,
-    lossKg: curve[0]?.avg != null ? (startWeight * curve[0].avg / 100) : null,
   };
+
+  const tight = computeFor(tightFilter, 'tight');
+  if (tight && tight.n >= 5) return { ...tight, fallback: false };
+  const medOnly = medication ? computeFor({ medication }, 'medOnly') : null;
+  if (medOnly && medOnly.n >= 5) return { ...medOnly, fallback: true };
+  const overall = computeFor({}, 'overall');
+  if (overall) return { ...overall, fallback: true };
+  return { level: 'none', lossPct: null, lossKg: null, successRate: 0, n: 0, fallback: true };
+}
+
+// 임계값(percent) 이상 감량한 비율 (코호트 단위)
+export function successRateAtWeek(filter, thresholdPct = 5, week = 12) {
+  const matched = matchedCourses(filter);
+  const lossVals = [];
+  for (const m of matched) {
+    const v = lossPctAtWeekForCourse(m.course, m.logs, m.user, week);
+    if (v != null) lossVals.push(v);
+  }
+  if (!lossVals.length) return { n: 0, rate: 0, thresholdPct };
+  const count = lossVals.filter(v => v >= thresholdPct).length;
+  return { n: lossVals.length, rate: count / lossVals.length, thresholdPct };
+}
+
+// 익명 기록 총량 (랜딩 hero 신뢰도용)
+export function platformScale() {
+  const users = Storage.getUsers();
+  const logs = Storage.getLogs();
+  const doses = Storage.getDoses();
+  const exercises = Storage.getExercises();
+  const diets = Storage.getDiets();
+  const courses = Storage.getMedCourses();
+  return {
+    users: users.length,
+    realUsers: users.filter(u => !u.seed).length,
+    records: logs.length + doses.length + exercises.length + diets.length,
+    weights: logs.length,
+    doses: doses.length,
+    exercises: exercises.length,
+    diets: diets.length,
+    courses: courses.length,
+  };
+}
+
+// 사용자 입력 깊이 점수 (0-100) + 잠금 해제 단계
+// 단계: 0 (시작) → 25 (체중 추세) → 50 (코호트 비교) → 75 (성공 패턴) → 100 (개인 백분위)
+export function inputDepth(user) {
+  if (!user) return { score: 0, level: 0, milestones: [] };
+  const logs = Storage.getLogsByUser(user.id);
+  const courses = Storage.getMedCoursesByUser(user.id);
+  const doses = Storage.getDosesByUser(user.id);
+  const exercises = Storage.getExercisesByUser(user.id);
+  const diets = Storage.getDietsByUser(user.id);
+  // 마일스톤: 각각의 기록 카운트와 잠금 해제 인사이트
+  const milestones = [
+    {
+      key: 'weight',  icon: '⚖️', label: '체중 기록',
+      done: logs.length, need: 5, unlocks: '본인 추세선이 차트에 표시',
+    },
+    {
+      key: 'course',  icon: '💊', label: '약 코스 등록',
+      done: courses.length, need: 1, unlocks: '같은 약 사용자와 비교',
+    },
+    {
+      key: 'dose',    icon: '💉', label: '투약 기록',
+      done: doses.length, need: 3, unlocks: '지역별 가격 비교 + 누적 비용',
+    },
+    {
+      key: 'exercise',icon: '🏃', label: '운동 기록',
+      done: exercises.length, need: 5, unlocks: '같은 운동량 코호트와 감량률 비교',
+    },
+    {
+      key: 'diet',    icon: '🍽️', label: '식단 기록',
+      done: diets.length, need: 5, unlocks: '투약 직후 vs 평소 식이 비교 활성화',
+    },
+    {
+      key: 'history', icon: '📈', label: '체중 12주 기록',
+      done: logs.length, need: 12, unlocks: '12주차 본인 백분위 표시 (상위 N%)',
+    },
+  ];
+  const score = milestones.reduce((s, m) => s + Math.min(1, m.done / m.need) * (100 / milestones.length), 0);
+  const completed = milestones.filter(m => m.done >= m.need).length;
+  return { score: Math.round(score), level: completed, milestones };
 }
 
 // ============================================================

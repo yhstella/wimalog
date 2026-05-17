@@ -242,9 +242,9 @@ export function Statistics({ user, navigate, onSignup }) {
         </FilterRow>
       </div>
 
-      {n < 5 && (
-        <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          ⚠ 표본이 적습니다. 필터를 완화해 보세요.
+      {n < 5 && n > 0 && (
+        <div className="rounded-xl bg-brand-50 dark:bg-brand-900/15 border border-brand-200 dark:border-brand-800/40 px-4 py-3 text-sm text-ink-700 dark:text-slate-300">
+          🔍 좁은 필터입니다. 더 정확한 비교를 위해 필터를 완화해 보세요.
         </div>
       )}
 
@@ -279,7 +279,9 @@ export function Statistics({ user, navigate, onSignup }) {
             yLabel="kg" height={240}
           />
         ) : (
-          <div className="text-sm text-ink-500 dark:text-slate-400 py-6 text-center">표본이 부족합니다</div>
+          <div className="text-sm text-ink-500 dark:text-slate-400 py-6 text-center">
+            📊 데이터가 계속 모이는 중입니다 — 필터를 더 일반적으로 설정해 보세요
+          </div>
         )}
         <div className="mt-4 overflow-x-auto -mx-2">
           <table className="w-full text-sm">
@@ -289,7 +291,7 @@ export function Statistics({ user, navigate, onSignup }) {
                 <th className="py-2 px-2 font-medium text-right">평균</th>
                 <th className="py-2 px-2 font-medium text-right">중앙값</th>
                 {user && <th className="py-2 px-2 font-medium text-right">25–75%</th>}
-                <th className="py-2 px-2 font-medium text-right">표본</th>
+                <th className="py-2 px-2 font-medium text-right" title="해당 주차까지 추적된 코호트 비율">추적률</th>
               </tr>
             </thead>
             <tbody>
@@ -298,6 +300,7 @@ export function Statistics({ user, navigate, onSignup }) {
                 const medianKg = c.median != null ? refWeight * c.median / 100 : null;
                 const p25Kg = c.p25 != null ? refWeight * c.p25 / 100 : null;
                 const p75Kg = c.p75 != null ? refWeight * c.p75 / 100 : null;
+                const trackPct = n > 0 ? Math.round((c.n / n) * 100) : 0;
                 return (
                   <tr key={c.week} className="border-t border-ink-100 dark:border-slate-800">
                     <td className="py-1.5 px-2">{c.week}주</td>
@@ -314,7 +317,7 @@ export function Statistics({ user, navigate, onSignup }) {
                         {p25Kg != null ? `−${p25Kg.toFixed(1)}~−${p75Kg.toFixed(1)} kg` : '—'}
                       </td>
                     )}
-                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{c.n}</td>
+                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{trackPct}%</td>
                   </tr>
                 );
               })}
@@ -407,8 +410,7 @@ export function Statistics({ user, navigate, onSignup }) {
                     <tr className="text-left text-ink-500 dark:text-slate-400">
                       <th className="py-2 px-2 font-medium">중단 후</th>
                       <th className="py-2 px-2 font-medium text-right">평균 체중 증가</th>
-                      <th className="py-2 px-2 font-medium text-right">회복률</th>
-                      <th className="py-2 px-2 font-medium text-right">표본</th>
+                      <th className="py-2 px-2 font-medium text-right">감량분 회복률</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -427,7 +429,6 @@ export function Statistics({ user, navigate, onSignup }) {
                             ? `${(r.avgRegainRatio * 100).toFixed(0)}%`
                             : '—'}
                         </td>
-                        <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{r.n}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -449,7 +450,7 @@ export function Statistics({ user, navigate, onSignup }) {
                           ? `${reboundByEx.active.avgRegainPct.toFixed(0)}%`
                           : '—'}
                       </div>
-                      <div className="text-[10px] text-ink-500 dark:text-slate-500">n={reboundByEx.active.n}</div>
+                      <div className="text-[10px] text-ink-500 dark:text-slate-500">평균 회복률</div>
                     </div>
                     <div className="rounded-lg bg-white dark:bg-slate-900 p-3 text-center">
                       <div className="text-xs text-ink-500 dark:text-slate-400">운동 미지속</div>
@@ -458,7 +459,7 @@ export function Statistics({ user, navigate, onSignup }) {
                           ? `${reboundByEx.inactive.avgRegainPct.toFixed(0)}%`
                           : '—'}
                       </div>
-                      <div className="text-[10px] text-ink-500 dark:text-slate-500">n={reboundByEx.inactive.n}</div>
+                      <div className="text-[10px] text-ink-500 dark:text-slate-500">평균 회복률</div>
                     </div>
                   </div>
                   {reboundByEx.active.avgRegainPct != null && reboundByEx.inactive.avgRegainPct != null && (
@@ -582,13 +583,13 @@ export function Statistics({ user, navigate, onSignup }) {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
                 <Tile label="주당 평균 운동" value={`${Math.round(exData.avgMinPerWeek || 0)}분`} />
-                <Tile label="운동 기록 사용자" value={`${exData.withExercise}/${exData.n}명`} />
+                <Tile label="운동 기록 사용자" value={`${Math.round((exData.withExercise / Math.max(1, exData.n)) * 100)}%`} />
                 <Tile label="WHO 권장 달성" value={`${Math.round((exDist?.buckets?.slice(3).reduce((s,b)=>s+b.count,0) || 0) / Math.max(1, exDist?.n || 1) * 100)}%`} />
               </div>
               {/* 히스토그램 */}
               {exDist && exDist.n > 0 && (
                 <div>
-                  <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">주당 운동 시간 분포 ({exDist.n}명)</div>
+                  <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">코호트의 주당 운동 시간 분포</div>
                   <div className="space-y-1.5">
                     {exDist.buckets.map(b => {
                       const max = Math.max(...exDist.buckets.map(x => x.count), 1);
@@ -597,7 +598,7 @@ export function Statistics({ user, navigate, onSignup }) {
                         <div key={b.label}>
                           <div className="flex justify-between text-xs mb-0.5">
                             <span className="text-ink-700 dark:text-slate-300">{b.label}</span>
-                            <span className="text-ink-500 dark:text-slate-400 tabular-nums">{pct.toFixed(0)}% ({b.count})</span>
+                            <span className="text-ink-500 dark:text-slate-400 tabular-nums">{pct.toFixed(0)}%</span>
                           </div>
                           <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <div className="h-full rounded-full bg-brand-500" style={{ width: `${(b.count/max)*100}%` }} />
@@ -793,9 +794,6 @@ function ClickableSideEffectList({ rates, filter, canDrill, onLockedClick }) {
               </span>
               <span className="text-ink-500 dark:text-slate-400 tabular-nums">
                 {(s.rate * 100).toFixed(0)}%
-                {s.count != null && s.n != null && (
-                  <span className="text-ink-300 dark:text-slate-600 ml-1">({s.count}/{s.n})</span>
-                )}
               </span>
             </div>
             <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -955,7 +953,7 @@ function SuccessPatternCard({ filter, user, myCourse, myLogs, onUnlock }) {
             <div className="mt-4 rounded-xl bg-white dark:bg-slate-800 p-4">
               <div className="text-xs text-ink-500 dark:text-slate-400">내 12주차 위치</div>
               <div className="text-2xl font-extrabold text-ink-900 dark:text-slate-100 tabular-nums">
-                상위 {100 - myPercentile.percentile}% <span className="text-sm font-normal text-ink-500 dark:text-slate-400">({myPercentile.n}명 중)</span>
+                상위 {100 - myPercentile.percentile}%
               </div>
               <div className="mt-2 h-2 bg-ink-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className="h-full bg-brand-500"
@@ -1079,9 +1077,6 @@ function PhaseTile({ icon, label, data, tone }) {
         )}
         {data.avgProtein != null && (
           <div><span className="opacity-70">단백질</span> <b>{Math.round(data.avgProtein)}</b> g</div>
-        )}
-        {data.uniqueUsers != null && (
-          <div className="text-[10px] opacity-70 mt-1">{data.uniqueUsers}명, {data.n}건</div>
         )}
       </div>
     </div>

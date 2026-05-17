@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { overallSummary, compareMedications, recentTrend, anonymousNotes } from '../lib/stats.js';
+import { overallSummary, compareMedications, recentTrend, anonymousNotes, platformScale, successRateAtWeek } from '../lib/stats.js';
 import { MED_BY_ID } from '../lib/constants.js';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, QuickSignupModal } from './Paywall.jsx';
@@ -17,12 +17,18 @@ export function Landing({ navigate, onSignup }) {
   const [medCmp, setMedCmp] = useState(null);
   const [trend, setTrend] = useState(null);
   const [notes, setNotes] = useState([]);
+  const [scale, setScale] = useState(null);
+  const [success5pct, setSuccess5pct] = useState(null);
+  const [success10pct, setSuccess10pct] = useState(null);
 
   useEffect(() => {
     setSummary(overallSummary());
     setMedCmp(compareMedications({}, 12));
     setTrend(recentTrend());
     setNotes(anonymousNotes({}, 4));
+    setScale(platformScale());
+    setSuccess5pct(successRateAtWeek({}, 5, 12));
+    setSuccess10pct(successRateAtWeek({}, 10, 24));
   }, []);
 
   const handleSignup = () => setShowSignup(true);
@@ -44,6 +50,30 @@ export function Landing({ navigate, onSignup }) {
           가입 없이 먼저 <b className="text-ink-700 dark:text-slate-200">"내가 쓰면 어떻게 될까?"</b>를 확인해 보세요.
         </p>
       </section>
+
+      {/* Hero stats — 신뢰도 큰 숫자 */}
+      {scale && (
+        <section>
+          <div className="rounded-2xl bg-gradient-to-br from-brand-50 via-white to-brand-50/40 dark:from-brand-900/30 dark:via-slate-900 dark:to-brand-900/20 border border-brand-200/60 dark:border-brand-800/40 p-5 sm:p-6">
+            <div className="text-center text-xs font-semibold text-brand-700 dark:text-brand-300 uppercase tracking-wider">
+              지금까지 위마로그가 모은 데이터
+            </div>
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <HeroStat value={scale.users.toLocaleString()} unit="명" label="익명 사용자" highlight />
+              <HeroStat value={scale.records.toLocaleString()} unit="건" label="누적 익명 기록" />
+              <HeroStat
+                value={success5pct?.rate != null ? `${Math.round(success5pct.rate * 100)}` : '—'}
+                unit="%" label="12주 5% 이상 감량" />
+              <HeroStat
+                value={success10pct?.rate != null ? `${Math.round(success10pct.rate * 100)}` : '—'}
+                unit="%" label="24주 10% 이상 감량" />
+            </div>
+            <p className="text-[11px] text-center text-ink-500 dark:text-slate-500 mt-3">
+              ※ 실제 임상 데이터(STEP-1, SURMOUNT-5, SCALE) 기반으로 시뮬레이션된 익명 코호트입니다.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* 최근 본 페이지 (재방문자) */}
       <RecentPagesRow navigate={navigate} />
@@ -276,6 +306,17 @@ export function Landing({ navigate, onSignup }) {
           onComplete={(userId) => { setShowSignup(false); onSignup?.(userId); }}
         />
       )}
+    </div>
+  );
+}
+
+function HeroStat({ value, unit, label, highlight }) {
+  return (
+    <div className="text-center">
+      <div className={`text-2xl sm:text-3xl font-extrabold tabular-nums ${highlight ? 'text-brand-700 dark:text-brand-300' : 'text-ink-900 dark:text-slate-100'}`}>
+        {value}<span className="text-base font-bold opacity-80 ml-0.5">{unit}</span>
+      </div>
+      <div className="text-[11px] sm:text-xs text-ink-500 dark:text-slate-400 mt-1 leading-tight">{label}</div>
     </div>
   );
 }

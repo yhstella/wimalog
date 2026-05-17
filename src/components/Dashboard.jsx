@@ -13,6 +13,7 @@ import { useToast } from './Toast.jsx';
 import { StreakCard, WeeklySummaryCard, BadgesRow, DiscontinuerPanel } from './RetentionCards.jsx';
 import { WelcomeTour } from './WelcomeTour.jsx';
 import { GoalWidget } from './GoalWidget.jsx';
+import { InputProgressCard } from './InputProgressCard.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -109,11 +110,11 @@ export function Dashboard({ user, navigate }) {
     },
     {
       id: 'stats', icon: '📊', title: '비슷한 사용자 통계 보기',
-      desc: `${cohortN}명의 평균 감량률 + 약 중단 후 회복률까지 확인하세요.`,
+      desc: `같은 약·BMI·성별 코호트의 평균 감량률 + 약 중단 후 회복률까지 확인하세요.`,
       done: false,
       cta: '통계 보기', onClick: () => navigate('stats'),
     },
-  ], [courses.length, logs.length, exercises.length, cohortN, navigate]);
+  ], [courses.length, logs.length, exercises.length, navigate]);
 
   const completed = tourTasks.filter(t => t.done).length;
   const showTour = !dismissedTour && completed < tourTasks.length;
@@ -196,6 +197,9 @@ export function Dashboard({ user, navigate }) {
                           onOpenMeds={() => navigate('meds')} />
         )}
       </div>
+
+      {/* 입력 보상 — 자세히 입력할수록 더 많은 데이터 잠금 해제 */}
+      <InputProgressCard user={user} navigate={navigate} />
 
       {/* Notification banner (한 번만) */}
       <NotificationBanner user={user} />
@@ -456,8 +460,8 @@ function MiniTile({ icon, label, value, sub, onClick }) {
 
 function CohortTable({ cohortCurve, mine, startWeight }) {
   const myWeeks = mine?.weeks ?? 0;
-  // 본인 시작 체중 기준 kg 환산
   const toKg = (pct) => pct != null && startWeight ? (startWeight * pct / 100) : null;
+  const cohortMax = Math.max(...cohortCurve.map(c => c.n || 0), 1);
   return (
     <div className="overflow-x-auto -mx-2">
       <table className="w-full text-sm">
@@ -466,7 +470,7 @@ function CohortTable({ cohortCurve, mine, startWeight }) {
             <th className="py-2 px-2 font-medium">주차</th>
             <th className="py-2 px-2 font-medium text-right">코호트 평균</th>
             <th className="py-2 px-2 font-medium text-right">중앙값</th>
-            <th className="py-2 px-2 font-medium text-right">표본</th>
+            <th className="py-2 px-2 font-medium text-right" title="해당 주차까지 추적된 코호트 비율">추적률</th>
           </tr>
         </thead>
         <tbody>
@@ -474,6 +478,7 @@ function CohortTable({ cohortCurve, mine, startWeight }) {
             const reached = myWeeks >= c.week;
             const avgKg = toKg(c.avg);
             const medianKg = toKg(c.median);
+            const trackPct = Math.round((c.n / cohortMax) * 100);
             return (
               <tr key={c.week} className={`border-t border-ink-100 dark:border-slate-800 ${reached ? 'bg-brand-50/50 dark:bg-brand-900/20' : ''}`}>
                 <td className="py-2 px-2">
@@ -490,7 +495,7 @@ function CohortTable({ cohortCurve, mine, startWeight }) {
                 <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">
                   {medianKg != null ? `−${medianKg.toFixed(1)} kg` : '—'}
                 </td>
-                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{c.n}</td>
+                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{trackPct}%</td>
               </tr>
             );
           })}

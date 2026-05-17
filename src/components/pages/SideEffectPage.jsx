@@ -112,7 +112,6 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
                   <th className="py-2 pr-2">약</th>
                   <th className="py-2 px-2 text-right">평균 발생 시점</th>
                   <th className="py-2 px-2 text-right">평균 지속</th>
-                  <th className="py-2 px-2 text-right">표본</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,7 +129,6 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
                     <td className="py-1.5 px-2 text-right tabular-nums">
                       {d.avgDuration != null ? `${d.avgDuration.toFixed(1)}주` : '—'}
                     </td>
-                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{d.n}</td>
                   </tr>
                 ))}
               </tbody>

@@ -176,9 +176,9 @@ export function LineChart({
   );
 }
 
-// 가로 바 차트
-export function HBarChart({ data, color = '#2E9A58', max = null, showCount = true }) {
-  if (!data?.length) return <div className="text-sm text-ink-500 dark:text-slate-400">데이터가 부족합니다</div>;
+// 가로 바 차트 — N 카운트는 더 이상 노출하지 않음 (percentage only)
+export function HBarChart({ data, color = '#2E9A58', max = null }) {
+  if (!data?.length) return <div className="text-sm text-ink-500 dark:text-slate-400">데이터가 모이는 중입니다</div>;
   const m = max ?? Math.max(...data.map(d => d.value), 0.001);
   return (
     <div className="space-y-2">
@@ -188,9 +188,6 @@ export function HBarChart({ data, color = '#2E9A58', max = null, showCount = tru
             <span className="text-ink-700 dark:text-slate-300">{d.label}</span>
             <span className="text-ink-500 dark:text-slate-500 tabular-nums">
               {(d.value * 100).toFixed(0)}%
-              {showCount && d.count != null && d.n != null && (
-                <span className="text-ink-300 dark:text-slate-600 ml-1">({d.count}/{d.n})</span>
-              )}
             </span>
           </div>
           <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -203,7 +200,7 @@ export function HBarChart({ data, color = '#2E9A58', max = null, showCount = tru
   );
 }
 
-// 그룹 바 차트
+// 그룹 바 차트 — N 카운트는 더 이상 노출하지 않음
 export function GroupBarChart({ data, valueLabel = '%', height = 200, color = '#2E9A58' }) {
   if (!data?.length) return null;
   const filtered = data.filter(d => d.value != null);
@@ -228,7 +225,6 @@ export function GroupBarChart({ data, valueLabel = '%', height = 200, color = '#
         {data.map((d, i) => (
           <div key={i} className="flex-1 text-center">
             <div className="text-xs text-ink-700 dark:text-slate-300 leading-tight">{d.label}</div>
-            <div className="text-[10px] text-ink-500 dark:text-slate-500">n={d.n ?? 0}</div>
           </div>
         ))}
       </div>
