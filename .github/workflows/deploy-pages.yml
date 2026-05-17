@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
+# Vercel을 주 배포로 사용. GitHub Pages는 수동 실행만.
+# (활성화 원하면: 저장소 Settings → Pages → Source: GitHub Actions 설정 후 Actions 탭에서 수동 실행)
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
