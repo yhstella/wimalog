@@ -11,8 +11,10 @@ const NAV_AUTHED = [
 ];
 
 const NAV_GUEST = [
-  { id: 'stats',      label: '통계',   icon: '📊' },
-  { id: 'info',       label: '안전',   icon: '🛡️' },
+  { id: 'drug/wegovy', label: '약 정보', icon: '💉' },
+  { id: 'stats',       label: '통계',   icon: '📊' },
+  { id: 'calc/cost',   label: '계산기', icon: '🧮' },
+  { id: 'info',        label: '안전',   icon: '🛡️' },
 ];
 
 export function Layout({ route, navigate, user, onLogout, children }) {
@@ -44,7 +46,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
               <button key={item.id}
                       onClick={() => navigate(item.id)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition
-                                  ${route === item.id
+                                  ${route === item.id || (item.id.includes('/') && route.startsWith(item.id.split('/')[0] + '/'))
                                     ? 'bg-brand-50 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300'
                                     : 'text-ink-700 dark:text-slate-300 hover:bg-ink-100 dark:hover:bg-slate-800'}`}>
                 {item.label}
@@ -92,7 +94,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
                   aria-label={item.label}
                   aria-current={route === item.id ? 'page' : undefined}
                   className={`flex-1 min-h-[56px] py-2.5 px-1 text-[10px] font-medium transition flex flex-col items-center gap-0.5
-                              ${route === item.id
+                              ${route === item.id || (item.id.includes('/') && route.startsWith(item.id.split('/')[0] + '/'))
                                 ? 'text-brand-700 dark:text-brand-400'
                                 : 'text-ink-500 dark:text-slate-500'}`}>
             <span className="text-lg leading-none" aria-hidden>{item.icon}</span>

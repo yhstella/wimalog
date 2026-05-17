@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wimalog.vercel.app/sitemap.xml

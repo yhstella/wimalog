@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2E9A58"/>
+      <stop offset="100%" stop-color="#176237"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <text x="600" y="280" font-size="120" font-weight="900" text-anchor="middle" fill="white" font-family="Pretendard, 'Noto Sans KR', sans-serif">위마로그</text>
+  <text x="600" y="370" font-size="42" font-weight="600" text-anchor="middle" fill="white" opacity="0.95" font-family="Pretendard, sans-serif">위고비·마운자로 리얼데이터</text>
+  <text x="600" y="450" font-size="28" text-anchor="middle" fill="white" opacity="0.85" font-family="Pretendard, sans-serif">실제 사용자 1000명의 감량·부작용·가격 데이터를 비교하세요</text>
+</svg>

@@ -10,6 +10,7 @@ import { MED_BY_ID, SIDE_EFFECTS } from '../lib/constants.js';
 import { QuickWeightCard, QuickDoseCard } from './QuickEntry.jsx';
 import { PremiumBadge } from './Paywall.jsx';
 import { useToast } from './Toast.jsx';
+import { StreakCard, WeeklySummaryCard, BadgesRow, DiscontinuerPanel } from './RetentionCards.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -192,6 +193,12 @@ export function Dashboard({ user, navigate }) {
         )}
       </div>
 
+      {/* Streak + Badges */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <StreakCard user={user} navigate={navigate} />
+        <BadgesRow user={user} />
+      </div>
+
       {/* 요약 카드 */}
       {summary ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -224,6 +231,12 @@ export function Dashboard({ user, navigate }) {
           <div className="text-sm text-ink-500 dark:text-slate-400 mt-1">위의 빠른 기록 카드에서 첫 체중을 입력해 보세요</div>
         </div>
       )}
+
+      {/* 주간 요약 */}
+      <WeeklySummaryCard user={user} navigate={navigate} />
+
+      {/* 중단자 패널 */}
+      <DiscontinuerPanel user={user} navigate={navigate} />
 
       {/* 이번 주 활동 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

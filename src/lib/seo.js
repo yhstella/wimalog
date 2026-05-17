@@ -24,6 +24,11 @@ export function setSEO({ title, description, ogTitle, ogDescription, canonical }
   ensureMeta('og:description', ogDescription || desc, 'property');
   ensureMeta('og:type', 'website', 'property');
   ensureMeta('og:site_name', SITE, 'property');
+  ensureMeta('og:image', 'https://wimalog.vercel.app/og.svg', 'property');
+  ensureMeta('twitter:card', 'summary_large_image');
+  ensureMeta('twitter:title', ogTitle || fullTitle);
+  ensureMeta('twitter:description', ogDescription || desc);
+  ensureMeta('twitter:image', 'https://wimalog.vercel.app/og.svg');
   if (canonical) {
     let link = document.querySelector('link[rel="canonical"]');
     if (!link) {
