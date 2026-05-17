@@ -29,6 +29,11 @@ export function Layout({ route, navigate, user, onLogout, children }) {
 
   return (
     <div className="min-h-screen flex flex-col">
+      {/* 스킵 링크 (a11y) */}
+      <a href="#main"
+         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:bg-brand-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-semibold">
+        본문으로 건너뛰기
+      </a>
       <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-ink-100 dark:border-slate-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           <button onClick={() => navigate(user ? 'dashboard' : 'landing')}
@@ -72,7 +77,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-6">
+      <main id="main" className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 pb-24 sm:pb-6">
         {children}
       </main>
 

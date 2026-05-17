@@ -34,6 +34,16 @@ html.dark ::-webkit-scrollbar-thumb { background: rgba(226,232,240,.12); }
   border-radius: 6px;
 }
 
+/* sr-only utility (focus 시 보이게) */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0;
+  margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+.focus\:not-sr-only:focus {
+  position: fixed; width: auto; height: auto;
+  margin: 0; overflow: visible; clip: auto; white-space: normal;
+}
+
 /* 모바일에서 터치 타깃 최소 44px */
 button, [role="button"], input[type="button"], input[type="submit"], a {
   touch-action: manipulation;
