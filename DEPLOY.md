@@ -1,6 +1,6 @@
 # 배포 가이드
 
-감량로그는 100% 정적 SPA(Vite + React)입니다. 어떤 정적 호스팅에도 빌드 결과(`dist/`)만
+위마로그는 100% 정적 SPA(Vite + React)입니다. 어떤 정적 호스팅에도 빌드 결과(`dist/`)만
 업로드하면 동작합니다. 백엔드 의존성 없음 (현재 MVP는 사용자 데이터를 브라우저 localStorage에 저장).
 
 > 📌 SPA 라우팅은 **해시 라우팅**(`#/dashboard`)을 사용하므로 서버 fallback이 없어도
@@ -43,9 +43,9 @@ npm run build
 **자동 배포 (권장)**
 - 저장소 Settings → Pages → Source: "GitHub Actions"
 - `main`에 push 하면 `.github/workflows/deploy-pages.yml`이 빌드·배포
-- **서브패스 배포** (`user.github.io/gamryang-log/`)인 경우:
+- **서브패스 배포** (`user.github.io/wimalog/`)인 경우:
   - 저장소 Settings → Variables → Actions → New variable
-  - 이름 `BASE_PATH`, 값 `/gamryang-log/` (앞뒤 슬래시 포함)
+  - 이름 `BASE_PATH`, 값 `/wimalog/` (앞뒤 슬래시 포함)
 - **루트 도메인** (CNAME + custom domain)인 경우 BASE_PATH는 그대로 `/`
 
 `public/404.html`이 포함되어 SPA 새로고침 시에도 동작합니다.
@@ -71,7 +71,7 @@ npx surge dist
 
 ```bash
 npm run build
-rsync -av dist/ user@server:/var/www/gamryang-log/
+rsync -av dist/ user@server:/var/www/wimalog/
 ```
 
 `nginx.conf` 권장 설정:
@@ -79,7 +79,7 @@ rsync -av dist/ user@server:/var/www/gamryang-log/
 server {
   listen 80;
   server_name your-domain.com;
-  root /var/www/gamryang-log;
+  root /var/www/wimalog;
   index index.html;
 
   # SPA fallback

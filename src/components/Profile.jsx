@@ -37,7 +37,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 
   const exportData = () => {
     const data = Storage.exportUserData(user.id);
-    download(`gamryang-log-${user.id}-${todayStr()}.json`,
+    download(`wimalog-${user.id}-${todayStr()}.json`,
              new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
   };
 
@@ -53,7 +53,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
       csvEscape(l.notes || ''),
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    download(`gamryang-log-weights-${user.id}-${todayStr()}.csv`,
+    download(`wimalog-weights-${user.id}-${todayStr()}.csv`,
              new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
   };
 
@@ -71,7 +71,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
       csvEscape(d.notes || ''),
     ]);
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    download(`gamryang-log-doses-${user.id}-${todayStr()}.csv`,
+    download(`wimalog-doses-${user.id}-${todayStr()}.csv`,
              new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
   };
 

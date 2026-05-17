@@ -26,7 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          # 서브패스 배포(예: user.github.io/gamryang-log)일 때 BASE_PATH=/gamryang-log/ 로 설정
+          # 서브패스 배포(예: user.github.io/wimalog)일 때 BASE_PATH=/wimalog/ 로 설정
           BASE_PATH: ${{ vars.BASE_PATH || '/' }}
       - uses: actions/upload-pages-artifact@v3
         with:

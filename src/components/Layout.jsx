@@ -33,7 +33,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
                   className="flex items-center gap-2 group">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-500 text-white font-bold">감</span>
             <div className="text-left leading-tight">
-              <div className="text-sm font-bold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 transition">감량로그</div>
+              <div className="text-sm font-bold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 transition">위마로그</div>
               <div className="text-[10px] text-ink-500 dark:text-slate-500 -mt-0.5">위고비·마운자로 리얼데이터</div>
             </div>
           </button>
@@ -78,7 +78,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-2">
           <MedicalDisclaimer />
           <p className="text-[10px] text-ink-300 dark:text-slate-600">
-            © 2026 감량로그 · 모든 데이터는 사용자의 브라우저에 익명으로 저장됩니다 (MVP).
+            © 2026 위마로그 · 모든 데이터는 사용자의 브라우저에 익명으로 저장됩니다 (MVP).
           </p>
         </div>
       </footer>
