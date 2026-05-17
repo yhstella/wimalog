@@ -57,6 +57,33 @@ function buildJsonLd(route) {
       })),
     };
   }
+  if (route.startsWith('guide/')) {
+    const id = route.slice(6);
+    const g = GUIDE_CONTENT[id];
+    if (!g) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      'headline': g.title,
+      'description': g.summary,
+      'about': { '@type': 'MedicalCondition', 'name': '비만 (Obesity)' },
+      'publisher': { '@type': 'Organization', 'name': '위마로그' },
+    };
+  }
+  if (route === 'info') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      'mainEntity': [
+        { '@type': 'Question', 'name': '위고비/마운자로가 안전한 약인가요?',
+          'acceptedAnswer': { '@type': 'Answer', 'text': 'FDA·식약처 승인된 약입니다. GLP-1 호르몬 작용을 모방하는 비교적 새로운 약으로, 임상시험에서 효과와 안전성이 검증됐습니다.' } },
+        { '@type': 'Question', 'name': '평생 맞아야 하나요?',
+          'acceptedAnswer': { '@type': 'Answer', 'text': '중단 후 평균 6개월에 감량분의 30-50%가 회복됩니다. 일부 환자는 저용량 유지, 일부는 식이·운동으로 유지 시도.' } },
+        { '@type': 'Question', 'name': 'BMI 27인데 처방받을 수 있나요?',
+          'acceptedAnswer': { '@type': 'Answer', 'text': '한국 기준: BMI ≥ 30 또는 BMI ≥ 27이면서 동반질환(당뇨·고혈압·지방간·이상지질혈증 등).' } },
+      ],
+    };
+  }
   if (route === 'landing') {
     return {
       '@context': 'https://schema.org',
