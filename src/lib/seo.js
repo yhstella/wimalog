@@ -79,6 +79,7 @@ export function seoFor(route) {
     records: { title: '기록' },
     meds: { title: '약 관리' },
     stats: { title: '통계', description: '위고비·마운자로·삭센다 사용자 1000명의 평균 감량률, 부작용, 가격, 중단 후 회복률.' },
+    compare: { title: '약별 한눈 비교', description: '위고비 vs 마운자로 vs 삭센다 vs 오젬픽 vs 젭바운드 효과·부작용·가격 한 화면 비교.' },
     profile: { title: '프로필' },
     info: { title: '안전 정보 + FAQ', description: 'GLP-1 비만 치료제(위고비·마운자로·삭센다)의 안전 정보, 즉시 의료기관 문의가 필요한 증상, FAQ.' },
   };

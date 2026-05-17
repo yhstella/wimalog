@@ -17,6 +17,7 @@ import { DrugInfoPage } from './components/pages/DrugInfoPage.jsx';
 import { SideEffectPage } from './components/pages/SideEffectPage.jsx';
 import { GuidePage } from './components/pages/GuidePage.jsx';
 import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
+import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
 
 function readRouteFromHash() {
   const h = (window.location.hash || '').replace(/^#\/?/, '');
@@ -85,7 +86,7 @@ export default function App() {
 
   const authedRoutes = ['dashboard', 'records', 'meds', 'profile'];
   const isPublicContent = route.startsWith('drug/') || route.startsWith('effect/')
-    || route.startsWith('guide/') || route.startsWith('calc/');
+    || route.startsWith('guide/') || route.startsWith('calc/') || route === 'compare';
   const effectiveRoute = (!user && authedRoutes.includes(route)) ? 'landing' : route;
 
   // route 파싱: 'drug/wegovy' → { kind: 'drug', id: 'wegovy' }
@@ -115,6 +116,7 @@ export default function App() {
         {effectiveRoute === 'info'       && <Info />}
 
         {/* SEO 콘텐츠 페이지 */}
+        {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
         {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
         {effectId && <SideEffectPage effectId={effectId} navigate={navigate} onSignup={onSignupStay} />}
         {guideId  && <GuidePage guideId={guideId} navigate={navigate} onSignup={onSignupStay} />}

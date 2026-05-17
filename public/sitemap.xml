@@ -11,6 +11,11 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://wimalog.vercel.app/#/compare</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
     <loc>https://wimalog.vercel.app/#/drug/wegovy</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>

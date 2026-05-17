@@ -135,11 +135,11 @@ export function Statistics({ user, navigate, onSignup }) {
       </div>
 
       {!user && (
-        <div className="rounded-2xl border-2 border-brand-200 bg-gradient-to-br from-brand-50 to-white p-4 flex items-start gap-3">
+        <div className="rounded-2xl border-2 border-brand-200 dark:border-brand-800/40 bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/20 dark:to-slate-900 p-4 flex items-start gap-3">
           <div className="text-2xl">👋</div>
           <div className="flex-1">
-            <div className="font-bold text-ink-900">지금 보고 계신 것은 전체 데이터의 일부입니다</div>
-            <div className="text-sm text-ink-500 mt-1">
+            <div className="font-bold text-ink-900 dark:text-slate-100">지금 보고 계신 것은 전체 데이터의 일부입니다</div>
+            <div className="text-sm text-ink-500 dark:text-slate-400 mt-1">
               1분만 입력하면 전체 평균 곡선, 약제 비교, 지역별 가격, 부작용 발생률을 모두 볼 수 있어요.
             </div>
           </div>
@@ -148,6 +148,30 @@ export function Statistics({ user, navigate, onSignup }) {
           </button>
         </div>
       )}
+
+      {/* 세그먼트별 빠른 진입 */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button onClick={() => set('medication', 'wegovy')}
+                className="card !p-3 text-center hover:shadow-cardHover transition group">
+          <div className="text-xl">💉</div>
+          <div className="text-xs font-semibold mt-1 text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">위고비 사용자</div>
+        </button>
+        <button onClick={() => set('medication', 'mounjaro')}
+                className="card !p-3 text-center hover:shadow-cardHover transition group">
+          <div className="text-xl">💉</div>
+          <div className="text-xs font-semibold mt-1 text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">마운자로 사용자</div>
+        </button>
+        <button onClick={() => navigate('guide/after-stop')}
+                className="card !p-3 text-center hover:shadow-cardHover transition group">
+          <div className="text-xl">📉</div>
+          <div className="text-xs font-semibold mt-1 text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">중단자 가이드</div>
+        </button>
+        <button onClick={() => navigate('guide/diet-only')}
+                className="card !p-3 text-center hover:shadow-cardHover transition group">
+          <div className="text-xl">🥗</div>
+          <div className="text-xs font-semibold mt-1 text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">다이어트만</div>
+        </button>
+      </div>
 
       {/* 필터 */}
       <div className="card space-y-3">

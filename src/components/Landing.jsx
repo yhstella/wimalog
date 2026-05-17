@@ -153,7 +153,12 @@ export function Landing({ navigate, onSignup }) {
       <section>
         <div className="text-center mb-4">
           <h2 className="text-2xl font-bold text-ink-900 dark:text-slate-100">약별 정보 바로가기</h2>
-          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">검색으로 들어오셨다면 여기부터</p>
+          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">
+            검색으로 들어오셨다면 여기부터 ·
+            <button onClick={() => navigate('compare')} className="text-brand-700 dark:text-brand-400 underline ml-1">
+              5개 약 한눈에 비교 →
+            </button>
+          </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
           {['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'].map(id => (
