@@ -117,6 +117,7 @@ export function Dashboard({ user, navigate }) {
 
   return (
     <div className="space-y-6">
+      <WelcomeTour user={user} navigate={navigate} />
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 dark:text-slate-100">

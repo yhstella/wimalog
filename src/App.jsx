@@ -46,8 +46,8 @@ export default function App() {
 
   // 라우트가 바뀔 때 SEO 메타 갱신
   useEffect(() => {
-    const meta = seoFor(route);
-    if (meta) setSEO(meta);
+    const meta = seoFor(route) || {};
+    setSEO({ ...meta, route });
   }, [route]);
 
   const navigate = useCallback((r) => {

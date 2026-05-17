@@ -1,6 +1,75 @@
 // 라우트별 SEO 메타 갱신 (title + description). OG 태그도 함께 갱신.
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT, GUIDE_CONTENT } from './content.js';
 
+// JSON-LD 구조화 데이터 주입/제거
+function setJsonLd(data) {
+  let el = document.getElementById('json-ld');
+  if (data) {
+    if (!el) {
+      el = document.createElement('script');
+      el.id = 'json-ld';
+      el.type = 'application/ld+json';
+      document.head.appendChild(el);
+    }
+    el.textContent = JSON.stringify(data);
+  } else if (el) {
+    el.remove();
+  }
+}
+
+function buildJsonLd(route) {
+  if (route.startsWith('drug/')) {
+    const id = route.slice(5);
+    const d = DRUG_CONTENT[id];
+    if (!d) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Drug',
+      'name': d.label,
+      'alternateName': d.en,
+      'description': `${d.label}(${d.generic})은 ${d.type}로, ${d.indication}에 사용됩니다. ${d.efficacy.headlinePct}.`,
+      'manufacturer': { '@type': 'Organization', 'name': d.company },
+      'mechanismOfAction': d.mechanism.join(' '),
+      'dosageForm': d.frequency,
+      'administrationRoute': '피하주사',
+    };
+  }
+  if (route.startsWith('effect/')) {
+    const id = route.slice(7);
+    const s = SIDE_EFFECT_CONTENT[id];
+    if (!s) return null;
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'MedicalSymptom',
+      'name': s.label,
+      'description': s.summary,
+      'possibleTreatment': s.selfCare.map(t => ({ '@type': 'MedicalTherapy', 'name': t })),
+    };
+  }
+  if (route === 'compare') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      'name': '비만 치료제 비교',
+      'itemListElement': Object.values(DRUG_CONTENT).map((d, i) => ({
+        '@type': 'ListItem', 'position': i + 1,
+        'item': { '@type': 'Drug', 'name': d.label, 'alternateName': d.en },
+      })),
+    };
+  }
+  if (route === 'landing') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      'name': '위마로그',
+      'alternateName': 'wimalog',
+      'description': '위고비·마운자로 사용자 리얼데이터 플랫폼',
+      'url': 'https://wimalog.vercel.app',
+    };
+  }
+  return null;
+}
+
 const SITE = '위마로그';
 const SUB = '위고비·마운자로 리얼데이터';
 const FALLBACK_DESC = '위고비·마운자로·삭센다 사용자의 실제 체중 감량, 부작용, 가격 데이터를 익명으로 비교·기록하는 플랫폼';
@@ -15,7 +84,7 @@ function ensureMeta(name, content, attr = 'name') {
   el.setAttribute('content', content);
 }
 
-export function setSEO({ title, description, ogTitle, ogDescription, canonical }) {
+export function setSEO({ title, description, ogTitle, ogDescription, canonical, route }) {
   const fullTitle = title ? `${title} — ${SITE}` : `${SITE} · ${SUB}`;
   const desc = description || FALLBACK_DESC;
   document.title = fullTitle;
@@ -38,6 +107,8 @@ export function setSEO({ title, description, ogTitle, ogDescription, canonical }
     }
     link.href = canonical;
   }
+  // JSON-LD
+  if (route) setJsonLd(buildJsonLd(route));
 }
 
 export function seoFor(route) {
