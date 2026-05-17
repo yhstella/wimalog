@@ -234,6 +234,12 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="💉" title="주사 통증·자국"
                             desc="부위 로테이션·통증 줄이는 팁"
                             onClick={() => navigate('guide/injection-tips')} />
+          <PersonaCardLink icon="🍵" title="오심 줄이는 음식"
+                            desc="BRAT·생강·작게 자주 — 메스꺼움 완화"
+                            onClick={() => navigate('guide/nausea-foods')} />
+          <PersonaCardLink icon="🏋️" title="감량기 운동 추천"
+                            desc="유산소+근력 단계별 가이드"
+                            onClick={() => navigate('guide/exercise-types')} />
           <PersonaCardLink icon="📋" title="시작하기 전 점검"
                             desc="BMI·동반질환·예산·생활 체크리스트"
                             onClick={() => navigate('guide/before-use')} />
