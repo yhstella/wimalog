@@ -149,6 +149,25 @@ export function Statistics({ user, navigate, onSignup }) {
         </div>
       )}
 
+      {/* 콘텐츠 페이지 빠른 진입 (검색 친화) */}
+      <div className="flex gap-2 flex-wrap text-xs">
+        <button onClick={() => navigate('compare')} className="px-3 py-1.5 rounded-full bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/40 font-semibold transition">
+          ⚖️ 5개 약 비교
+        </button>
+        <button onClick={() => navigate('drug/wegovy')} className="px-3 py-1.5 rounded-full bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-ink-300/40 transition">
+          💉 위고비 상세
+        </button>
+        <button onClick={() => navigate('drug/mounjaro')} className="px-3 py-1.5 rounded-full bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-ink-300/40 transition">
+          💉 마운자로 상세
+        </button>
+        <button onClick={() => navigate('guide/before-use')} className="px-3 py-1.5 rounded-full bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-ink-300/40 transition">
+          📋 시작 전 점검
+        </button>
+        <button onClick={() => navigate('calc/cost')} className="px-3 py-1.5 rounded-full bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-ink-300/40 transition">
+          💰 비용 계산기
+        </button>
+      </div>
+
       {/* 세그먼트별 빠른 진입 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <button onClick={() => set('medication', 'wegovy')}
