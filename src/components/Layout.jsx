@@ -31,7 +31,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           <button onClick={() => navigate(user ? 'dashboard' : 'landing')}
                   className="flex items-center gap-2 group">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-500 text-white font-bold">감</span>
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-brand-500 text-white font-bold text-xs">위마</span>
             <div className="text-left leading-tight">
               <div className="text-sm font-bold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 transition">위마로그</div>
               <div className="text-[10px] text-ink-500 dark:text-slate-500 -mt-0.5">위고비·마운자로 리얼데이터</div>

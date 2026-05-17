@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { overallSummary, compareMedications, priceStats, recentTrend, anonymousNotes } from '../lib/stats.js';
+import { overallSummary, compareMedications, recentTrend, anonymousNotes } from '../lib/stats.js';
 import { MED_BY_ID } from '../lib/constants.js';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, QuickSignupModal } from './Paywall.jsx';
@@ -10,15 +10,12 @@ export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
   const [showSignup, setShowSignup] = useState(false);
   const [medCmp, setMedCmp] = useState(null);
-  const [priceTop, setPriceTop] = useState(null);
   const [trend, setTrend] = useState(null);
   const [notes, setNotes] = useState([]);
 
   useEffect(() => {
     setSummary(overallSummary());
     setMedCmp(compareMedications({}, 12));
-    const p = priceStats({});
-    setPriceTop({ avg: p.avg, topRegion: p.byRegion[0] });
     setTrend(recentTrend());
     setNotes(anonymousNotes({}, 4));
   }, []);
@@ -142,30 +139,6 @@ export function Landing({ navigate, onSignup }) {
                 <div className="text-xs text-ink-500 dark:text-slate-500 mt-2 tabular-nums">현재 {n.weight} kg</div>
               </div>
             ))}
-          </div>
-        </section>
-      )}
-
-      {/* 가격 미리보기 */}
-      {priceTop?.topRegion && (
-        <section className="card !p-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <div className="text-xs text-ink-500 dark:text-slate-400">가장 저렴한 지역</div>
-              <div className="text-lg font-bold text-ink-900 dark:text-slate-100">
-                {priceTop.topRegion.region}{' '}
-                <span className="text-brand-600 dark:text-brand-400 tabular-nums">
-                  {Math.round(priceTop.topRegion.avg).toLocaleString()}원
-                </span>
-              </div>
-              <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">
-                전체 평균 {Math.round(priceTop.avg).toLocaleString()}원 대비{' '}
-                {Math.round((1 - priceTop.topRegion.avg / priceTop.avg) * 100)}% 저렴
-              </div>
-            </div>
-            <button onClick={handleSignup} className="btn-secondary !py-2 !px-3 text-xs">
-              나머지 지역 보기 →
-            </button>
           </div>
         </section>
       )}

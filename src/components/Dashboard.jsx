@@ -73,6 +73,18 @@ export function Dashboard({ user, navigate }) {
 
   const activeMeds = courses.filter(c => !c.endDate);
 
+  // 정체기 감지: 최근 4주 동안 체중 변화 ±0.3kg 미만
+  const stallAlert = useMemo(() => {
+    if (logs.length < 4) return null;
+    const recent4 = logs.slice(-4);
+    const min = Math.min(...recent4.map(l => l.weight));
+    const max = Math.max(...recent4.map(l => l.weight));
+    if (max - min < 0.4 && current && !current.endDate) {
+      return { range: max - min, weeks: recent4.length };
+    }
+    return null;
+  }, [logs, current]);
+
   // Next-Action 가이드 (한 번 dismiss하면 안 보임)
   const [dismissedTour, setDismissedTour] = useState(() => !!localStorage.getItem(NEXT_ACTION_DISMISSED_KEY));
   const tourTasks = useMemo(() => [
@@ -276,7 +288,7 @@ export function Dashboard({ user, navigate }) {
           </button>
         </div>
         {current && cohortN > 0 ? (
-          <CohortTable cohortCurve={cohortCurve} mine={summary} />
+          <CohortTable cohortCurve={cohortCurve} mine={summary} startWeight={summary?.startWeight ?? user.startWeight} />
         ) : (
           <button onClick={() => navigate('stats')} className="w-full text-sm text-brand-700 dark:text-brand-400 underline py-2">
             통계 페이지로 이동
@@ -317,6 +329,27 @@ export function Dashboard({ user, navigate }) {
               <br />→ 지금부터 운동 습관을 만들면 요요를 크게 줄일 수 있어요.
             </div>
           )}
+        </div>
+      )}
+
+      {/* 정체기 감지 */}
+      {stallAlert && (
+        <div className="card border border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/15">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">📉</div>
+            <div className="flex-1">
+              <h2 className="section-title">정체기 가능성</h2>
+              <p className="text-sm text-ink-700 dark:text-slate-300 mt-1">
+                최근 4번 체중 기록의 변동이 <b>{stallAlert.range.toFixed(1)} kg</b>밖에 안 됩니다.
+                약 효과가 둔해지는 시점일 수 있어요.
+              </p>
+              <ul className="text-sm text-ink-700 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
+                <li>주당 운동 시간 늘리기 (이번 주 {thisWeek.exMinutes}분 → +50%)</li>
+                <li>단백질 섭취 점검 — 근손실 방지</li>
+                <li>의료진과 용량 조정 상의</li>
+              </ul>
+            </div>
+          </div>
         </div>
       )}
 
@@ -367,8 +400,10 @@ function MiniTile({ icon, label, value, sub, onClick }) {
   );
 }
 
-function CohortTable({ cohortCurve, mine }) {
+function CohortTable({ cohortCurve, mine, startWeight }) {
   const myWeeks = mine?.weeks ?? 0;
+  // 본인 시작 체중 기준 kg 환산
+  const toKg = (pct) => pct != null && startWeight ? (startWeight * pct / 100) : null;
   return (
     <div className="overflow-x-auto -mx-2">
       <table className="w-full text-sm">
@@ -383,19 +418,35 @@ function CohortTable({ cohortCurve, mine }) {
         <tbody>
           {cohortCurve.map(c => {
             const reached = myWeeks >= c.week;
+            const avgKg = toKg(c.avg);
+            const medianKg = toKg(c.median);
             return (
               <tr key={c.week} className={`border-t border-ink-100 dark:border-slate-800 ${reached ? 'bg-brand-50/50 dark:bg-brand-900/20' : ''}`}>
                 <td className="py-2 px-2">
                   {c.week}주{reached && <span className="ml-1 text-[10px] text-brand-700 dark:text-brand-400">↑</span>}
                 </td>
-                <td className="py-2 px-2 text-right tabular-nums text-ink-900 dark:text-slate-100">{c.avg != null ? `-${c.avg.toFixed(1)}%` : '—'}</td>
-                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{c.median != null ? `-${c.median.toFixed(1)}%` : '—'}</td>
+                <td className="py-2 px-2 text-right tabular-nums">
+                  {avgKg != null ? (
+                    <>
+                      <span className="text-ink-900 dark:text-slate-100 font-semibold">−{avgKg.toFixed(1)} kg</span>
+                      <span className="text-ink-300 dark:text-slate-600 text-xs ml-1">({c.avg.toFixed(1)}%)</span>
+                    </>
+                  ) : '—'}
+                </td>
+                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">
+                  {medianKg != null ? `−${medianKg.toFixed(1)} kg` : '—'}
+                </td>
                 <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{c.n}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      {startWeight && (
+        <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2 text-right">
+          본인 시작 체중 {startWeight} kg 기준 환산
+        </p>
+      )}
     </div>
   );
 }

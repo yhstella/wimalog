@@ -192,52 +192,83 @@ function WeightTab({ user, version, refresh, navigate }) {
 }
 
 /* ============================================================
-   투약 탭
+   투약 탭 — 새로운 UX:
+   - 코스 개념 숨김 (자동 처리)
+   - 첫 투약: 약/용량/가격/지역 선택만
+   - 이후 투약: 같은 약/용량으로 자동 채움 + "오늘/+7일/직접" 빠른 날짜 칩
+   - 위고비/마운자로 = 주 1회 이상 간격, 삭센다 = 매일 가능 (간격 제약)
 ============================================================ */
 function DoseTab({ user, version, refresh, navigate }) {
   const toast = useToast();
-  const courses = useMemo(() => Storage.getMedCoursesByUser(user.id).filter(c => !c.endDate),
-                          [user.id, version]);
+  const courses = useMemo(() => Storage.getMedCoursesByUser(user.id), [user.id, version]);
   const allDoses = useMemo(() => Storage.getDosesByUser(user.id), [user.id, version]);
+  const activeCourses = courses.filter(c => !c.endDate);
 
-  const [courseId, setCourseId] = useState(courses[0]?.id || '');
-  const course = courses.find(c => c.id === courseId) || courses[0];
-  const med = course ? MED_BY_ID[course.medication] : null;
-  const lastDose = useMemo(() => allDoses.filter(d => d.courseId === course?.id).slice(-1)[0], [allDoses, course]);
+  // 가장 최근 투약 (사용자가 마지막으로 쓴 약)
+  const lastDose = allDoses[allDoses.length - 1];
+  const lastDoseCourse = lastDose ? courses.find(c => c.id === lastDose.courseId) : null;
+  const lastMedId = lastDoseCourse?.medication;
+  const lastMed = lastMedId ? MED_BY_ID[lastMedId] : null;
 
-  const [date, setDate] = useState(todayISO());
-  const [dose, setDose] = useState('');
-  const [price, setPrice] = useState('');
-  const [region, setRegion] = useState('');
+  // 같은 약으로 이어 투약 (자동 채움) — useState 위에서 미리 계산
+  const med = lastMed || MED_BY_ID[activeCourses[0]?.medication] || MED_BY_ID.wegovy;
+  const medId = lastMedId || activeCourses[0]?.medication || 'wegovy';
 
-  // 코스가 바뀌면 기본값 갱신
-  React.useEffect(() => {
-    if (course) {
-      setDose(lastDose?.dose || course.initialDose || med?.doses[0] || '');
-      setPrice(lastDose?.price || '');
-      setRegion(lastDose?.region || '');
-    }
-  }, [course?.id]);
+  const minIntervalDays = med?.frequency === '매일' ? 1 : 7;
+  const lastDoseMs = lastDose ? new Date(lastDose.date).getTime() : null;
+  const earliestNextMs = lastDoseMs ? lastDoseMs + minIntervalDays * 86400000 : Date.now();
+  const earliestNextDate = new Date(earliestNextMs).toISOString().slice(0, 10);
+  const todayDate = todayISO();
+  const recommendedDate = todayDate >= earliestNextDate ? todayDate : earliestNextDate;
 
-  if (courses.length === 0) {
-    return (
-      <div className="card text-center py-10">
-        <div className="text-4xl mb-2">💊</div>
-        <div className="font-bold text-ink-900">진행 중인 약 코스가 없습니다</div>
-        <p className="text-sm text-ink-500 mt-1 mb-4">
-          투약 기록을 남기려면 먼저 약 관리 페이지에서 코스를 시작하세요.
-        </p>
-        <button onClick={() => navigate('meds')} className="btn-primary">약 관리로 이동</button>
-      </div>
-    );
+  // 모든 hooks는 early return 위에 (React Hooks 규칙)
+  const [date, setDate] = useState(recommendedDate);
+  const [dose, setDose] = useState(lastDose?.dose || med?.doses[0] || '');
+  const [price, setPrice] = useState(lastDose?.price ?? '');
+  const [region, setRegion] = useState(lastDose?.region ?? '');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [switchMed, setSwitchMed] = useState(false);
+  const [selectedMedId, setSelectedMedId] = useState(medId);
+
+  // 첫 사용자 — 약 선택 화면 표시 (모든 hooks 호출 후)
+  if (!lastDose && activeCourses.length === 0) {
+    return <FirstDosePicker user={user} refresh={refresh} toast={toast} />;
   }
+
+  const courseForLog = activeCourses.find(c => c.medication === medId) || activeCourses[0] || lastDoseCourse;
+
+  // 약 변경 시 default 갱신
+  const activeMed = MED_BY_ID[selectedMedId] || med;
+  const isIntervalShort = lastDoseMs && date < earliestNextDate;
 
   const submit = () => {
     if (!dose) return;
+    if (isIntervalShort && selectedMedId === medId) {
+      toast.error(`${activeMed.label}은 최소 ${minIntervalDays}일 간격이 필요합니다 (${earliestNextDate} 이후)`);
+      return;
+    }
+    // 약 변경 시: 새 코스 자동 생성
+    let targetCourseId = courseForLog?.id;
+    if (selectedMedId !== medId || !targetCourseId) {
+      const newCourse = {
+        id: uid('mc'),
+        userId: user.id,
+        seed: false,
+        medication: selectedMedId,
+        startDate: date,
+        endDate: null,
+        initialDose: dose,
+        notes: '',
+        discontinueReason: null,
+        createdAt: new Date().toISOString(),
+      };
+      Storage.addMedCourse(newCourse);
+      targetCourseId = newCourse.id;
+    }
     Storage.addDose({
       id: uid('dose'),
       userId: user.id,
-      courseId: course.id,
+      courseId: targetCourseId,
       seed: false,
       date,
       dose,
@@ -247,71 +278,147 @@ function DoseTab({ user, version, refresh, navigate }) {
       notes: '',
       createdAt: new Date().toISOString(),
     });
-    setPrice('');
     refresh();
-    toast.success(`${MED_BY_ID[course.medication]?.label.replace(/\s*\(.+\)/, '')} ${dose} 투약 기록됨`);
+    toast.success(`${activeMed.label.replace(/\s*\(.+\)/, '')} ${dose} · ${date} 기록됨`);
   };
+
+  // 빠른 날짜 칩 옵션
+  const dateChips = [];
+  if (todayDate >= earliestNextDate) {
+    dateChips.push({ label: '오늘', value: todayDate });
+  }
+  dateChips.push({ label: lastDoseMs ? `+${minIntervalDays}일 (예정일)` : '추천일', value: earliestNextDate });
+  if (minIntervalDays === 7) {
+    dateChips.push({ label: '+8일', value: new Date(earliestNextMs + 86400000).toISOString().slice(0, 10) });
+    dateChips.push({ label: '+10일', value: new Date(earliestNextMs + 3 * 86400000).toISOString().slice(0, 10) });
+  }
 
   return (
     <div className="space-y-4">
+      {lastDose && !switchMed && (
+        <div className="rounded-2xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-4 py-3 text-sm">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-ink-700 dark:text-slate-300">
+              지난 투약 <b>{lastMed?.label.replace(/\s*\(.+\)/, '')} {lastDose.dose}</b> · {lastDose.date}
+              {lastDose.price > 0 && <> · {lastDose.price.toLocaleString()}원</>}
+            </div>
+            <button onClick={() => setSwitchMed(true)}
+                    className="text-xs text-brand-700 dark:text-brand-400 underline">
+              다른 약으로 변경
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card space-y-4">
-        {courses.length > 1 && (
+        {/* 약 선택 (변경 시에만) */}
+        {switchMed && (
           <div>
-            <div className="label">기록 대상 코스</div>
-            <div className="flex gap-2 flex-wrap">
-              {courses.map(c => (
-                <button key={c.id} type="button" onClick={() => setCourseId(c.id)}
-                        className={`px-3 py-2 rounded-xl text-sm border transition
-                                    ${course?.id === c.id
+            <div className="label">약</div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {Object.keys(MED_PROFILE_DOSES).map(id => (
+                <button key={id} type="button"
+                        onClick={() => {
+                          setSelectedMedId(id);
+                          setDose(MED_BY_ID[id].doses[0]);
+                        }}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium border transition
+                                    ${selectedMedId === id
                                       ? 'bg-brand-500 text-white border-brand-500'
-                                      : 'bg-white text-ink-700 border-ink-300'}`}>
-                  {MED_BY_ID[c.medication]?.label} {c.notes && `· ${c.notes}`}
+                                      : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+                  {MED_BY_ID[id]?.label.replace(/\s*\(.+\)/, '')}
                 </button>
               ))}
             </div>
+            <button onClick={() => { setSwitchMed(false); setSelectedMedId(medId); }}
+                    className="text-xs text-ink-500 dark:text-slate-500 underline mt-2">
+              이전 약 그대로
+            </button>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="label">투약일</div>
-            <input type="date" className="input" max={todayISO()}
+        {/* 빠른 날짜 칩 + 직접 입력 */}
+        <div>
+          <div className="label flex items-center justify-between">
+            <span>투약일</span>
+            {minIntervalDays > 1 && (
+              <span className="text-[10px] text-ink-500 dark:text-slate-500 font-normal">
+                {activeMed?.label.replace(/\s*\(.+\)/, '')} 최소 {minIntervalDays}일 간격
+              </span>
+            )}
+          </div>
+          <div className="flex gap-1.5 flex-wrap mb-2">
+            {dateChips.map((c, i) => (
+              <button key={i} type="button" onClick={() => setDate(c.value)}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold border transition
+                                  ${date === c.value
+                                    ? 'bg-brand-500 text-white border-brand-500'
+                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>
+                {c.label}
+              </button>
+            ))}
+            <input type="date" className="input !w-auto !py-1.5 !px-2 text-xs"
+                   max={todayISO()}
                    value={date} onChange={e => setDate(e.target.value)} />
           </div>
-          <div>
-            <div className="label">용량 — {med?.label}</div>
-            <div className="flex gap-1.5 flex-wrap">
-              {med?.doses.map(d => (
-                <button key={d} type="button" onClick={() => setDose(d)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition
-                                    ${dose === d
-                                      ? 'bg-brand-500 text-white border-brand-500'
-                                      : 'bg-white text-ink-700 border-ink-300'}`}>{d}</button>
-              ))}
+          {isIntervalShort && selectedMedId === medId && (
+            <div className="text-xs text-rose-600 dark:text-rose-400">
+              ⚠ 이전 투약({lastDose.date})으로부터 {minIntervalDays}일이 지나지 않았어요. {earliestNextDate} 이후로 선택.
             </div>
-          </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="label">구매 가격 (원, 1회분)</div>
-            <input type="number" inputMode="numeric" className="input"
-                   value={price} onChange={e => setPrice(e.target.value)}
-                   placeholder="예: 50000" />
+        {/* 용량 — 항상 큰 버튼 */}
+        <div>
+          <div className="label">용량 — {activeMed?.label.replace(/\s*\(.+\)/, '')}</div>
+          <div className="flex gap-1.5 flex-wrap">
+            {activeMed?.doses.map(d => (
+              <button key={d} type="button" onClick={() => setDose(d)}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold border transition
+                                  ${dose === d
+                                    ? 'bg-brand-500 text-white border-brand-500'
+                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>
+                {d}
+              </button>
+            ))}
           </div>
-          <div>
-            <div className="label">구매 지역</div>
-            <input type="text" className="input" list="dose-region-suggestions" maxLength={30}
-                   value={region} onChange={e => setRegion(e.target.value)}
-                   placeholder="예: 서울 대학로" />
-            <datalist id="dose-region-suggestions">
-              {REGION_SUGGESTIONS.map(r => <option key={r} value={r} />)}
-            </datalist>
-          </div>
+          {lastDose?.dose === dose && (
+            <p className="helptext">↩ 지난번과 같은 용량</p>
+          )}
+        </div>
+
+        {/* 가격·지역 (접힘) */}
+        <div>
+          <button type="button" onClick={() => setShowAdvanced(s => !s)}
+                  className="text-xs text-brand-700 dark:text-brand-400 underline">
+            {showAdvanced ? '가격/지역 숨기기' : '+ 가격·지역 입력 (선택)'}
+          </button>
+          {showAdvanced && (
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div>
+                <div className="label">가격 (원)</div>
+                <input type="number" inputMode="numeric" className="input"
+                       value={price} onChange={e => setPrice(e.target.value)}
+                       placeholder="예: 380000" />
+              </div>
+              <div>
+                <div className="label">지역</div>
+                <input type="text" className="input" list="dose-region-suggestions" maxLength={30}
+                       value={region} onChange={e => setRegion(e.target.value)}
+                       placeholder="예: 서울 대학로" />
+                <datalist id="dose-region-suggestions">
+                  {REGION_SUGGESTIONS.map(r => <option key={r} value={r} />)}
+                </datalist>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end">
-          <button onClick={submit} disabled={!dose} className="btn-primary">투약 기록 저장</button>
+          <button onClick={submit} disabled={!dose || (isIntervalShort && selectedMedId === medId)}
+                  className="btn-primary !py-3 !px-6 text-base">
+            ✓ 투약 기록
+          </button>
         </div>
       </div>
 
@@ -324,11 +431,11 @@ function DoseTab({ user, version, refresh, navigate }) {
             <div className="flex justify-between items-center gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-ink-900">{d.dose}</span>
-                  {c && <span className="text-xs text-ink-500">· {MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '')}</span>}
-                  <span className="text-xs text-ink-500">· {d.date}</span>
+                  <span className="font-semibold text-ink-900 dark:text-slate-100">{d.dose}</span>
+                  {c && <span className="text-xs text-ink-500 dark:text-slate-400">· {MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '')}</span>}
+                  <span className="text-xs text-ink-500 dark:text-slate-400">· {d.date}</span>
                 </div>
-                <div className="text-xs text-ink-500 mt-0.5">
+                <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">
                   {d.region && <>{d.region} · </>}
                   {d.price ? `${d.price.toLocaleString()}원` : '가격 미기록'}
                 </div>
@@ -339,6 +446,140 @@ function DoseTab({ user, version, refresh, navigate }) {
           );
         }}
       />
+    </div>
+  );
+}
+
+// 첫 투약 시: 약 선택 + 시작
+const MED_PROFILE_DOSES = {
+  wegovy: true, mounjaro: true, saxenda: true, ozempic: true, zepbound: true,
+};
+
+function FirstDosePicker({ user, refresh, toast }) {
+  const [picked, setPicked] = useState(null);
+  if (!picked) {
+    return (
+      <div className="card text-center py-8">
+        <div className="text-4xl mb-3">💊</div>
+        <div className="font-bold text-ink-900 dark:text-slate-100 text-lg mb-1">어떤 약을 시작하셨나요?</div>
+        <div className="text-sm text-ink-500 dark:text-slate-400 mb-5">선택 후 첫 투약을 기록해요</div>
+        <div className="grid grid-cols-2 gap-2 max-w-sm mx-auto">
+          {Object.keys(MED_PROFILE_DOSES).map(id => {
+            const m = MED_BY_ID[id];
+            return (
+              <button key={id} onClick={() => setPicked(id)}
+                      className="px-4 py-4 rounded-xl bg-white dark:bg-slate-800 border-2 border-ink-300 dark:border-slate-700 hover:border-brand-400 transition">
+                <div className="font-bold text-ink-900 dark:text-slate-100">{m.label.replace(/\s*\(.+\)/, '')}</div>
+                <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-0.5">{m.frequency}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+  // 약 선택 후 — 첫 투약 폼
+  return <FirstDoseForm user={user} medId={picked} onCancel={() => setPicked(null)}
+                         onSaved={() => { refresh(); toast.success('첫 투약 기록 완료'); }} />;
+}
+
+function FirstDoseForm({ user, medId, onCancel, onSaved }) {
+  const med = MED_BY_ID[medId];
+  const [date, setDate] = useState(todayISO());
+  const [dose, setDose] = useState(med.doses[0]);
+  const [price, setPrice] = useState('');
+  const [region, setRegion] = useState('');
+
+  const submit = () => {
+    if (!dose) return;
+    const courseId = uid('mc');
+    Storage.addMedCourse({
+      id: courseId, userId: user.id, seed: false,
+      medication: medId, startDate: date, endDate: null,
+      initialDose: dose, notes: '',
+      discontinueReason: null, createdAt: new Date().toISOString(),
+    });
+    Storage.addDose({
+      id: uid('dose'), userId: user.id, courseId, seed: false,
+      date, dose,
+      price: +price || null, region: region.trim() || null,
+      pharmacyName: null, notes: '',
+      createdAt: new Date().toISOString(),
+    });
+    onSaved();
+  };
+
+  return (
+    <div className="card space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="font-bold text-ink-900 dark:text-slate-100">
+          {med.label.replace(/\s*\(.+\)/, '')} 첫 투약
+        </div>
+        <button onClick={onCancel} className="btn-ghost text-xs">← 약 다시 선택</button>
+      </div>
+
+      <div>
+        <div className="label">시작일</div>
+        <div className="flex gap-1.5 flex-wrap mb-2">
+          {[
+            { label: '오늘', v: todayISO() },
+            { label: '어제', v: new Date(Date.now() - 86400000).toISOString().slice(0, 10) },
+            { label: '3일 전', v: new Date(Date.now() - 3*86400000).toISOString().slice(0, 10) },
+            { label: '1주 전', v: new Date(Date.now() - 7*86400000).toISOString().slice(0, 10) },
+          ].map(c => (
+            <button key={c.label} type="button" onClick={() => setDate(c.v)}
+                    className={`px-3 py-2 rounded-lg text-xs font-semibold border transition
+                                ${date === c.v
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+              {c.label}
+            </button>
+          ))}
+          <input type="date" className="input !w-auto !py-1.5 !px-2 text-xs"
+                 max={todayISO()}
+                 value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+      </div>
+
+      <div>
+        <div className="label">용량</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {med.doses.map(d => (
+            <button key={d} type="button" onClick={() => setDose(d)}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold border transition
+                                ${dose === d
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+              {d}
+            </button>
+          ))}
+        </div>
+        <p className="helptext">처음엔 보통 가장 낮은 용량부터 시작합니다</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <div className="label">가격 (원, 선택)</div>
+          <input type="number" inputMode="numeric" className="input"
+                 value={price} onChange={e => setPrice(e.target.value)}
+                 placeholder="예: 380000" />
+        </div>
+        <div>
+          <div className="label">지역 (선택)</div>
+          <input type="text" className="input" list="first-region-suggestions" maxLength={30}
+                 value={region} onChange={e => setRegion(e.target.value)}
+                 placeholder="예: 서울 대학로" />
+          <datalist id="first-region-suggestions">
+            {REGION_SUGGESTIONS.map(r => <option key={r} value={r} />)}
+          </datalist>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button onClick={submit} disabled={!dose} className="btn-primary !py-3 !px-6 text-base">
+          ✓ 첫 투약 기록
+        </button>
+      </div>
     </div>
   );
 }

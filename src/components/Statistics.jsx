@@ -89,10 +89,12 @@ export function Statistics({ user, navigate, onSignup }) {
     });
   }, [user, myCourse, myLogs, curve]);
 
+  // 가입자 본인 시작 체중 기준 kg 환산 (없으면 평균 80kg 가정)
+  const refWeight = user?.startWeight ?? 80;
   const lineData = useMemo(() =>
     curve.filter(c => c.avg != null).map(c => ({
-      x: c.week, y: -c.avg, label: `${c.week}주`,
-    })), [curve]);
+      x: c.week, y: -refWeight * c.avg / 100, label: `${c.week}주`,
+    })), [curve, refWeight]);
 
   const set = (k, v) => setFilter(f => ({ ...f, [k]: v, _similarApplied: false }));
 
@@ -202,11 +204,11 @@ export function Statistics({ user, navigate, onSignup }) {
       <div className="card">
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h2 className="section-title">주차별 평균 감량률</h2>
+            <h2 className="section-title">주차별 평균 감량 (kg)</h2>
             <p className="section-subtitle">
-              x축: 약 시작 후 주차, y축: 시작 시점 체중 대비 감량 %
-              {!user && <> · <b className="text-brand-600">처음 4주만 미리 보기</b></>}
-              {myPersonalCurve.length > 0 && <> · <b className="text-rose-600">빨간 선 = 본인</b></>}
+              본인 시작 체중 <b>{refWeight} kg</b> 기준으로 환산
+              {!user && <> · <b className="text-brand-600 dark:text-brand-400">처음 4주만 미리 보기</b></>}
+              {myPersonalCurve.length > 0 && <> · <b className="text-rose-600 dark:text-rose-400">빨간 선 = 본인</b></>}
             </p>
           </div>
         </div>
@@ -218,11 +220,11 @@ export function Statistics({ user, navigate, onSignup }) {
               ...(myPersonalCurve.length > 0 ? [{
                 name: '나', color: '#E11D48',
                 data: myPersonalCurve.map(p => ({
-                  x: p.week, y: p.lossPct, label: `${p.week}주`,
+                  x: p.week, y: refWeight * p.lossPct / 100, label: `${p.week}주`,
                 })),
               }] : []),
             ]}
-            yLabel="%" height={240}
+            yLabel="kg" height={240}
           />
         ) : (
           <div className="text-sm text-ink-500 dark:text-slate-400 py-6 text-center">표본이 부족합니다</div>
@@ -239,19 +241,31 @@ export function Statistics({ user, navigate, onSignup }) {
               </tr>
             </thead>
             <tbody>
-              {visibleCurve.map(c => (
-                <tr key={c.week} className="border-t border-ink-100">
-                  <td className="py-1.5 px-2">{c.week}주</td>
-                  <td className="py-1.5 px-2 text-right tabular-nums">{c.avg != null ? `-${c.avg.toFixed(1)}%` : '—'}</td>
-                  <td className="py-1.5 px-2 text-right tabular-nums text-ink-500">{c.median != null ? `-${c.median.toFixed(1)}%` : '—'}</td>
-                  {user && (
-                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500">
-                      {c.p25 != null ? `-${c.p25.toFixed(1)}~-${c.p75.toFixed(1)}%` : '—'}
+              {visibleCurve.map(c => {
+                const avgKg = c.avg != null ? refWeight * c.avg / 100 : null;
+                const medianKg = c.median != null ? refWeight * c.median / 100 : null;
+                const p25Kg = c.p25 != null ? refWeight * c.p25 / 100 : null;
+                const p75Kg = c.p75 != null ? refWeight * c.p75 / 100 : null;
+                return (
+                  <tr key={c.week} className="border-t border-ink-100 dark:border-slate-800">
+                    <td className="py-1.5 px-2">{c.week}주</td>
+                    <td className="py-1.5 px-2 text-right tabular-nums">
+                      {avgKg != null
+                        ? <><span className="font-semibold text-ink-900 dark:text-slate-100">−{avgKg.toFixed(1)} kg</span> <span className="text-ink-300 dark:text-slate-600 text-xs">({c.avg.toFixed(1)}%)</span></>
+                        : '—'}
                     </td>
-                  )}
-                  <td className="py-1.5 px-2 text-right tabular-nums text-ink-500">{c.n}</td>
-                </tr>
-              ))}
+                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">
+                      {medianKg != null ? `−${medianKg.toFixed(1)} kg` : '—'}
+                    </td>
+                    {user && (
+                      <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">
+                        {p25Kg != null ? `−${p25Kg.toFixed(1)}~−${p75Kg.toFixed(1)} kg` : '—'}
+                      </td>
+                    )}
+                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{c.n}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {hiddenCurveCount > 0 && (

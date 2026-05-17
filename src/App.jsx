@@ -35,7 +35,7 @@ export default function App() {
     applyTheme();
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
-    seedIfNeeded(150);
+    seedIfNeeded(1000);
     return unwatch;
   }, []);
 

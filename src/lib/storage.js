@@ -7,7 +7,7 @@ const KEYS = {
   exercises: 'gl_exercises',   // 운동 기록
   diets: 'gl_diets',           // 식단 기록
   session: 'gl_session',
-  seeded: 'gl_seeded_v3',  // v3: rebound model + dedication-based variation
+  seeded: 'gl_seeded_v4',  // v4: real clinical data + Korea prices + 1000 users
   migrated: 'gl_migrated_v2',
 };
 
