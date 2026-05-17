@@ -232,7 +232,7 @@ function DoseTab({ user, version, refresh, navigate }) {
 
   // 첫 사용자 — 약 선택 화면 표시 (모든 hooks 호출 후)
   if (!lastDose && activeCourses.length === 0) {
-    return <FirstDosePicker user={user} refresh={refresh} toast={toast} />;
+    return <FirstDosePicker user={user} refresh={refresh} toast={toast} navigate={navigate} />;
   }
 
   const courseForLog = activeCourses.find(c => c.medication === medId) || activeCourses[0] || lastDoseCourse;
@@ -455,7 +455,7 @@ const MED_PROFILE_DOSES = {
   wegovy: true, mounjaro: true, saxenda: true, ozempic: true, zepbound: true,
 };
 
-function FirstDosePicker({ user, refresh, toast }) {
+function FirstDosePicker({ user, refresh, toast, navigate }) {
   const [picked, setPicked] = useState(null);
   if (!picked) {
     return (
@@ -480,10 +480,11 @@ function FirstDosePicker({ user, refresh, toast }) {
   }
   // 약 선택 후 — 첫 투약 폼
   return <FirstDoseForm user={user} medId={picked} onCancel={() => setPicked(null)}
+                         navigate={navigate}
                          onSaved={() => { refresh(); toast.success('첫 투약 기록 완료'); }} />;
 }
 
-function FirstDoseForm({ user, medId, onCancel, onSaved }) {
+function FirstDoseForm({ user, medId, onCancel, onSaved, navigate }) {
   const med = MED_BY_ID[medId];
   const [date, setDate] = useState(todayISO());
   const [dose, setDose] = useState(med.doses[0]);
@@ -506,6 +507,11 @@ function FirstDoseForm({ user, medId, onCancel, onSaved }) {
       pharmacyName: null, notes: '',
       createdAt: new Date().toISOString(),
     });
+    // 첫 약 시작자에게 첫 한 달 가이드 제안
+    if (navigate && confirm('첫 투약 기록 완료! 🎉\n\n첫 한 달 가이드를 확인하시겠어요? (주차별 무엇이 일어나고 어떻게 대처하는지)')) {
+      navigate('guide/first-month');
+      return;
+    }
     onSaved();
   };
 

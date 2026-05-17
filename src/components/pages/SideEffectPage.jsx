@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { SIDE_EFFECT_CONTENT, DRUG_CONTENT } from '../../lib/content.js';
-import { sideEffectRates, sideEffectTiming } from '../../lib/stats.js';
+import { SIDE_EFFECT_CONTENT, DRUG_CONTENT, GUIDE_CONTENT } from '../../lib/content.js';
+import { sideEffectRates, sideEffectTiming, avgLossCurve } from '../../lib/stats.js';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
@@ -31,6 +31,20 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
 
   // 시점 분포 (전체 코호트)
   const timing = useMemo(() => sideEffectTiming({}, effectId), [effectId]);
+
+  // 약별 시점 분포 + 코호트 평균 감량
+  const drugTiming = useMemo(() => {
+    return Object.keys(DRUG_CONTENT).map(medId => {
+      const t = sideEffectTiming({ medication: medId }, effectId);
+      return {
+        id: medId,
+        label: DRUG_CONTENT[medId].label,
+        n: t.n,
+        avgOnset: t.avgOnset,
+        avgDuration: t.avgDuration,
+      };
+    }).filter(x => x.n >= 3);
+  }, [effectId]);
 
   const handleSignup = () => setShowSignup(true);
 
@@ -85,6 +99,45 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
           ))}
         </div>
       </section>
+
+      {/* 약별 시점 분포 비교 표 */}
+      {drugTiming.length > 0 && (
+        <section className="card">
+          <h2 className="section-title">약별 {content.label} 발생 패턴</h2>
+          <p className="section-subtitle">언제 시작하고 얼마나 지속되는지 약마다 다름</p>
+          <div className="overflow-x-auto -mx-2 mt-3">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800">
+                  <th className="py-2 pr-2">약</th>
+                  <th className="py-2 px-2 text-right">평균 발생 시점</th>
+                  <th className="py-2 px-2 text-right">평균 지속</th>
+                  <th className="py-2 px-2 text-right">표본</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drugTiming.map(d => (
+                  <tr key={d.id} className="border-b border-ink-100 dark:border-slate-800">
+                    <td className="py-1.5 pr-2">
+                      <button onClick={() => navigate(`drug/${d.id}`)}
+                              className="text-left font-medium text-ink-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-400">
+                        {d.label} <span className="text-[10px] text-ink-300 dark:text-slate-600">▸</span>
+                      </button>
+                    </td>
+                    <td className="py-1.5 px-2 text-right tabular-nums">
+                      {d.avgOnset != null ? `${d.avgOnset.toFixed(1)}주차` : '—'}
+                    </td>
+                    <td className="py-1.5 px-2 text-right tabular-nums">
+                      {d.avgDuration != null ? `${d.avgDuration.toFixed(1)}주` : '—'}
+                    </td>
+                    <td className="py-1.5 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{d.n}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* 시점 분포 (실시간) */}
       {timing.n > 0 && (
