@@ -4,7 +4,7 @@ import {
   compareMedications, similarFilter, priceStats, exerciseStats, primaryCourse,
   reboundCurve, reboundByExercise, reboundByMedication,
   personalSummaryForCourse, sideEffectTiming, successPattern, personalPercentile,
-  cohortDietByPhase,
+  cohortDietByPhase, exerciseDistribution,
 } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
 import { LineChart, HBarChart, GroupBarChart } from './Chart.jsx';
@@ -49,6 +49,7 @@ export function Statistics({ user, navigate, onSignup }) {
   const stopStats  = useMemo(() => discontinuationStats(cleanFilter), [cleanFilter]);
   const priceData  = useMemo(() => priceStats(cleanFilter), [cleanFilter]);
   const exData     = useMemo(() => exerciseStats(cleanFilter), [cleanFilter]);
+  const exDist     = useMemo(() => exerciseDistribution(cleanFilter), [cleanFilter]);
   const reboundData = useMemo(() => reboundCurve(cleanFilter), [cleanFilter]);
   const reboundByEx = useMemo(() => reboundByExercise(cleanFilter, 24), [cleanFilter]);
   const reboundByMed = useMemo(() => {
@@ -574,14 +575,41 @@ export function Statistics({ user, navigate, onSignup }) {
           <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
             <div>
               <h2 className="section-title">운동 패턴</h2>
-              <p className="section-subtitle">필터된 코호트의 평균</p>
+              <p className="section-subtitle">필터된 코호트의 주당 운동 시간 분포</p>
             </div>
           </div>
           {can(user, 'exercisePattern') ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Tile label="주당 평균 운동" value={`${Math.round(exData.avgMinPerWeek || 0)}분`} />
-              <Tile label="운동 기록 사용자" value={`${exData.withExercise}/${exData.n}명`} />
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                <Tile label="주당 평균 운동" value={`${Math.round(exData.avgMinPerWeek || 0)}분`} />
+                <Tile label="운동 기록 사용자" value={`${exData.withExercise}/${exData.n}명`} />
+                <Tile label="WHO 권장 달성" value={`${Math.round((exDist?.buckets?.slice(3).reduce((s,b)=>s+b.count,0) || 0) / Math.max(1, exDist?.n || 1) * 100)}%`} />
+              </div>
+              {/* 히스토그램 */}
+              {exDist && exDist.n > 0 && (
+                <div>
+                  <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">주당 운동 시간 분포 ({exDist.n}명)</div>
+                  <div className="space-y-1.5">
+                    {exDist.buckets.map(b => {
+                      const max = Math.max(...exDist.buckets.map(x => x.count), 1);
+                      const pct = (b.count / exDist.n) * 100;
+                      return (
+                        <div key={b.label}>
+                          <div className="flex justify-between text-xs mb-0.5">
+                            <span className="text-ink-700 dark:text-slate-300">{b.label}</span>
+                            <span className="text-ink-500 dark:text-slate-400 tabular-nums">{pct.toFixed(0)}% ({b.count})</span>
+                          </div>
+                          <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-brand-500" style={{ width: `${(b.count/max)*100}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="helptext mt-3">💡 WHO 권장: 주 150분 이상 (61분+ 그룹). 약 효과 극대화 + 요요 방지 핵심.</p>
+                </div>
+              )}
+            </>
           ) : (
             <LockedOverlay reason="free"
                            title="운동 패턴은 가입자 전용"

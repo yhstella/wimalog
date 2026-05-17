@@ -269,6 +269,42 @@ export function priceStats(filter) {
   };
 }
 
+// 코호트 운동 시간 분포 (히스토그램)
+export function exerciseDistribution(filter) {
+  const { users, courses, exercises } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  const cohortUsers = new Set(
+    courses.filter(c => {
+      const u = userById.get(c.userId);
+      return u && matchesCourseFilter(c, u, filter);
+    }).map(c => c.userId)
+  );
+  // 사용자별 주당 평균 운동 분
+  const perUserMin = [];
+  for (const uid of cohortUsers) {
+    const ex = exercises.filter(e => e.userId === uid);
+    if (!ex.length) { perUserMin.push(0); continue; }
+    const dateSet = new Set(ex.map(e => e.date));
+    const totalMin = ex.reduce((s, e) => s + (e.durationMin || 0), 0);
+    const weeks = Math.max(1, dateSet.size / 7);
+    perUserMin.push(totalMin / weeks);
+  }
+  // 버킷: 0, 1-30, 31-60, 61-120, 121-180, 181+
+  const buckets = [
+    { label: '0분 (안 함)', range: [0, 0.01], count: 0 },
+    { label: '1-30분', range: [0.01, 30.01], count: 0 },
+    { label: '31-60분', range: [30.01, 60.01], count: 0 },
+    { label: '61-120분', range: [60.01, 120.01], count: 0 },
+    { label: '121-180분', range: [120.01, 180.01], count: 0 },
+    { label: '181분+', range: [180.01, Infinity], count: 0 },
+  ];
+  for (const m of perUserMin) {
+    const b = buckets.find(x => m >= x.range[0] && m < x.range[1]);
+    if (b) b.count++;
+  }
+  return { n: perUserMin.length, buckets };
+}
+
 // 운동 시간 분포 (코호트의 주당 평균 분)
 export function exerciseStats(filter) {
   const { users, courses, exercises } = loadAll();
