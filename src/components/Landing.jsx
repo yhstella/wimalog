@@ -7,6 +7,7 @@ import { GroupBarChart } from './Chart.jsx';
 import { Simulator } from './Simulator.jsx';
 import { PollSection } from './Polls.jsx';
 import { PopularTopics } from './PopularTopics.jsx';
+import { EmailWaitlist } from './EmailWaitlist.jsx';
 
 export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
@@ -216,6 +217,9 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="🤔" title="아직 약 안 써본 분"
                             desc="위 시뮬레이터로 본인 예상 결과부터 확인"
                             onClick={() => document.getElementById('simulator-anchor')?.scrollIntoView({behavior: 'smooth'})} />
+          <PersonaCardLink icon="🏥" title="처방받는 법"
+                            desc="병원 선택·진료 준비·비용 — 한국 기준"
+                            onClick={() => navigate('guide/prescription')} />
           <PersonaCardLink icon="📋" title="시작하기 전 점검"
                             desc="BMI·동반질환·예산·생활 체크리스트"
                             onClick={() => navigate('guide/before-use')} />
@@ -264,6 +268,11 @@ export function Landing({ navigate, onSignup }) {
           곧 Premium으로 출시 예정입니다.
         </FAQ>
       </section>
+
+      {/* 이메일 알림 대기 */}
+      <EmailWaitlist title="Premium 출시 알림 받기"
+                      description="진료용 PDF 리포트 · AI 주간 분석 · 약가 가성비 분석 — 출시 시 가장 먼저 알려드려요"
+                      feature="premium" />
 
       {/* 하단 큰 CTA */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-8 text-center">
