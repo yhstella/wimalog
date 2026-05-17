@@ -21,6 +21,7 @@ import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
 import { DoctorReport } from './components/DoctorReport.jsx';
 import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
+import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
 function readRouteFromHash() {
   const h = (window.location.hash || '').replace(/^#\/?/, '');
@@ -111,31 +112,34 @@ export default function App() {
   return (
     <ToastProvider>
       <Layout route={effectiveRoute} navigate={navigate} user={user} onLogout={logout} onSignup={onSignupGo}>
-        {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} />}
-        {effectiveRoute === 'onboarding' && <Onboarding navigate={navigate} onComplete={onSignupGo} />}
-        {effectiveRoute === 'dashboard'  && user && <Dashboard user={user} navigate={navigate} />}
-        {effectiveRoute === 'records'    && user && <Records user={user} navigate={navigate} />}
-        {effectiveRoute === 'meds'       && user && <MedManager user={user} />}
-        {effectiveRoute === 'stats'      && (
-          <Statistics user={user} navigate={navigate} onSignup={onSignupGo} />
-        )}
-        {effectiveRoute === 'profile'    && user && (
-          <Profile user={user} navigate={navigate} onLogout={logout} refresh={refresh} />
-        )}
-        {effectiveRoute === 'info'       && <Info />}
-        {effectiveRoute === 'doctor-report' && user && (
-          <DoctorReport user={user} onBack={() => navigate('profile')} />
-        )}
-        {effectiveRoute === 'about'   && <AboutPage />}
-        {effectiveRoute === 'privacy' && <PrivacyPage />}
-        {effectiveRoute === 'terms'   && <TermsPage />}
+        {/* ErrorBoundary key=route — 라우트 변경 시 boundary state 리셋 */}
+        <ErrorBoundary key={effectiveRoute}>
+          {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} />}
+          {effectiveRoute === 'onboarding' && <Onboarding navigate={navigate} onComplete={onSignupGo} />}
+          {effectiveRoute === 'dashboard'  && user && <Dashboard user={user} navigate={navigate} />}
+          {effectiveRoute === 'records'    && user && <Records user={user} navigate={navigate} />}
+          {effectiveRoute === 'meds'       && user && <MedManager user={user} />}
+          {effectiveRoute === 'stats'      && (
+            <Statistics user={user} navigate={navigate} onSignup={onSignupGo} />
+          )}
+          {effectiveRoute === 'profile'    && user && (
+            <Profile user={user} navigate={navigate} onLogout={logout} refresh={refresh} />
+          )}
+          {effectiveRoute === 'info'       && <Info />}
+          {effectiveRoute === 'doctor-report' && user && (
+            <DoctorReport user={user} onBack={() => navigate('profile')} />
+          )}
+          {effectiveRoute === 'about'   && <AboutPage />}
+          {effectiveRoute === 'privacy' && <PrivacyPage />}
+          {effectiveRoute === 'terms'   && <TermsPage />}
 
-        {/* SEO 콘텐츠 페이지 */}
-        {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
-        {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
-        {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
-        {guideId  && <GuidePage guideId={guideId} navigate={navigate} onSignup={onSignupStay} />}
-        {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
+          {/* SEO 콘텐츠 페이지 */}
+          {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
+          {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
+          {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
+          {guideId  && <GuidePage guideId={guideId} navigate={navigate} onSignup={onSignupStay} />}
+          {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
+        </ErrorBoundary>
       </Layout>
     </ToastProvider>
   );
