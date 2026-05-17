@@ -86,7 +86,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       <section className="card">
         <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
           <div>
-            <h2 className="section-title">위마로그 사용자 {cohortN}명의 실제 곡선</h2>
+            <h2 className="section-title">위마로그 사용자 실제 곡선</h2>
             <p className="section-subtitle">본인 시작 체중 {refWeight}kg 기준 환산</p>
           </div>
           <button onClick={handleSignup} className="btn-primary !py-2 !px-3 text-sm">
@@ -177,7 +177,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       {demographics && demographics.total > 0 && (
         <section className="card">
           <h2 className="section-title">{drug.label}를 쓰는 사람들</h2>
-          <p className="section-subtitle">{demographics.total}명 사용자 특성</p>
+          <p className="section-subtitle">코호트 특성 분포</p>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div>
               <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">성별</div>
@@ -299,7 +299,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 text-white p-6 text-center">
         <h2 className="text-xl font-bold">{drug.label} 사용 중이거나 고민 중이신가요?</h2>
         <p className="mt-2 text-slate-300 text-sm">
-          익명으로 본인 정보를 등록하면 {cohortN}명 비슷한 사용자 데이터와 비교됩니다.
+          익명으로 본인 정보를 등록하면 비슷한 사용자 데이터와 비교됩니다.
         </p>
         <button onClick={handleSignup}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
@@ -308,7 +308,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       </section>
 
       <ShareButtons title={`${drug.label} 효과와 부작용 — 위마로그`}
-                    text={`${drug.label} 평균 ${drug.efficacy.headlineKg} 감량. 실제 사용자 ${cohortN}명 데이터.`} />
+                    text={`${drug.label} 평균 ${drug.efficacy.headlineKg} 감량. 실제 사용자 데이터.`} />
 
       <MedicalDisclaimer />
 

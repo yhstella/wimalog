@@ -302,7 +302,7 @@ export function Dashboard({ user, navigate }) {
             <h2 className="section-title">나와 비슷한 사용자 비교</h2>
             <p className="section-subtitle">
               {current
-                ? <>같은 약제·성별·비슷한 BMI <b className="text-ink-700 dark:text-slate-300">{cohortN}명</b></>
+                ? <>같은 약제·성별·비슷한 BMI 코호트와 비교</>
                 : <>약 시작 후 비교가 활성화됩니다. 통계 페이지에서 자유롭게 둘러볼 수 있어요.</>}
             </p>
           </div>

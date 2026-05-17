@@ -143,7 +143,7 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
       {timing.n > 0 && (
         <section className="card">
           <h2 className="section-title">언제 처음 나타날까?</h2>
-          <p className="section-subtitle">위마로그 사용자 {timing.n}건 기준</p>
+          <p className="section-subtitle">위마로그 사용자 보고 기준</p>
           <div className="mt-4 flex items-end gap-2 h-32">
             {timing.distribution.map((b, i) => (
               <div key={i} className="flex-1 flex flex-col items-center gap-1">

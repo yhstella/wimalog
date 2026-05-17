@@ -123,9 +123,9 @@ export function Statistics({ user, navigate, onSignup }) {
     <div className="space-y-6">
       <div className="flex justify-between flex-wrap gap-2 items-end">
         <div>
-          <h1 className="text-2xl font-extrabold text-ink-900">통계</h1>
-          <p className="text-sm text-ink-500 mt-1">
-            현재 필터에 해당하는 약 코스 <b className="text-ink-700">{n}개</b>의 익명 데이터입니다.
+          <h1 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">통계</h1>
+          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">
+            필터된 사용자 코호트의 익명 데이터입니다.
           </p>
         </div>
         <div className="flex gap-2">
@@ -244,7 +244,7 @@ export function Statistics({ user, navigate, onSignup }) {
 
       {n < 5 && (
         <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          ⚠ 표본이 너무 적습니다 ({n}개 코스). 필터를 완화해 보세요.
+          ⚠ 표본이 적습니다. 필터를 완화해 보세요.
         </div>
       )}
 
@@ -670,7 +670,7 @@ export function Statistics({ user, navigate, onSignup }) {
               <div className="text-3xl font-extrabold text-ink-900 tabular-nums">
                 {(stopStats.rate * 100).toFixed(0)}%
               </div>
-              <div className="text-xs text-ink-500">{stopStats.discontinued} / {stopStats.n}코스</div>
+              <div className="text-xs text-ink-500">중단 사례</div>
             </div>
           )}
         </div>

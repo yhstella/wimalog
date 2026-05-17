@@ -82,10 +82,10 @@ export function Profile({ user, navigate, onLogout, refresh }) {
   };
 
   const handleReseed = () => {
-    if (!confirm('시드(샘플) 데이터를 재생성합니다. 본인 데이터는 보존됩니다. (1000명 분 — 몇 초 걸려요)')) return;
-    reseed(1000);
+    if (!confirm('시드(샘플) 데이터를 재생성합니다. 본인 데이터는 보존됩니다.')) return;
+    reseed(1031);
     refresh();
-    toast.success('시드 데이터 재생성 완료 (1000명)');
+    toast.success('시드 데이터 재생성 완료');
   };
 
   const activeMeds = courses.filter(c => !c.endDate);
@@ -201,7 +201,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
       <div className="card space-y-3">
         <h2 className="section-title">개발자 도구</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button onClick={handleReseed} className="btn-secondary">샘플 데이터 재생성 (1000명)</button>
+          <button onClick={handleReseed} className="btn-secondary">샘플 데이터 재생성</button>
           <button onClick={deleteAccount} className="btn-secondary text-rose-600 border-rose-200 hover:bg-rose-50">
             계정/내 데이터 삭제
           </button>

@@ -64,47 +64,9 @@ export function Landing({ navigate, onSignup }) {
         <PollSection />
       </section>
 
-      {/* 커뮤니티 신호 */}
-      {trend && (
-        <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatTile label="등록 사용자" value={`${trend.totalUsers.toLocaleString()}명`}
-                    sub={trend.newUsers7d > 0 ? `이번 주 +${trend.newUsers7d}` : null} />
-          <StatTile label="이번 주 활동자" value={`${trend.activeUsers7d}명`} sub="최근 7일 기록" />
-          <StatTile label="이번 주 투약 기록" value={`${trend.doses7d.toLocaleString()}건`} sub="최근 7일" />
-          <StatTile label="이번 주 체중 기록" value={`${trend.logs7d.toLocaleString()}건`} sub="최근 7일" highlight />
-        </section>
-      )}
+      {/* (커뮤니티 신호 — 데이터 충분히 쌓이면 노출) */}
 
-      {/* 가장 많이 쓰는 약 (실시간) */}
-      {trend?.topMedsNow?.length > 0 && (
-        <section className="card">
-          <div className="flex justify-between items-end mb-3 flex-wrap gap-2">
-            <div>
-              <h2 className="section-title">최근 한 달 새로 시작한 약</h2>
-              <p className="section-subtitle">사용자들이 지금 가장 많이 시작하는 약</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            {trend.topMedsNow.map((m, i) => {
-              const maxCount = trend.topMedsNow[0].count;
-              return (
-                <div key={m.id}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="text-ink-700 dark:text-slate-300">
-                      {i === 0 && '🏆 '}{m.label}
-                    </span>
-                    <span className="tabular-nums text-ink-500 dark:text-slate-400">{m.count}건</span>
-                  </div>
-                  <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full bg-brand-500"
-                         style={{ width: `${(m.count / maxCount) * 100}%` }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      )}
+      {/* (가장 많이 쓰는 약 ranking — 데이터 충분히 쌓이면 노출) */}
 
       {/* 약제 비교 — 블러로 호기심 유도 */}
       {medCmp && (
@@ -298,11 +260,11 @@ export function Landing({ navigate, onSignup }) {
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-8 text-center">
         <h2 className="text-2xl font-extrabold">지금 1분만 투자하세요</h2>
         <p className="mt-2 text-slate-300 text-sm">
-          {trend ? `${trend.totalUsers}명 사용자` : '실제 사용자'}의 12주 평균 감량률 · 5개 약제 비교 · 약 중단 후 회복률 · 지역별 가격
+          12주 평균 감량률 · 5개 약제 비교 · 약 중단 후 회복률 · 지역별 가격
         </p>
         <button onClick={handleSignup}
                 className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          1분 가입하고 전체 데이터 보기 →
+          가입하고 전체 데이터 보기 →
         </button>
       </section>
 

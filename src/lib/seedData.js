@@ -482,7 +482,7 @@ function generateLifestyle(rand, user, courses, out, opts = {}) {
   }
 }
 
-export function seedIfNeeded(count = 1000, seed = 20260518) {
+export function seedIfNeeded(count = 1031, seed = 20260518) {
   if (Storage.isSeeded()) return;
   const rand = mulberry32(seed);
   const out = {
@@ -519,7 +519,7 @@ export function seedIfNeeded(count = 1000, seed = 20260518) {
   }
 }
 
-export function reseed(count = 1000) {
+export function reseed(count = 1031) {
   Storage.setUsers(Storage.getUsers().filter(u => !u.seed));
   Storage.setLogs(Storage.getLogs().filter(l => !l.seed));
   Storage.setMedCourses(Storage.getMedCourses().filter(c => !c.seed));

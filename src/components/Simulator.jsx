@@ -56,7 +56,7 @@ export function Simulator({ onSignup, compact = false }) {
 
       {/* 예측 결과 */}
       <div className="mt-4 rounded-xl bg-white/15 backdrop-blur p-4 text-center">
-        <div className="text-xs opacity-80">비슷한 사용자 {result.n}명의 12주 평균</div>
+        <div className="text-xs opacity-80">비슷한 사용자의 12주 평균</div>
         {result.lossPct != null ? (
           <div className="mt-1">
             <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none animate-celebrate" key={`${result.lossPct.toFixed(1)}`}>

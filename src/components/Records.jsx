@@ -700,6 +700,17 @@ function ExerciseTab({ user, version, refresh }) {
           </div>
           <div>
             <div className="label">시간 (분)</div>
+            <div className="flex gap-1 mb-1.5 flex-wrap">
+              {[15, 30, 45, 60, 90].map(m => (
+                <button key={m} type="button" onClick={() => setDurationMin(m)}
+                        className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition
+                                    ${+durationMin === m
+                                      ? 'bg-brand-500 text-white border-brand-500'
+                                      : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+                  {m}분
+                </button>
+              ))}
+            </div>
             <input type="number" inputMode="numeric" min={1} max={600} step="5"
                    className="input" value={durationMin}
                    onChange={e => setDurationMin(e.target.value)} />
@@ -890,10 +901,22 @@ function DietTab({ user, version, refresh }) {
         </div>
 
         <div>
-          <div className="label">메뉴 / 메모</div>
-          <textarea className="input min-h-[60px] resize-none" maxLength={200}
+          <div className="label">메뉴</div>
+          {/* 자주 쓰는 메뉴 빠른 채우기 */}
+          <div className="flex gap-1.5 flex-wrap mb-2 text-xs">
+            {[
+              '닭가슴살 샐러드', '오트밀', '계란+토스트', '두부 덮밥',
+              '연어 포케', '단백질 쉐이크', '그릭요거트', '저녁 거름',
+            ].map(opt => (
+              <button key={opt} type="button" onClick={() => setDescription(opt)}
+                      className="px-2.5 py-1 rounded-lg bg-ink-100/60 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition">
+                + {opt}
+              </button>
+            ))}
+          </div>
+          <textarea className="input min-h-[50px] resize-none" maxLength={200}
                     value={description} onChange={e => setDescription(e.target.value)}
-                    placeholder="예: 닭가슴살 샐러드 + 그릭요거트" />
+                    placeholder="자유 입력 가능" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

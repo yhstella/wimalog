@@ -45,9 +45,9 @@ export default function App() {
     Storage.migrateV1ToV2();
     // 시드 1000명 생성은 메인 스레드 차단 — 첫 페인트 후 다음 tick에 비동기 실행
     if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(() => seedIfNeeded(1000), { timeout: 1500 });
+      requestIdleCallback(() => seedIfNeeded(1031), { timeout: 1500 });
     } else {
-      setTimeout(() => seedIfNeeded(1000), 0);
+      setTimeout(() => seedIfNeeded(1031), 0);
     }
     return unwatch;
   }, []);
@@ -110,7 +110,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <Layout route={effectiveRoute} navigate={navigate} user={user} onLogout={logout}>
+      <Layout route={effectiveRoute} navigate={navigate} user={user} onLogout={logout} onSignup={onSignupGo}>
         {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} />}
         {effectiveRoute === 'onboarding' && <Onboarding navigate={navigate} onComplete={onSignupGo} />}
         {effectiveRoute === 'dashboard'  && user && <Dashboard user={user} navigate={navigate} />}

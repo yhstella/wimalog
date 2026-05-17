@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { getTheme, setTheme as setStoredTheme } from '../lib/theme.js';
 import { SearchTrigger } from './SearchModal.jsx';
+import { QuickSignupModal } from './Paywall.jsx';
 
 const NAV_AUTHED = [
   { id: 'dashboard',  label: '홈',     icon: '🏠' },
@@ -18,9 +19,10 @@ const NAV_GUEST = [
   { id: 'info',        label: '안전',   icon: '🛡️' },
 ];
 
-export function Layout({ route, navigate, user, onLogout, children }) {
+export function Layout({ route, navigate, user, onLogout, onSignup, children }) {
   const nav = user ? NAV_AUTHED : NAV_GUEST;
   const [theme, setTheme] = useState(getTheme());
+  const [showSignup, setShowSignup] = useState(false);
 
   const cycleTheme = () => {
     const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system';
@@ -71,8 +73,8 @@ export function Layout({ route, navigate, user, onLogout, children }) {
             {user ? (
               <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
             ) : (
-              <button onClick={() => navigate('onboarding')} className="btn-primary !py-2 !px-3 text-sm">
-                시작하기
+              <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">
+                가입하기
               </button>
             )}
           </div>
@@ -124,6 +126,11 @@ export function Layout({ route, navigate, user, onLogout, children }) {
           </button>
         )}
       </nav>
+
+      {showSignup && (
+        <QuickSignupModal onClose={() => setShowSignup(false)}
+                          onComplete={(id) => { setShowSignup(false); onSignup?.(id); }} />
+      )}
     </div>
   );
 }
