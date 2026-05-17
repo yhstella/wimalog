@@ -19,6 +19,8 @@ import { GuidePage } from './components/pages/GuidePage.jsx';
 import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
 import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
 import { DoctorReport } from './components/DoctorReport.jsx';
+import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
+import { recordVisit } from './components/RecentPages.jsx';
 
 function readRouteFromHash() {
   const h = (window.location.hash || '').replace(/^#\/?/, '');
@@ -45,10 +47,11 @@ export default function App() {
     return unwatch;
   }, []);
 
-  // 라우트가 바뀔 때 SEO 메타 갱신
+  // 라우트가 바뀔 때 SEO 메타 갱신 + 방문 기록
   useEffect(() => {
     const meta = seoFor(route) || {};
     setSEO({ ...meta, route });
+    recordVisit(route);
   }, [route]);
 
   const navigate = useCallback((r) => {

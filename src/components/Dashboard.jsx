@@ -197,6 +197,9 @@ export function Dashboard({ user, navigate }) {
         )}
       </div>
 
+      {/* Notification banner (한 번만) */}
+      <NotificationBanner user={user} />
+
       {/* Streak + Badges */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <StreakCard user={user} navigate={navigate} />

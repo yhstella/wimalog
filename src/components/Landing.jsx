@@ -9,6 +9,7 @@ import { PollSection } from './Polls.jsx';
 import { PopularTopics } from './PopularTopics.jsx';
 import { EmailWaitlist } from './EmailWaitlist.jsx';
 import { DrugStartTrendChart } from './TrendChart.jsx';
+import { RecentPagesRow } from './RecentPages.jsx';
 
 export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
@@ -43,6 +44,9 @@ export function Landing({ navigate, onSignup }) {
           가입 없이 먼저 <b className="text-ink-700 dark:text-slate-200">"내가 쓰면 어떻게 될까?"</b>를 확인해 보세요.
         </p>
       </section>
+
+      {/* 최근 본 페이지 (재방문자) */}
+      <RecentPagesRow navigate={navigate} />
 
       {/* 시뮬레이터 — 가입 없이 즉시 사용 가능한 핵심 위젯 */}
       <section className="max-w-2xl mx-auto" id="simulator-anchor">

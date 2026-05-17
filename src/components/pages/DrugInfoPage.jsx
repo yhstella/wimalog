@@ -219,6 +219,28 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </section>
       )}
 
+      {/* 다른 약과 빠른 비교 (inline) */}
+      <section className="card">
+        <h2 className="section-title">다른 약과 비교</h2>
+        <p className="section-subtitle">{drug.label}와 비슷한 GLP-1 약 한눈에 보기</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+          {Object.values(DRUG_CONTENT).filter(d => d.id !== drug.id).map(d => (
+            <button key={d.id} onClick={() => navigate(`drug/${d.id}`)}
+                    className="text-left rounded-xl border border-ink-200 dark:border-slate-700 p-3 hover:border-brand-300 dark:hover:border-brand-700 transition">
+              <div className="text-xs text-ink-500 dark:text-slate-400">{d.label}</div>
+              <div className="text-sm font-bold text-brand-700 dark:text-brand-400 tabular-nums mt-0.5">
+                {d.efficacy.headlineKg}
+              </div>
+              <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-0.5">{d.frequency}</div>
+            </button>
+          ))}
+        </div>
+        <button onClick={() => navigate('compare')}
+                className="btn-secondary w-full mt-3 text-sm">
+          📋 5개 약 전체 비교 표 →
+        </button>
+      </section>
+
       {/* 한 줄 후기 (가입자 작성 + 익명 노출) */}
       <TestimonialBox topicId={`drug:${drug.id}`} user={user} />
 
