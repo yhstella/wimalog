@@ -73,6 +73,7 @@ export function Dashboard({ user, navigate }) {
   }, [logs]);
 
   const activeMeds = courses.filter(c => !c.endDate);
+  const isDietOnly = courses.length === 0 && (exercises.length > 0 || diets.length > 0 || logs.length >= 3);
 
   // 정체기 감지: 최근 4주 동안 체중 변화 ±0.3kg 미만
   const stallAlert = useMemo(() => {
@@ -343,6 +344,37 @@ export function Dashboard({ user, navigate }) {
               <br />→ 지금부터 운동 습관을 만들면 요요를 크게 줄일 수 있어요.
             </div>
           )}
+        </div>
+      )}
+
+      {/* 다이어트만 사용자 전용 안내 */}
+      {isDietOnly && (
+        <div className="card border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/60 dark:bg-emerald-900/15">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">🥗</div>
+            <div className="flex-1">
+              <h2 className="section-title">약 없이 다이어트 중</h2>
+              <p className="section-subtitle">기록 잘 하고 계세요. 약 없이도 의미있는 진척!</p>
+            </div>
+            <button onClick={() => navigate('guide/diet-only')} className="btn-ghost text-xs">가이드 →</button>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-3 text-center">
+            <div className="rounded-lg bg-white dark:bg-slate-800 p-2">
+              <div className="text-xs text-ink-500 dark:text-slate-400">체중 기록</div>
+              <div className="text-lg font-bold text-ink-900 dark:text-slate-100">{logs.length}회</div>
+            </div>
+            <div className="rounded-lg bg-white dark:bg-slate-800 p-2">
+              <div className="text-xs text-ink-500 dark:text-slate-400">운동 기록</div>
+              <div className="text-lg font-bold text-ink-900 dark:text-slate-100">{exercises.length}회</div>
+            </div>
+            <div className="rounded-lg bg-white dark:bg-slate-800 p-2">
+              <div className="text-xs text-ink-500 dark:text-slate-400">식단 기록</div>
+              <div className="text-lg font-bold text-ink-900 dark:text-slate-100">{diets.length}건</div>
+            </div>
+          </div>
+          <button onClick={() => navigate('calc/bmr')} className="btn-secondary w-full mt-3 text-sm">
+            🔥 칼로리 계산기 → 목표 칼로리 확인
+          </button>
         </div>
       )}
 
