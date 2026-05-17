@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT } from '../../lib/content.js';
-import { avgLossCurve, cohortSize, sideEffectRates, anonymousNotes, priceStats } from '../../lib/stats.js';
+import { avgLossCurve, cohortSize, sideEffectRates, anonymousNotes, priceStats, userDemographics } from '../../lib/stats.js';
 import { Storage } from '../../lib/storage.js';
 import { LineChart, HBarChart } from '../Chart.jsx';
 import { QuickSignupModal } from '../Paywall.jsx';
@@ -23,6 +23,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
   const sideRates = useMemo(() => sideEffectRates(filter), [medId]);
   const notes = useMemo(() => anonymousNotes(filter, 3), [medId]);
   const prices = useMemo(() => priceStats(filter), [medId]);
+  const demographics = useMemo(() => userDemographics(filter), [medId]);
 
   // 참고 체중 (사용자 기준)
   const refWeight = user?.startWeight ?? 80;
@@ -172,6 +173,52 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </div>
       </section>
 
+      {/* 사용자 인구통계 (이 약 쓰는 사람들의 특성) */}
+      {demographics && demographics.total > 0 && (
+        <section className="card">
+          <h2 className="section-title">{drug.label}를 쓰는 사람들</h2>
+          <p className="section-subtitle">{demographics.total}명 사용자 특성</p>
+          <div className="mt-4 grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">성별</div>
+              <div className="space-y-1.5">
+                <DemoRow label="여성" pct={demographics.genderPct.F} />
+                <DemoRow label="남성" pct={demographics.genderPct.M} />
+              </div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">나이대 분포</div>
+              <div className="space-y-1.5">
+                {demographics.ageDist.slice(0, 4).map(a => (
+                  <DemoRow key={a.id} label={a.id} pct={a.pct} />
+                ))}
+              </div>
+            </div>
+          </div>
+          {demographics.conditionPct.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-ink-100 dark:border-slate-800">
+              <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">동반 질환</div>
+              <div className="space-y-1.5">
+                {demographics.conditionPct.slice(0, 4).map(c => (
+                  <DemoRow key={c.id} label={
+                    c.id === 'diabetes' ? '당뇨' :
+                    c.id === 'prediabetes' ? '전당뇨' :
+                    c.id === 'fattyLiver' ? '지방간' :
+                    c.id === 'hypertension' ? '고혈압' :
+                    c.id === 'dyslipidemia' ? '이상지질혈증' : c.id
+                  } pct={c.pct} />
+                ))}
+              </div>
+            </div>
+          )}
+          {demographics.avgStartBmi && (
+            <div className="mt-4 pt-4 border-t border-ink-100 dark:border-slate-800 text-sm text-ink-700 dark:text-slate-300">
+              평균 시작 BMI: <b className="text-brand-700 dark:text-brand-400 tabular-nums">{demographics.avgStartBmi.toFixed(1)}</b>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* 한 줄 후기 (가입자 작성 + 익명 노출) */}
       <TestimonialBox topicId={`drug:${drug.id}`} user={user} />
 
@@ -246,6 +293,20 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       {showSignup && (
         <QuickSignupModal onClose={() => setShowSignup(false)} onComplete={onSignupComplete} />
       )}
+    </div>
+  );
+}
+
+function DemoRow({ label, pct }) {
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-0.5">
+        <span className="text-ink-700 dark:text-slate-300">{label}</span>
+        <span className="text-ink-500 dark:text-slate-400 tabular-nums">{(pct * 100).toFixed(0)}%</span>
+      </div>
+      <div className="h-1.5 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div className="h-full rounded-full bg-brand-500" style={{ width: `${Math.max(2, pct * 100)}%` }} />
+      </div>
     </div>
   );
 }

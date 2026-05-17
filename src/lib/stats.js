@@ -704,6 +704,51 @@ export function cohortDietByPhase(filter) {
   };
 }
 
+// 약 사용자 인구통계 (성별/나이대/동반질환 분포)
+export function userDemographics(filter) {
+  const { users, courses } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  const matchedUserIds = new Set();
+  for (const c of courses) {
+    const u = userById.get(c.userId);
+    if (u && matchesCourseFilter(c, u, filter)) matchedUserIds.add(c.userId);
+  }
+  const matched = users.filter(u => matchedUserIds.has(u.id));
+  const total = matched.length;
+  if (!total) return null;
+
+  const byGender = { F: 0, M: 0 };
+  const byAge = {};
+  const byCondition = { diabetes: 0, prediabetes: 0, fattyLiver: 0, hypertension: 0, dyslipidemia: 0, thyroid: 0 };
+  const startBmis = [];
+
+  for (const u of matched) {
+    if (byGender[u.gender] != null) byGender[u.gender]++;
+    byAge[u.ageGroup] = (byAge[u.ageGroup] || 0) + 1;
+    for (const k of Object.keys(byCondition)) {
+      if (u.conditions?.[k]) byCondition[k]++;
+    }
+    const b = bmi(u.startWeight, u.height);
+    if (b) startBmis.push(b);
+  }
+
+  return {
+    total,
+    genderPct: {
+      F: total ? byGender.F / total : 0,
+      M: total ? byGender.M / total : 0,
+    },
+    ageDist: Object.entries(byAge)
+      .sort((a, b) => b[1] - a[1])
+      .map(([id, count]) => ({ id, count, pct: count / total })),
+    conditionPct: Object.entries(byCondition)
+      .map(([id, count]) => ({ id, count, pct: count / total }))
+      .filter(c => c.pct > 0.05)
+      .sort((a, b) => b.pct - a.pct),
+    avgStartBmi: startBmis.length ? startBmis.reduce((s, b) => s + b, 0) / startBmis.length : null,
+  };
+}
+
 // 전체 요약 (랜딩페이지)
 export function overallSummary() {
   const { users, logs } = loadAll();
