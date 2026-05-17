@@ -118,6 +118,9 @@ export default function App() {
         {effectiveRoute === 'doctor-report' && user && (
           <DoctorReport user={user} onBack={() => navigate('profile')} />
         )}
+        {effectiveRoute === 'about'   && <AboutPage />}
+        {effectiveRoute === 'privacy' && <PrivacyPage />}
+        {effectiveRoute === 'terms'   && <TermsPage />}
 
         {/* SEO 콘텐츠 페이지 */}
         {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}

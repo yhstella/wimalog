@@ -86,6 +86,13 @@ export function Layout({ route, navigate, user, onLogout, children }) {
       <footer className="border-t border-ink-100 dark:border-slate-800 bg-white dark:bg-slate-900 mb-16 sm:mb-0">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-2">
           <MedicalDisclaimer />
+          <div className="flex gap-3 text-[10px] text-ink-500 dark:text-slate-500">
+            <button onClick={() => navigate('about')} className="hover:underline">소개</button>
+            <span>·</span>
+            <button onClick={() => navigate('privacy')} className="hover:underline">개인정보</button>
+            <span>·</span>
+            <button onClick={() => navigate('terms')} className="hover:underline">이용약관</button>
+          </div>
           <p className="text-[10px] text-ink-300 dark:text-slate-600">
             © 2026 위마로그 · 모든 데이터는 사용자의 브라우저에 익명으로 저장됩니다 (MVP).
           </p>
