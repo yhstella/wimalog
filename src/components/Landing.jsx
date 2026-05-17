@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { overallSummary, compareMedications, recentTrend, anonymousNotes, platformScale, successRateAtWeek } from '../lib/stats.js';
+import { Storage } from '../lib/storage.js';
 import { MED_BY_ID } from '../lib/constants.js';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, QuickSignupModal } from './Paywall.jsx';
@@ -21,7 +22,7 @@ export function Landing({ navigate, onSignup }) {
   const [success5pct, setSuccess5pct] = useState(null);
   const [success10pct, setSuccess10pct] = useState(null);
 
-  useEffect(() => {
+  const refreshStats = () => {
     setSummary(overallSummary());
     setMedCmp(compareMedications({}, 12));
     setTrend(recentTrend());
@@ -29,6 +30,16 @@ export function Landing({ navigate, onSignup }) {
     setScale(platformScale());
     setSuccess5pct(successRateAtWeek({}, 5, 12));
     setSuccess10pct(successRateAtWeek({}, 10, 24));
+  };
+
+  useEffect(() => {
+    refreshStats();
+    // 시드가 비동기로 끝나면 자동 재계산 (첫 방문자 데이터 0 → 시드 완료 → 실제 수치)
+    if (Storage.isSeeded()) return;
+    const id = setInterval(() => {
+      if (Storage.isSeeded()) { refreshStats(); clearInterval(id); }
+    }, 400);
+    return () => clearInterval(id);
   }, []);
 
   const handleSignup = () => setShowSignup(true);
