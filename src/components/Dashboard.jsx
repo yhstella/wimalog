@@ -11,6 +11,8 @@ import { QuickWeightCard, QuickDoseCard } from './QuickEntry.jsx';
 import { PremiumBadge } from './Paywall.jsx';
 import { useToast } from './Toast.jsx';
 import { StreakCard, WeeklySummaryCard, BadgesRow, DiscontinuerPanel } from './RetentionCards.jsx';
+import { WelcomeTour } from './WelcomeTour.jsx';
+import { GoalWidget } from './GoalWidget.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -234,8 +236,11 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 주간 요약 */}
-      <WeeklySummaryCard user={user} navigate={navigate} />
+      {/* 목표 예측 + 주간 요약 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <GoalWidget user={user} navigate={navigate} />
+        <WeeklySummaryCard user={user} navigate={navigate} />
+      </div>
 
       {/* 중단자 패널 */}
       <DiscontinuerPanel user={user} navigate={navigate} />
