@@ -6,6 +6,7 @@ import { LineChart, HBarChart } from '../Chart.jsx';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
+import { InterestButton } from '../InterestButton.jsx';
 
 // 약별 상세 페이지 — SEO 랜딩 + 실시간 통계 + 가입 CTA
 export function DrugInfoPage({ medId, navigate, user, onSignup }) {
@@ -46,18 +47,38 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">
           {drug.generic} · {drug.company} · {drug.type} · {drug.frequency}
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 items-center">
           <span className="chip-brand">{drug.indication}</span>
+          <InterestButton topicId={`drug:${drug.id}`} label="관심 있어요" />
         </div>
       </header>
 
       {/* 효과 헤드라인 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6">
-        <div className="text-xs uppercase tracking-wider opacity-80">평균 체중 감량</div>
+        <h2 className="text-xs uppercase tracking-wider opacity-80">{drug.label} 효과 · 평균 체중 감량</h2>
         <div className="text-4xl sm:text-5xl font-extrabold mt-1 tabular-nums">{drug.efficacy.headlineKg}</div>
         <div className="text-base mt-1 opacity-90">{drug.efficacy.headlinePct} · {drug.efficacy.trial}</div>
         <p className="mt-3 text-sm opacity-80 leading-relaxed">{drug.efficacy.caveat}</p>
       </section>
+
+      {/* 빠른 anchor links — 검색 의도 매칭 */}
+      <nav className="card !p-3">
+        <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-2">자주 검색되는 정보</div>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { hash: '#mechanism',  label: `${drug.label} 효과 원리` },
+            { hash: '#price',      label: `${drug.label} 가격` },
+            { hash: '#side',       label: `${drug.label} 부작용` },
+            { hash: '#tips',       label: `${drug.label} 사용 팁` },
+            { hash: '#warnings',   label: `${drug.label} 주의사항` },
+          ].map(a => (
+            <a key={a.hash} href={a.hash}
+               className="text-xs px-3 py-1.5 rounded-lg bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 hover:bg-brand-100 dark:hover:bg-brand-900/40 transition">
+              {a.label}
+            </a>
+          ))}
+        </div>
+      </nav>
 
       {/* 우리 사용자 데이터 (실시간) */}
       <section className="card">
@@ -80,8 +101,8 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       </section>
 
       {/* 작용 기전 */}
-      <section className="card">
-        <h2 className="section-title">어떻게 작용하나요?</h2>
+      <section className="card" id="mechanism">
+        <h2 className="section-title">{drug.label}는 어떻게 작용하나요?</h2>
         <ul className="mt-3 space-y-2 text-sm text-ink-700 dark:text-slate-300">
           {drug.mechanism.map((m, i) => (
             <li key={i} className="flex gap-2"><span className="text-brand-500">●</span><span>{m}</span></li>
@@ -90,8 +111,8 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       </section>
 
       {/* 용량 + 가격 */}
-      <section className="card">
-        <h2 className="section-title">용량과 가격</h2>
+      <section className="card" id="price">
+        <h2 className="section-title">{drug.label} 가격 · 용량</h2>
         <div className="mt-3 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-ink-500 dark:text-slate-400">투약 주기</span>
@@ -124,8 +145,8 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       </section>
 
       {/* 부작용 Top 5 + 클릭으로 상세 페이지 */}
-      <section className="card">
-        <h2 className="section-title">주요 부작용</h2>
+      <section className="card" id="side">
+        <h2 className="section-title">{drug.label} 부작용 — Top 5</h2>
         <p className="section-subtitle">막대를 클릭하면 부작용별 상세 페이지로 이동합니다</p>
         <div className="mt-4 space-y-2">
           {drug.sideEffectsTop.map(s => {
@@ -184,16 +205,16 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
       </section>
 
       {/* 사용 팁 */}
-      <section className="card">
-        <h2 className="section-title">사용 팁</h2>
+      <section className="card" id="tips">
+        <h2 className="section-title">{drug.label} 사용 팁</h2>
         <ul className="mt-3 space-y-2 text-sm text-ink-700 dark:text-slate-300">
           {drug.tips.map((t, i) => <li key={i} className="flex gap-2"><span className="text-amber-500">💡</span><span>{t}</span></li>)}
         </ul>
       </section>
 
       {/* 주의사항 */}
-      <section className="card border border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-900/15">
-        <h2 className="section-title">⚠️ 사용 전 확인</h2>
+      <section className="card border border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-900/15" id="warnings">
+        <h2 className="section-title">⚠️ {drug.label} 사용 전 주의사항</h2>
         <ul className="mt-3 space-y-1 text-sm text-rose-900 dark:text-rose-200 list-disc list-inside">
           {drug.warnings.map((w, i) => <li key={i}>{w}</li>)}
         </ul>

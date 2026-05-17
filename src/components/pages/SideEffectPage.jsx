@@ -4,6 +4,7 @@ import { sideEffectRates, sideEffectTiming } from '../../lib/stats.js';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
+import { InterestButton } from '../InterestButton.jsx';
 
 // 부작용별 상세 페이지 — SEO + 약별 발생률 + 시점 분포 + 자가 관리
 export function SideEffectPage({ effectId, navigate, onSignup }) {
@@ -41,6 +42,9 @@ export function SideEffectPage({ effectId, navigate, onSignup }) {
           {content.label}
         </h1>
         <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">{content.summary}</p>
+        <div className="mt-3">
+          <InterestButton topicId={`effect:${effectId}`} label="저도 겪고 있어요" />
+        </div>
       </header>
 
       {/* 핵심 숫자 */}

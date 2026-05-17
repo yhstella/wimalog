@@ -6,6 +6,7 @@ import { LockedOverlay, QuickSignupModal } from './Paywall.jsx';
 import { GroupBarChart } from './Chart.jsx';
 import { Simulator } from './Simulator.jsx';
 import { PollSection } from './Polls.jsx';
+import { PopularTopics } from './PopularTopics.jsx';
 
 export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
@@ -45,6 +46,9 @@ export function Landing({ navigate, onSignup }) {
       <section className="max-w-2xl mx-auto" id="simulator-anchor">
         <Simulator onSignup={handleSignup} />
       </section>
+
+      {/* 인기 토픽 — 관심 집계 노출 */}
+      <PopularTopics navigate={navigate} />
 
       {/* Quick Polls — 1탭 의견 수집 + 다른 사람들 결과 즉시 보기 */}
       <section className="max-w-2xl mx-auto">
