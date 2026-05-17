@@ -7,6 +7,7 @@ import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 import { InterestButton } from '../InterestButton.jsx';
+import { TestimonialBox } from '../TestimonialBox.jsx';
 
 // 약별 상세 페이지 — SEO 랜딩 + 실시간 통계 + 가입 CTA
 export function DrugInfoPage({ medId, navigate, user, onSignup }) {
@@ -171,10 +172,13 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </div>
       </section>
 
-      {/* 익명 사용자 메모 */}
+      {/* 한 줄 후기 (가입자 작성 + 익명 노출) */}
+      <TestimonialBox topicId={`drug:${drug.id}`} user={user} />
+
+      {/* 익명 사용자 메모 (체중 기록 시 작성된 것) */}
       {notes.length > 0 && (
         <section>
-          <h2 className="section-title mb-3">{drug.label} 사용자들의 익명 메모</h2>
+          <h2 className="section-title mb-3">{drug.label} 체중 기록 메모</h2>
           <div className="space-y-2">
             {notes.map((n, i) => (
               <div key={i} className="card !p-4">

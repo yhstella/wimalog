@@ -5,9 +5,10 @@ import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 import { InterestButton } from '../InterestButton.jsx';
+import { TestimonialBox } from '../TestimonialBox.jsx';
 
 // 부작용별 상세 페이지 — SEO + 약별 발생률 + 시점 분포 + 자가 관리
-export function SideEffectPage({ effectId, navigate, onSignup }) {
+export function SideEffectPage({ effectId, navigate, user, onSignup }) {
   const content = SIDE_EFFECT_CONTENT[effectId];
   const [showSignup, setShowSignup] = useState(false);
 
@@ -118,6 +119,9 @@ export function SideEffectPage({ effectId, navigate, onSignup }) {
           {content.selfCare.map((s, i) => <li key={i} className="flex gap-2"><span className="text-brand-500">✓</span><span>{s}</span></li>)}
         </ul>
       </section>
+
+      {/* 한 줄 후기 (가입자) */}
+      <TestimonialBox topicId={`effect:${effectId}`} user={user} />
 
       {/* 의사 상담 기준 */}
       <section className="card border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-900/15">

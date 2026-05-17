@@ -118,7 +118,7 @@ export default function App() {
         {/* SEO 콘텐츠 페이지 */}
         {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
         {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
-        {effectId && <SideEffectPage effectId={effectId} navigate={navigate} onSignup={onSignupStay} />}
+        {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
         {guideId  && <GuidePage guideId={guideId} navigate={navigate} onSignup={onSignupStay} />}
         {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
       </Layout>
