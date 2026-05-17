@@ -18,6 +18,7 @@ import { SideEffectPage } from './components/pages/SideEffectPage.jsx';
 import { GuidePage } from './components/pages/GuidePage.jsx';
 import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
 import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
+import { DoctorReport } from './components/DoctorReport.jsx';
 
 function readRouteFromHash() {
   const h = (window.location.hash || '').replace(/^#\/?/, '');
@@ -114,6 +115,9 @@ export default function App() {
           <Profile user={user} navigate={navigate} onLogout={logout} refresh={refresh} />
         )}
         {effectiveRoute === 'info'       && <Info />}
+        {effectiveRoute === 'doctor-report' && user && (
+          <DoctorReport user={user} onBack={() => navigate('profile')} />
+        )}
 
         {/* SEO 콘텐츠 페이지 */}
         {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}

@@ -220,6 +220,12 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="🏥" title="처방받는 법"
                             desc="병원 선택·진료 준비·비용 — 한국 기준"
                             onClick={() => navigate('guide/prescription')} />
+          <PersonaCardLink icon="📅" title="첫 한 달 가이드"
+                            desc="주차별 — 시작·적응·효과·증량 결정"
+                            onClick={() => navigate('guide/first-month')} />
+          <PersonaCardLink icon="💉" title="주사 통증·자국"
+                            desc="부위 로테이션·통증 줄이는 팁"
+                            onClick={() => navigate('guide/injection-tips')} />
           <PersonaCardLink icon="📋" title="시작하기 전 점검"
                             desc="BMI·동반질환·예산·생활 체크리스트"
                             onClick={() => navigate('guide/before-use')} />

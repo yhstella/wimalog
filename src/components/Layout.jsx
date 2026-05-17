@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { getTheme, setTheme as setStoredTheme } from '../lib/theme.js';
+import { SearchTrigger } from './SearchModal.jsx';
 
 const NAV_AUTHED = [
   { id: 'dashboard',  label: '홈',     icon: '🏠' },
@@ -60,6 +61,7 @@ export function Layout({ route, navigate, user, onLogout, children }) {
           </nav>
 
           <div className="flex items-center gap-1">
+            <SearchTrigger navigate={navigate} />
             <button onClick={cycleTheme}
                     title={`테마: ${theme}`}
                     className="btn-ghost !p-2 text-base"

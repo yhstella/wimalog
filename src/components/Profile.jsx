@@ -162,6 +162,17 @@ export function Profile({ user, navigate, onLogout, refresh }) {
         <button onClick={() => navigate('meds')} className="btn-secondary !py-2 !px-3 text-sm">약 관리 →</button>
       </div>
 
+      {/* 진료용 리포트 */}
+      <div className="card flex justify-between items-center gap-3 border border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/15">
+        <div>
+          <h2 className="section-title">📄 진료용 12주 리포트</h2>
+          <p className="section-subtitle">병원 방문 시 인쇄 또는 PDF로 저장해 가져가세요</p>
+        </div>
+        <button onClick={() => navigate('doctor-report')} className="btn-primary !py-2 !px-3 text-sm">
+          리포트 보기 →
+        </button>
+      </div>
+
       {/* 데이터 관리 */}
       <div className="card space-y-3">
         <h2 className="section-title">데이터 관리</h2>
