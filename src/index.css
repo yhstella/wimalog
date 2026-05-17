@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: 'Pretendard Variable', Pretendard, 'Noto Sans KR', system-ui, -apple-system, sans-serif;
+  background: #F8FAFC;
+  color: #0F172A;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+html.dark body {
+  background: #0B1220;
+  color: #E2E8F0;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(15,23,42,.12); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15,23,42,.2); }
+html.dark ::-webkit-scrollbar-thumb { background: rgba(226,232,240,.12); }
+
+/* a11y: 키보드 포커스는 명확하게, 마우스 클릭에는 안 보임 */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid #2E9A58;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 모바일에서 터치 타깃 최소 44px */
+button, [role="button"], input[type="button"], input[type="submit"], a {
+  touch-action: manipulation;
+}
+
+/* 줄이 모달이 열렸을 때 배경 스크롤 잠금 (옵션) */
+
+/* 모션 줄이기 (사용자 선호) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-slate-900 rounded-2xl shadow-card p-5 transition-colors;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-white font-semibold shadow-sm hover:bg-brand-600 active:scale-[.99] transition disabled:bg-ink-300 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-ink-300 dark:border-slate-700 px-5 py-3 text-ink-700 dark:text-slate-200 font-medium hover:bg-ink-100 dark:hover:bg-slate-700 transition;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-ink-500 dark:text-slate-400 hover:text-ink-900 dark:hover:text-slate-100 hover:bg-ink-100 dark:hover:bg-slate-800 transition;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-ink-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-ink-700 dark:text-slate-200;
+  }
+  .chip-brand {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-100 dark:bg-brand-900/40 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300;
+  }
+  .input {
+    @apply w-full rounded-xl border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-ink-900 dark:text-slate-100 placeholder:text-ink-500 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition;
+  }
+  .label {
+    @apply block text-sm font-semibold text-ink-700 dark:text-slate-300 mb-1.5;
+  }
+  .helptext {
+    @apply text-xs text-ink-500 dark:text-slate-400 mt-1.5;
+  }
+  .section-title {
+    @apply text-xl font-bold text-ink-900 dark:text-slate-100;
+  }
+  .section-subtitle {
+    @apply text-sm text-ink-500 dark:text-slate-400;
+  }
+  /* 빈 상태 일러스트 컨테이너 */
+  .empty-illust {
+    @apply text-5xl mb-3 inline-block;
+  }
+}
+
+/* 페이지 진입 fade-in */
+main > * {
+  animation: fadeIn 0.25s ease-out;
+}

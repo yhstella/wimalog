@@ -1,0 +1,3 @@
+# Cloudflare Pages / Netlify 캐싱 헤더
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

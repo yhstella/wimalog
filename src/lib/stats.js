@@ -1,0 +1,770 @@
+// 통계 계산. 모든 함수는 순수 함수이며, users/logs/medCourses/doses 등을 인자로 받습니다.
+import { Storage } from './storage.js';
+import { SIDE_EFFECTS, MED_BY_ID, DISCONTINUE_REASONS } from './constants.js';
+
+export function bmi(weight, heightCm) {
+  if (!weight || !heightCm) return null;
+  return weight / ((heightCm / 100) ** 2);
+}
+
+export function bmiCategory(b) {
+  if (b == null) return null;
+  if (b < 18.5) return '저체중';
+  if (b < 23)   return '정상';
+  if (b < 25)   return '과체중';
+  if (b < 30)   return '비만 1단계';
+  if (b < 35)   return '비만 2단계';
+  return '고도비만';
+}
+
+export function bookendLogs(logs) {
+  if (!logs?.length) return { first: null, last: null };
+  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  return { first: sorted[0], last: sorted[sorted.length - 1] };
+}
+
+export function weeksSinceStart(refDate, sinceDate) {
+  if (!sinceDate) return 0;
+  const ref = (refDate instanceof Date ? refDate : new Date()).getTime();
+  const ms = ref - new Date(sinceDate).getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24 * 7)));
+}
+
+// 사용자의 가장 최근 활성 코스 (없으면 가장 최근 종료 코스)
+export function primaryCourse(courses) {
+  if (!courses?.length) return null;
+  const active = courses.filter(c => !c.endDate);
+  if (active.length) {
+    return [...active].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+  }
+  return [...courses].sort((a, b) => b.startDate.localeCompare(a.startDate))[0];
+}
+
+function loadAll() {
+  const users = Storage.getUsers();
+  const logs = Storage.getLogs();
+  const courses = Storage.getMedCourses();
+  const doses = Storage.getDoses();
+  const exercises = Storage.getExercises();
+  const diets = Storage.getDiets();
+  const logsByUser = new Map();
+  for (const l of logs) {
+    if (!logsByUser.has(l.userId)) logsByUser.set(l.userId, []);
+    logsByUser.get(l.userId).push(l);
+  }
+  const coursesByUser = new Map();
+  for (const c of courses) {
+    if (!coursesByUser.has(c.userId)) coursesByUser.set(c.userId, []);
+    coursesByUser.get(c.userId).push(c);
+  }
+  const dosesByCourse = new Map();
+  for (const d of doses) {
+    if (!dosesByCourse.has(d.courseId)) dosesByCourse.set(d.courseId, []);
+    dosesByCourse.get(d.courseId).push(d);
+  }
+  return { users, logs, courses, doses, exercises, diets, logsByUser, coursesByUser, dosesByCourse };
+}
+
+// 매칭: filter 객체로 코스 단위 검색. user는 코스 소유자.
+// 코호트 단위 = "특정 약을 사용한 코스"
+function matchesCourseFilter(course, user, filter) {
+  if (filter.medication && filter.medication !== 'all' && course.medication !== filter.medication) return false;
+  if (filter.gender && filter.gender !== 'all' && user.gender !== filter.gender) return false;
+  if (filter.ageGroup && filter.ageGroup !== 'all' && user.ageGroup !== filter.ageGroup) return false;
+  if (filter.hasCondition && !user.conditions?.[filter.hasCondition]) return false;
+  if (filter.bmiRange) {
+    const b = bmi(user.startWeight, user.height);
+    const [lo, hi] = filter.bmiRange;
+    if (b < lo || b >= hi) return false;
+  }
+  return true;
+}
+
+// 코스 시작 시점부터의 주차별 감량률: 코스 startDate 이후 logs에서, 코스 시점 weight 대비
+function lossPctAtWeekForCourse(course, userLogs, user, targetWeek) {
+  if (!userLogs?.length) return null;
+  const sorted = [...userLogs].sort((a, b) => a.date.localeCompare(b.date));
+  const start = new Date(course.startDate).getTime();
+  const end = course.endDate ? new Date(course.endDate).getTime() : Date.now();
+  // 시작점 기준 weight (코스 시작 ±2주 내 가장 가까운 로그) - 없으면 user.startWeight
+  const startWeight = (() => {
+    const within = sorted.filter(l => {
+      const t = new Date(l.date).getTime();
+      return Math.abs(t - start) <= 14 * 24 * 60 * 60 * 1000;
+    });
+    if (within.length) return within[0].weight;
+    // fallback: 코스 시작 이전 가장 최근 log
+    const before = sorted.filter(l => new Date(l.date).getTime() <= start).pop();
+    return before?.weight ?? user.startWeight;
+  })();
+  if (!startWeight) return null;
+  // targetWeek에 도달한 첫 로그
+  const targetMs = start + targetWeek * 7 * 24 * 60 * 60 * 1000;
+  if (targetMs > end) return null;
+  const reached = sorted.find(l => new Date(l.date).getTime() >= targetMs);
+  if (!reached) return null;
+  return ((startWeight - reached.weight) / startWeight) * 100;
+}
+
+export function similarFilter(me, currentCourse) {
+  if (!me) return {};
+  const f = {
+    gender: me.gender,
+    ageGroup: me.ageGroup,
+  };
+  if (currentCourse) f.medication = currentCourse.medication;
+  const b = bmi(me.startWeight, me.height);
+  if (b) f.bmiRange = [Math.max(15, b - 3), Math.min(50, b + 3)];
+  return f;
+}
+
+// 필터에 매칭되는 코스 + 소유자 정보
+function matchedCourses(filter) {
+  const { users, courses, logsByUser } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  return courses
+    .map(c => ({ course: c, user: userById.get(c.userId), logs: logsByUser.get(c.userId) || [] }))
+    .filter(x => x.user && matchesCourseFilter(x.course, x.user, filter));
+}
+
+export function cohortSize(filter) {
+  return matchedCourses(filter).length;
+}
+
+export function avgLossCurve(filter, weeks = [1, 2, 4, 8, 12, 16, 24, 36, 48]) {
+  const matched = matchedCourses(filter);
+  return weeks.map(w => {
+    const vals = [];
+    for (const m of matched) {
+      const v = lossPctAtWeekForCourse(m.course, m.logs, m.user, w);
+      if (v != null) vals.push(v);
+    }
+    return {
+      week: w,
+      n: vals.length,
+      avg: vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null,
+      median: vals.length ? median(vals) : null,
+      p25: vals.length ? quantile(vals, 0.25) : null,
+      p75: vals.length ? quantile(vals, 0.75) : null,
+    };
+  });
+}
+
+function median(arr) {
+  const sorted = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[m] : (sorted[m - 1] + sorted[m]) / 2;
+}
+function quantile(arr, q) {
+  const sorted = [...arr].sort((a, b) => a - b);
+  const pos = (sorted.length - 1) * q;
+  const base = Math.floor(pos), rest = pos - base;
+  return sorted[base + 1] !== undefined ? sorted[base] + rest * (sorted[base + 1] - sorted[base]) : sorted[base];
+}
+
+// 부작용 발생률: 매칭된 코스의 시작~종료 구간 logs에서 한 번이라도 보고된 비율 (코스 단위)
+export function sideEffectRates(filter) {
+  const matched = matchedCourses(filter);
+  const result = SIDE_EFFECTS.map(s => ({ id: s.id, label: s.label, count: 0 }));
+  const idx = Object.fromEntries(result.map((r, i) => [r.id, i]));
+  for (const m of matched) {
+    const start = new Date(m.course.startDate).getTime();
+    const end = m.course.endDate ? new Date(m.course.endDate).getTime() : Date.now();
+    const reported = new Set();
+    for (const l of m.logs) {
+      const t = new Date(l.date).getTime();
+      if (t < start || t > end) continue;
+      for (const id of Object.keys(l.sideEffects || {})) {
+        if (l.sideEffects[id]) reported.add(id);
+      }
+    }
+    for (const id of reported) {
+      if (idx[id] != null) result[idx[id]].count++;
+    }
+  }
+  const n = matched.length;
+  return result.map(r => ({ ...r, rate: n ? r.count / n : 0, n }));
+}
+
+export function discontinuationStats(filter) {
+  const matched = matchedCourses(filter);
+  const n = matched.length;
+  const stopped = matched.filter(m => m.course.endDate);
+  const reasonCounts = {};
+  for (const m of stopped) {
+    const r = m.course.discontinueReason || 'other';
+    reasonCounts[r] = (reasonCounts[r] || 0) + 1;
+  }
+  return {
+    n,
+    discontinued: stopped.length,
+    rate: n ? stopped.length / n : 0,
+    reasons: DISCONTINUE_REASONS.map(r => ({
+      id: r.id, label: r.label,
+      count: reasonCounts[r.id] || 0,
+      rate: stopped.length ? (reasonCounts[r.id] || 0) / stopped.length : 0,
+    })),
+  };
+}
+
+export function compareMedications(baseFilter, week = 12) {
+  const meds = ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'];
+  return meds.map(medId => {
+    const f = { ...baseFilter, medication: medId };
+    const curve = avgLossCurve(f, [week]);
+    const point = curve[0];
+    return {
+      id: medId,
+      label: MED_BY_ID[medId]?.label || medId,
+      n: point.n,
+      avg: point.avg,
+      median: point.median,
+    };
+  });
+}
+
+// 약제별 평균 가격 (지역별)
+export function priceStats(filter) {
+  const { doses, courses, users, dosesByCourse } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  // 매칭되는 코스의 dose만
+  const matched = courses
+    .filter(c => {
+      const u = userById.get(c.userId);
+      return u && matchesCourseFilter(c, u, filter);
+    });
+  const allDoses = [];
+  for (const c of matched) {
+    const ds = (dosesByCourse.get(c.id) || []).filter(d => d.price > 0);
+    allDoses.push(...ds);
+  }
+  if (!allDoses.length) return { n: 0, avg: null, median: null, byRegion: [] };
+  const prices = allDoses.map(d => d.price);
+  const byRegion = {};
+  for (const d of allDoses) {
+    const r = d.region || '미기록';
+    if (!byRegion[r]) byRegion[r] = [];
+    byRegion[r].push(d.price);
+  }
+  const byRegionArr = Object.entries(byRegion)
+    .map(([region, vals]) => ({
+      region,
+      n: vals.length,
+      avg: vals.reduce((s, v) => s + v, 0) / vals.length,
+      median: median(vals),
+    }))
+    .filter(r => r.n >= 3)
+    .sort((a, b) => a.avg - b.avg);
+  return {
+    n: allDoses.length,
+    avg: prices.reduce((s, v) => s + v, 0) / prices.length,
+    median: median(prices),
+    byRegion: byRegionArr,
+  };
+}
+
+// 운동 시간 분포 (코호트의 주당 평균 분)
+export function exerciseStats(filter) {
+  const { users, courses, exercises } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  // 코호트의 사용자 ID
+  const cohortUsers = new Set(
+    courses.filter(c => {
+      const u = userById.get(c.userId);
+      return u && matchesCourseFilter(c, u, filter);
+    }).map(c => c.userId)
+  );
+  if (!cohortUsers.size) return { n: 0, avgMinPerWeek: null };
+  // 사용자별 주당 평균 분
+  const perUser = [];
+  for (const uid of cohortUsers) {
+    const ex = exercises.filter(e => e.userId === uid);
+    if (!ex.length) { perUser.push(0); continue; }
+    const minByWeek = {};
+    for (const e of ex) {
+      const wk = Math.floor(new Date(e.date).getTime() / (7 * 24 * 60 * 60 * 1000));
+      minByWeek[wk] = (minByWeek[wk] || 0) + (e.durationMin || 0);
+    }
+    const totalWeeks = Object.keys(minByWeek).length || 1;
+    const avg = Object.values(minByWeek).reduce((s, v) => s + v, 0) / totalWeeks;
+    perUser.push(avg);
+  }
+  return {
+    n: cohortUsers.size,
+    avgMinPerWeek: perUser.reduce((s, v) => s + v, 0) / perUser.length,
+    withExercise: perUser.filter(v => v > 0).length,
+  };
+}
+
+// ============================================================
+// REBOUND: 약 중단 후 체중 회복률
+// ============================================================
+
+// 중단된 코스 + 중단 시점 체중 추출
+function stoppedCoursesWithStopWeight(filter) {
+  const { users, courses, logsByUser, exercises } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  const result = [];
+  for (const c of courses) {
+    if (!c.endDate) continue;
+    const u = userById.get(c.userId);
+    if (!u) continue;
+    if (!matchesCourseFilter(c, u, filter)) continue;
+    const sorted = [...(logsByUser.get(u.id) || [])].sort((a, b) => a.date.localeCompare(b.date));
+    const stopMs = new Date(c.endDate).getTime();
+    // 중단 시점 ±14일 내 가장 가까운 log
+    const candidates = sorted.filter(l => Math.abs(new Date(l.date).getTime() - stopMs) <= 14 * 86400000);
+    if (!candidates.length) continue;
+    const stopLog = candidates.sort((a, b) =>
+      Math.abs(new Date(a.date).getTime() - stopMs) - Math.abs(new Date(b.date).getTime() - stopMs)
+    )[0];
+    // 코스 시작 시점 체중 (loss 계산용)
+    const startMs = new Date(c.startDate).getTime();
+    const startCandidates = sorted.filter(l => Math.abs(new Date(l.date).getTime() - startMs) <= 14 * 86400000);
+    const startLog = startCandidates[0] || { weight: u.startWeight };
+    // 운동 빈도 (코스 종료 후 12주간 주당 평균 분)
+    const oneYearAfter = stopMs + 84 * 86400000;
+    const exAfter = (exercises.filter(e => e.userId === u.id && Date.parse(e.date) >= stopMs && Date.parse(e.date) < oneYearAfter));
+    const exMinutesPerWeek = exAfter.length
+      ? (exAfter.reduce((s, e) => s + (e.durationMin || 0), 0) / 12)
+      : 0;
+    result.push({
+      course: c,
+      user: u,
+      logs: sorted,
+      stopMs,
+      stopWeight: stopLog.weight,
+      startWeight: startLog.weight,
+      lostKg: startLog.weight - stopLog.weight,
+      exMinutesPerWeek,
+    });
+  }
+  return result;
+}
+
+// 중단 후 N주차 체중 회복 곡선
+// y축: 중단 시점 대비 현재 체중 (양수 = 다시 늘어남, %)
+// 또한 "감량분 대비 회복률"도 계산
+export function reboundCurve(filter, weeks = [2, 4, 8, 12, 24, 36, 48]) {
+  const stopped = stoppedCoursesWithStopWeight(filter);
+  return weeks.map(w => {
+    const gainPctVals = [];      // 중단 시점 대비 % 증가
+    const regainRatioVals = [];  // 감량분 회복률 (regained / lostKg)
+    for (const m of stopped) {
+      if (m.lostKg <= 0) continue;
+      const targetMs = m.stopMs + w * 7 * 86400000;
+      const reached = m.logs.find(l => new Date(l.date).getTime() >= targetMs);
+      if (!reached) continue;
+      const gain = reached.weight - m.stopWeight;
+      gainPctVals.push((gain / m.stopWeight) * 100);
+      regainRatioVals.push(Math.max(0, gain) / m.lostKg);
+    }
+    return {
+      week: w,
+      n: gainPctVals.length,
+      avgGainPct: gainPctVals.length ? gainPctVals.reduce((s, x) => s + x, 0) / gainPctVals.length : null,
+      medianGainPct: gainPctVals.length ? median(gainPctVals) : null,
+      avgRegainRatio: regainRatioVals.length ? regainRatioVals.reduce((s, x) => s + x, 0) / regainRatioVals.length : null,
+    };
+  });
+}
+
+// 운동 지속 vs 미지속의 rebound 비교 (24주 기준)
+export function reboundByExercise(filter, targetWeek = 24, exerciseThresholdMin = 90) {
+  const stopped = stoppedCoursesWithStopWeight(filter);
+  const groups = { active: [], inactive: [] };
+  for (const m of stopped) {
+    if (m.lostKg <= 0) continue;
+    const targetMs = m.stopMs + targetWeek * 7 * 86400000;
+    const reached = m.logs.find(l => new Date(l.date).getTime() >= targetMs);
+    if (!reached) continue;
+    const ratio = Math.max(0, reached.weight - m.stopWeight) / m.lostKg;
+    const grp = m.exMinutesPerWeek >= exerciseThresholdMin ? 'active' : 'inactive';
+    groups[grp].push(ratio);
+  }
+  const summarize = (arr) => arr.length ? {
+    n: arr.length,
+    avgRegainPct: (arr.reduce((s, x) => s + x, 0) / arr.length) * 100,
+  } : { n: 0, avgRegainPct: null };
+  return {
+    targetWeek,
+    threshold: exerciseThresholdMin,
+    active: summarize(groups.active),
+    inactive: summarize(groups.inactive),
+  };
+}
+
+// 약제별 rebound 비교 (24주차 회복률)
+export function reboundByMedication(baseFilter, targetWeek = 24) {
+  const meds = ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'];
+  return meds.map(medId => {
+    const f = { ...baseFilter, medication: medId };
+    const curve = reboundCurve(f, [targetWeek]);
+    return {
+      id: medId,
+      label: MED_BY_ID[medId]?.label || medId,
+      n: curve[0].n,
+      avgRegainRatio: curve[0].avgRegainRatio,  // 0~1
+    };
+  });
+}
+
+// ============================================================
+// 시뮬레이터: "나와 비슷한 사람"의 12주 예상 감량률
+// ============================================================
+export function simulateOutcome({ height, startWeight, gender, ageGroup, medication, weeks = 12 }) {
+  const b = bmi(startWeight, height);
+  const filter = {};
+  if (medication) filter.medication = medication;
+  if (gender) filter.gender = gender;
+  if (ageGroup) filter.ageGroup = ageGroup;
+  if (b) filter.bmiRange = [Math.max(15, b - 3), Math.min(50, b + 3)];
+  const n = cohortSize(filter);
+  if (n < 3) {
+    // fallback: medication만
+    const fallbackFilter = medication ? { medication } : {};
+    const fbN = cohortSize(fallbackFilter);
+    const fbCurve = avgLossCurve(fallbackFilter, [weeks]);
+    return {
+      n: fbN, fallback: true,
+      lossPct: fbCurve[0]?.avg,
+      lossKg: fbCurve[0]?.avg != null ? (startWeight * fbCurve[0].avg / 100) : null,
+    };
+  }
+  const curve = avgLossCurve(filter, [weeks]);
+  return {
+    n, fallback: false,
+    lossPct: curve[0]?.avg,
+    lossKg: curve[0]?.avg != null ? (startWeight * curve[0].avg / 100) : null,
+  };
+}
+
+// ============================================================
+// 부작용 시점 분포: 각 부작용이 코스 시작 후 어느 주차에 발생하는지
+// ============================================================
+export function sideEffectTiming(filter, sideEffectId) {
+  const { users, courses, logsByUser } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  // 매칭되는 코스 + 로그
+  const matched = courses
+    .map(c => ({ course: c, user: userById.get(c.userId), logs: logsByUser.get(c.userId) || [] }))
+    .filter(x => x.user && matchesCourseFilter(x.course, x.user, filter));
+  // 각 코스에서 해당 부작용이 처음 발생한 주차
+  const onsetWeeks = []; // 첫 발생 주차
+  const durationCounts = []; // 몇 주간 보고됐는지
+  for (const m of matched) {
+    const start = new Date(m.course.startDate).getTime();
+    const end = m.course.endDate ? new Date(m.course.endDate).getTime() : Date.now();
+    const inCourse = m.logs.filter(l => {
+      const t = new Date(l.date).getTime();
+      return t >= start && t <= end && l.sideEffects?.[sideEffectId];
+    });
+    if (!inCourse.length) continue;
+    const firstMs = new Date(inCourse[0].date).getTime();
+    const lastMs = new Date(inCourse[inCourse.length - 1].date).getTime();
+    onsetWeeks.push(Math.floor((firstMs - start) / (7 * 86400000)));
+    durationCounts.push(Math.max(1, Math.round((lastMs - firstMs) / (7 * 86400000)) + 1));
+  }
+  if (!onsetWeeks.length) return { n: 0, distribution: [], avgOnset: null, avgDuration: null };
+  // 구간 분포: 0-1, 2-3, 4-7, 8-11, 12+
+  const buckets = [
+    { label: '0-1주', count: 0, range: [0, 2] },
+    { label: '2-3주', count: 0, range: [2, 4] },
+    { label: '4-7주', count: 0, range: [4, 8] },
+    { label: '8-11주', count: 0, range: [8, 12] },
+    { label: '12주+', count: 0, range: [12, Infinity] },
+  ];
+  for (const w of onsetWeeks) {
+    const b = buckets.find(x => w >= x.range[0] && w < x.range[1]);
+    if (b) b.count++;
+  }
+  return {
+    n: onsetWeeks.length,
+    distribution: buckets.map(b => ({ label: b.label, count: b.count, rate: b.count / onsetWeeks.length })),
+    avgOnset: onsetWeeks.reduce((s, x) => s + x, 0) / onsetWeeks.length,
+    avgDuration: durationCounts.reduce((s, x) => s + x, 0) / durationCounts.length,
+  };
+}
+
+// ============================================================
+// 성공 패턴: 상위 25% 감량자의 평균 운동/식단/패턴
+// ============================================================
+export function successPattern(filter, atWeek = 12) {
+  const { users, courses, logsByUser, exercises, diets } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  const matched = courses
+    .map(c => ({ course: c, user: userById.get(c.userId), logs: logsByUser.get(c.userId) || [] }))
+    .filter(x => x.user && matchesCourseFilter(x.course, x.user, filter));
+
+  const entries = matched.map(m => {
+    const lossPct = lossPctAtWeekForCourse(m.course, m.logs, m.user, atWeek);
+    return { ...m, lossPct };
+  }).filter(e => e.lossPct != null && e.lossPct > 0);
+
+  if (entries.length < 4) return null;
+
+  entries.sort((a, b) => b.lossPct - a.lossPct);
+  const topN = Math.max(2, Math.floor(entries.length * 0.25));
+  const top = entries.slice(0, topN);
+  const rest = entries.slice(topN);
+
+  const summarize = (group) => {
+    // 그룹의 평균 주당 운동 시간
+    const exMins = [];
+    const proteinScores = [];
+    for (const e of group) {
+      const start = new Date(e.course.startDate).getTime();
+      const endMs = Math.min(start + atWeek * 7 * 86400000, e.course.endDate ? new Date(e.course.endDate).getTime() : Date.now());
+      const userEx = exercises.filter(x => x.userId === e.user.id
+        && Date.parse(x.date) >= start && Date.parse(x.date) <= endMs);
+      const userDiet = diets.filter(d => d.userId === e.user.id
+        && Date.parse(d.date) >= start && Date.parse(d.date) <= endMs);
+      // 주당 평균 분
+      const wks = Math.max(1, atWeek);
+      exMins.push(userEx.reduce((s, x) => s + (x.durationMin || 0), 0) / wks);
+      // 단백질 기록 비율 (단순)
+      proteinScores.push(userDiet.filter(d => d.proteinG && d.proteinG >= 20).length / Math.max(1, userDiet.length));
+    }
+    return {
+      n: group.length,
+      avgLossPct: group.reduce((s, e) => s + e.lossPct, 0) / group.length,
+      avgExerciseMinPerWeek: exMins.reduce((s, x) => s + x, 0) / Math.max(1, exMins.length),
+      proteinFocusRate: proteinScores.reduce((s, x) => s + x, 0) / Math.max(1, proteinScores.length),
+    };
+  };
+
+  return {
+    top: summarize(top),
+    rest: summarize(rest),
+  };
+}
+
+// 본인 백분위 (감량률 기준)
+export function personalPercentile(filter, myLossPct, atWeek = 12) {
+  const matched = matchedCourses(filter);
+  const lossPcts = matched
+    .map(m => lossPctAtWeekForCourse(m.course, m.logs, m.user, atWeek))
+    .filter(v => v != null);
+  if (lossPcts.length < 5 || myLossPct == null) return null;
+  const below = lossPcts.filter(v => v < myLossPct).length;
+  return {
+    percentile: Math.round((below / lossPcts.length) * 100),
+    n: lossPcts.length,
+  };
+}
+
+// ============================================================
+// 최근 트렌드 (커뮤니티 신호)
+// ============================================================
+export function recentTrend() {
+  const { users, logs, courses, doses } = loadAll();
+  const now = Date.now();
+  const days7Ago = now - 7 * 86400000;
+  const days30Ago = now - 30 * 86400000;
+  return {
+    totalUsers: users.length,
+    newUsers7d: users.filter(u => Date.parse(u.createdAt) >= days7Ago).length,
+    activeUsers7d: new Set(logs.filter(l => Date.parse(l.date) >= days7Ago).map(l => l.userId)).size,
+    activeUsers30d: new Set(logs.filter(l => Date.parse(l.date) >= days30Ago).map(l => l.userId)).size,
+    newCourses7d: courses.filter(c => Date.parse(c.startDate) >= days7Ago).length,
+    logs7d: logs.filter(l => Date.parse(l.date) >= days7Ago).length,
+    doses7d: doses.filter(d => Date.parse(d.date) >= days7Ago).length,
+    // 활발히 사용되는 약 (지난 30일 시작 코스 기준)
+    topMedsNow: topMedications(courses, days30Ago),
+  };
+}
+
+function topMedications(courses, sinceMs) {
+  const counts = {};
+  for (const c of courses) {
+    if (Date.parse(c.startDate) >= sinceMs) {
+      counts[c.medication] = (counts[c.medication] || 0) + 1;
+    }
+  }
+  return Object.entries(counts)
+    .map(([id, count]) => ({ id, label: MED_BY_ID[id]?.label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+// 익명 메모 모음 (notes 필드 있는 logs 중 최근 + 길이 있는 것)
+export function anonymousNotes(filter, limit = 5) {
+  const { users, logs, courses } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  const courseByUser = new Map();
+  for (const c of courses) {
+    if (!courseByUser.has(c.userId)) courseByUser.set(c.userId, []);
+    courseByUser.get(c.userId).push(c);
+  }
+  const matchedUserIds = new Set();
+  for (const c of courses) {
+    const u = userById.get(c.userId);
+    if (u && matchesCourseFilter(c, u, filter)) matchedUserIds.add(c.userId);
+  }
+  return logs
+    .filter(l => matchedUserIds.has(l.userId) && l.notes && l.notes.length > 10 && l.notes !== '온보딩 초기 기록')
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, limit)
+    .map(l => {
+      const u = userById.get(l.userId);
+      const c = courseByUser.get(l.userId)?.find(c => !c.endDate);
+      return {
+        date: l.date,
+        notes: l.notes,
+        weight: l.weight,
+        gender: u?.gender,
+        ageGroup: u?.ageGroup,
+        medication: c?.medication ?? null,
+      };
+    });
+}
+
+// ============================================================
+// 식이 phase: 식단 기록 시점이 가장 최근 투약으로부터 며칠 후인지
+// 0-2일: 'fresh'(주사 직후), 3-6일: 'mid', 7일+ 또는 약 없음: 'baseline'
+// ============================================================
+export function dietPhaseFor(dietEntry, userId, allDoses) {
+  const dietMs = Date.parse(dietEntry.date);
+  const userDoses = allDoses
+    .filter(d => d.userId === userId && Date.parse(d.date) <= dietMs)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (!userDoses.length) return { phase: 'baseline', daysSinceDose: null };
+  const lastDose = userDoses[0];
+  const days = Math.floor((dietMs - Date.parse(lastDose.date)) / 86400000);
+  if (days <= 2) return { phase: 'fresh', daysSinceDose: days };
+  if (days <= 6) return { phase: 'mid', daysSinceDose: days };
+  return { phase: 'baseline', daysSinceDose: days };
+}
+
+// 사용자별 식이 phase 분포 (평소 vs 투약 직후 vs 중간)
+// 단백질 평균, 칼로리 평균 등 phase별 비교
+export function dietByPhase(userId) {
+  const diets = Storage.getDietsByUser(userId);
+  const doses = Storage.getDoses();
+  const phases = { fresh: [], mid: [], baseline: [] };
+  for (const d of diets) {
+    const p = dietPhaseFor(d, userId, doses);
+    phases[p.phase].push(d);
+  }
+  const summarize = (arr) => {
+    const proteinVals = arr.filter(d => d.proteinG).map(d => d.proteinG);
+    const calVals = arr.filter(d => d.estCalories).map(d => d.estCalories);
+    return {
+      n: arr.length,
+      avgProtein: proteinVals.length ? proteinVals.reduce((s, x) => s + x, 0) / proteinVals.length : null,
+      avgCalories: calVals.length ? calVals.reduce((s, x) => s + x, 0) / calVals.length : null,
+      // 식사 종류 분포
+      byMeal: { breakfast: 0, lunch: 0, dinner: 0, snack: 0 },
+    };
+  };
+  const result = {
+    fresh:    summarize(phases.fresh),
+    mid:      summarize(phases.mid),
+    baseline: summarize(phases.baseline),
+  };
+  // byMeal 채우기
+  for (const k of ['fresh', 'mid', 'baseline']) {
+    for (const d of phases[k]) {
+      if (result[k].byMeal[d.mealType] != null) result[k].byMeal[d.mealType]++;
+    }
+  }
+  return result;
+}
+
+// 코호트 식이 phase 비교 (cohort 전체에서 phase별 평균 단백질/칼로리)
+export function cohortDietByPhase(filter) {
+  const { users, courses, diets, doses } = loadAll();
+  const userById = new Map(users.map(u => [u.id, u]));
+  // 매칭되는 사용자 ID 집합
+  const matchedUserIds = new Set();
+  for (const c of courses) {
+    const u = userById.get(c.userId);
+    if (u && matchesCourseFilter(c, u, filter)) matchedUserIds.add(c.userId);
+  }
+  const phases = { fresh: [], mid: [], baseline: [] };
+  for (const d of diets) {
+    if (!matchedUserIds.has(d.userId)) continue;
+    const p = dietPhaseFor(d, d.userId, doses);
+    phases[p.phase].push(d);
+  }
+  const summarize = (arr) => {
+    const proteinVals = arr.filter(d => d.proteinG).map(d => d.proteinG);
+    const calVals = arr.filter(d => d.estCalories).map(d => d.estCalories);
+    return {
+      n: arr.length,
+      uniqueUsers: new Set(arr.map(d => d.userId)).size,
+      avgProtein: proteinVals.length ? proteinVals.reduce((s, x) => s + x, 0) / proteinVals.length : null,
+      avgCalories: calVals.length ? calVals.reduce((s, x) => s + x, 0) / calVals.length : null,
+    };
+  };
+  return {
+    fresh:    summarize(phases.fresh),
+    mid:      summarize(phases.mid),
+    baseline: summarize(phases.baseline),
+  };
+}
+
+// 전체 요약 (랜딩페이지)
+export function overallSummary() {
+  const { users, logs } = loadAll();
+  const totalUsers = users.length;
+  const totalLogs = logs.length;
+  const curve = avgLossCurve({}, [4, 12, 24]);
+  return { totalUsers, totalLogs, curve };
+}
+
+// 사용자 본인 변화 요약 (특정 코스 기준)
+export function personalSummaryForCourse(user, logs, course) {
+  if (!user || !logs?.length) return null;
+  const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
+  const start = course?.startDate ? new Date(course.startDate).getTime() : null;
+  const end = course?.endDate ? new Date(course.endDate).getTime() : Date.now();
+  // 코스 시점 weight
+  const startWeight = (() => {
+    if (!start) return user.startWeight;
+    const within = sorted.filter(l => Math.abs(new Date(l.date).getTime() - start) <= 14 * 24 * 60 * 60 * 1000);
+    if (within.length) return within[0].weight;
+    return user.startWeight;
+  })();
+  // 코스 구간 내 최신 weight
+  const inRange = sorted.filter(l => {
+    const t = new Date(l.date).getTime();
+    return (!start || t >= start) && t <= end;
+  });
+  const last = inRange[inRange.length - 1] || sorted[sorted.length - 1];
+  if (!last) return null;
+  const cur = last.weight;
+  const lossKg = +(startWeight - cur).toFixed(1);
+  const lossPct = ((startWeight - cur) / startWeight) * 100;
+  const weeks = course?.startDate ? weeksSinceStart(course.endDate ? new Date(course.endDate) : new Date(), course.startDate) : weeksSinceStart(new Date(), sorted[0].date);
+  return {
+    weeks,
+    startWeight,
+    currentWeight: cur,
+    lossKg, lossPct,
+    startBmi: bmi(startWeight, user.height),
+    curBmi: bmi(cur, user.height),
+    targetRemaining: +(cur - user.targetWeight).toFixed(1),
+    totalLogs: inRange.length,
+  };
+}
+
+// 사용자 본인 변화 요약 (코스 없이, 전체 로그 기준)
+export function personalSummary(user, logs) {
+  if (!user || !logs?.length) return null;
+  const { first, last } = bookendLogs(logs);
+  const start = user.startWeight;
+  const cur = last.weight;
+  const lossKg = +(start - cur).toFixed(1);
+  const lossPct = ((start - cur) / start) * 100;
+  return {
+    weeks: weeksSinceStart(new Date(), first.date),
+    startWeight: start,
+    currentWeight: cur,
+    lossKg, lossPct,
+    startBmi: bmi(start, user.height),
+    curBmi: bmi(cur, user.height),
+    targetRemaining: +(cur - user.targetWeight).toFixed(1),
+    totalLogs: logs.length,
+  };
+}
