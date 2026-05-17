@@ -1,0 +1,226 @@
+import React, { useMemo, useState } from 'react';
+import { DRUG_CONTENT, SIDE_EFFECT_CONTENT } from '../../lib/content.js';
+import { avgLossCurve, cohortSize, sideEffectRates, anonymousNotes, priceStats } from '../../lib/stats.js';
+import { Storage } from '../../lib/storage.js';
+import { LineChart, HBarChart } from '../Chart.jsx';
+import { QuickSignupModal } from '../Paywall.jsx';
+import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
+import { ShareButtons } from '../Share.jsx';
+
+// 약별 상세 페이지 — SEO 랜딩 + 실시간 통계 + 가입 CTA
+export function DrugInfoPage({ medId, navigate, user, onSignup }) {
+  const drug = DRUG_CONTENT[medId];
+  const [showSignup, setShowSignup] = useState(false);
+
+  if (!drug) return <div className="card text-center py-10">약 정보를 찾을 수 없습니다</div>;
+
+  // 실시간 통계 (이 약에 한정)
+  const filter = { medication: medId };
+  const cohortN = useMemo(() => cohortSize(filter), [medId]);
+  const curve = useMemo(() => avgLossCurve(filter, [4, 8, 12, 16, 24, 36, 48]), [medId]);
+  const sideRates = useMemo(() => sideEffectRates(filter), [medId]);
+  const notes = useMemo(() => anonymousNotes(filter, 3), [medId]);
+  const prices = useMemo(() => priceStats(filter), [medId]);
+
+  // 참고 체중 (사용자 기준)
+  const refWeight = user?.startWeight ?? 80;
+  const lineData = curve.filter(c => c.avg != null).map(c => ({
+    x: c.week, y: refWeight * c.avg / 100, label: `${c.week}주`,
+  }));
+
+  const handleSignup = () => setShowSignup(true);
+  const onSignupComplete = (id) => {
+    setShowSignup(false);
+    onSignup?.(id);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* 헤더 */}
+      <header>
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-ink-900 dark:text-slate-100">
+            {drug.label} <span className="text-ink-500 dark:text-slate-500 text-lg font-normal">({drug.en})</span>
+          </h1>
+        </div>
+        <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">
+          {drug.generic} · {drug.company} · {drug.type} · {drug.frequency}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="chip-brand">{drug.indication}</span>
+        </div>
+      </header>
+
+      {/* 효과 헤드라인 */}
+      <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6">
+        <div className="text-xs uppercase tracking-wider opacity-80">평균 체중 감량</div>
+        <div className="text-4xl sm:text-5xl font-extrabold mt-1 tabular-nums">{drug.efficacy.headlineKg}</div>
+        <div className="text-base mt-1 opacity-90">{drug.efficacy.headlinePct} · {drug.efficacy.trial}</div>
+        <p className="mt-3 text-sm opacity-80 leading-relaxed">{drug.efficacy.caveat}</p>
+      </section>
+
+      {/* 우리 사용자 데이터 (실시간) */}
+      <section className="card">
+        <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
+          <div>
+            <h2 className="section-title">위마로그 사용자 {cohortN}명의 실제 곡선</h2>
+            <p className="section-subtitle">본인 시작 체중 {refWeight}kg 기준 환산</p>
+          </div>
+          <button onClick={handleSignup} className="btn-primary !py-2 !px-3 text-sm">
+            내 데이터 추가 →
+          </button>
+        </div>
+        {lineData.length > 0 ? (
+          <LineChart series={[
+            { name: '평균', color: '#2E9A58', data: lineData },
+          ]} yLabel="kg" height={220} />
+        ) : (
+          <div className="text-sm text-ink-500 dark:text-slate-400 py-6 text-center">아직 충분한 데이터가 쌓이지 않았어요</div>
+        )}
+      </section>
+
+      {/* 작용 기전 */}
+      <section className="card">
+        <h2 className="section-title">어떻게 작용하나요?</h2>
+        <ul className="mt-3 space-y-2 text-sm text-ink-700 dark:text-slate-300">
+          {drug.mechanism.map((m, i) => (
+            <li key={i} className="flex gap-2"><span className="text-brand-500">●</span><span>{m}</span></li>
+          ))}
+        </ul>
+      </section>
+
+      {/* 용량 + 가격 */}
+      <section className="card">
+        <h2 className="section-title">용량과 가격</h2>
+        <div className="mt-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-500 dark:text-slate-400">투약 주기</span>
+            <span className="font-medium text-ink-900 dark:text-slate-100">{drug.frequency}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-500 dark:text-slate-400">용량 단계</span>
+            <span className="font-medium text-ink-900 dark:text-slate-100">{drug.doses.join(' → ')}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-500 dark:text-slate-400">증량 일정</span>
+            <span className="font-medium text-ink-900 dark:text-slate-100 text-right">{drug.doseSchedule}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-ink-500 dark:text-slate-400">가격 범위</span>
+            <span className="font-semibold text-brand-700 dark:text-brand-400">{drug.priceRange}</span>
+          </div>
+          {prices?.byRegion?.length > 0 && (
+            <div className="pt-2 border-t border-ink-100 dark:border-slate-800">
+              <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">지역별 평균 (사용자 보고)</div>
+              {prices.byRegion.slice(0, 3).map(r => (
+                <div key={r.region} className="flex justify-between text-sm">
+                  <span className="text-ink-700 dark:text-slate-300">{r.region}</span>
+                  <span className="tabular-nums text-ink-900 dark:text-slate-100">{Math.round(r.avg).toLocaleString()}원</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* 부작용 Top 5 + 클릭으로 상세 페이지 */}
+      <section className="card">
+        <h2 className="section-title">주요 부작용</h2>
+        <p className="section-subtitle">막대를 클릭하면 부작용별 상세 페이지로 이동합니다</p>
+        <div className="mt-4 space-y-2">
+          {drug.sideEffectsTop.map(s => {
+            const real = sideRates.find(r => r.id === s.id);
+            const displayRate = real?.rate ?? s.rate;
+            return (
+              <button key={s.id} onClick={() => navigate(`effect/${s.id}`)}
+                      className="w-full text-left group hover:bg-ink-100/40 dark:hover:bg-slate-800/40 -mx-2 px-2 py-1.5 rounded-lg transition">
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="text-ink-700 dark:text-slate-300 group-hover:text-brand-700 dark:group-hover:text-brand-400">
+                    {SIDE_EFFECT_CONTENT[s.id]?.label || s.label} <span className="text-[10px] text-ink-300 dark:text-slate-600">▸</span>
+                  </span>
+                  <span className="text-ink-500 dark:text-slate-400 tabular-nums">{(displayRate * 100).toFixed(0)}%</span>
+                </div>
+                <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full bg-rose-500"
+                       style={{ width: `${Math.min(100, displayRate * 100)}%` }} />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 익명 사용자 메모 */}
+      {notes.length > 0 && (
+        <section>
+          <h2 className="section-title mb-3">{drug.label} 사용자들의 익명 메모</h2>
+          <div className="space-y-2">
+            {notes.map((n, i) => (
+              <div key={i} className="card !p-4">
+                <p className="text-sm text-ink-700 dark:text-slate-300">"{n.notes}"</p>
+                <div className="text-xs text-ink-500 dark:text-slate-500 mt-2">
+                  {n.date} · {n.gender === 'F' ? '여성' : '남성'} {n.ageGroup}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* 장단점 */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="card">
+          <h3 className="font-bold text-ink-900 dark:text-slate-100">👍 장점</h3>
+          <ul className="mt-2 space-y-1 text-sm text-ink-700 dark:text-slate-300">
+            {drug.pros.map((p, i) => <li key={i}>· {p}</li>)}
+          </ul>
+        </div>
+        <div className="card">
+          <h3 className="font-bold text-ink-900 dark:text-slate-100">👎 단점</h3>
+          <ul className="mt-2 space-y-1 text-sm text-ink-700 dark:text-slate-300">
+            {drug.cons.map((c, i) => <li key={i}>· {c}</li>)}
+          </ul>
+        </div>
+      </section>
+
+      {/* 사용 팁 */}
+      <section className="card">
+        <h2 className="section-title">사용 팁</h2>
+        <ul className="mt-3 space-y-2 text-sm text-ink-700 dark:text-slate-300">
+          {drug.tips.map((t, i) => <li key={i} className="flex gap-2"><span className="text-amber-500">💡</span><span>{t}</span></li>)}
+        </ul>
+      </section>
+
+      {/* 주의사항 */}
+      <section className="card border border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-900/15">
+        <h2 className="section-title">⚠️ 사용 전 확인</h2>
+        <ul className="mt-3 space-y-1 text-sm text-rose-900 dark:text-rose-200 list-disc list-inside">
+          {drug.warnings.map((w, i) => <li key={i}>{w}</li>)}
+        </ul>
+      </section>
+
+      <RedFlagBanner />
+
+      {/* CTA */}
+      <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 text-white p-6 text-center">
+        <h2 className="text-xl font-bold">{drug.label} 사용 중이거나 고민 중이신가요?</h2>
+        <p className="mt-2 text-slate-300 text-sm">
+          익명으로 본인 정보를 등록하면 {cohortN}명 비슷한 사용자 데이터와 비교됩니다.
+        </p>
+        <button onClick={handleSignup}
+                className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
+          1분 가입하기 →
+        </button>
+      </section>
+
+      <ShareButtons title={`${drug.label} 효과와 부작용 — 위마로그`}
+                    text={`${drug.label} 평균 ${drug.efficacy.headlineKg} 감량. 실제 사용자 ${cohortN}명 데이터.`} />
+
+      <MedicalDisclaimer />
+
+      {showSignup && (
+        <QuickSignupModal onClose={() => setShowSignup(false)} onComplete={onSignupComplete} />
+      )}
+    </div>
+  );
+}

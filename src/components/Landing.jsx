@@ -5,6 +5,7 @@ import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, QuickSignupModal } from './Paywall.jsx';
 import { GroupBarChart } from './Chart.jsx';
 import { Simulator } from './Simulator.jsx';
+import { PollSection } from './Polls.jsx';
 
 export function Landing({ navigate, onSignup }) {
   const [summary, setSummary] = useState(null);
@@ -41,8 +42,13 @@ export function Landing({ navigate, onSignup }) {
       </section>
 
       {/* 시뮬레이터 — 가입 없이 즉시 사용 가능한 핵심 위젯 */}
-      <section className="max-w-2xl mx-auto">
+      <section className="max-w-2xl mx-auto" id="simulator-anchor">
         <Simulator onSignup={handleSignup} />
+      </section>
+
+      {/* Quick Polls — 1탭 의견 수집 + 다른 사람들 결과 즉시 보기 */}
+      <section className="max-w-2xl mx-auto">
+        <PollSection />
       </section>
 
       {/* 커뮤니티 신호 */}
@@ -143,20 +149,91 @@ export function Landing({ navigate, onSignup }) {
         </section>
       )}
 
-      {/* 누가 잘 맞을까? - 페르소나별 안내 */}
+      {/* 약별 빠른 진입 (사용예정자, 사용자 핵심 유입) */}
       <section>
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-ink-900 dark:text-slate-100">약별 정보 바로가기</h2>
+          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">검색으로 들어오셨다면 여기부터</p>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'].map(id => (
+            <button key={id} onClick={() => navigate(`drug/${id}`)}
+                    className="card !p-3 text-center hover:shadow-cardHover transition group">
+              <div className="text-2xl mb-1">💉</div>
+              <div className="font-bold text-ink-900 dark:text-slate-100 text-sm group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                {id === 'wegovy' && '위고비'}
+                {id === 'mounjaro' && '마운자로'}
+                {id === 'saxenda' && '삭센다'}
+                {id === 'ozempic' && '오젬픽'}
+                {id === 'zepbound' && '젭바운드'}
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 부작용별 빠른 진입 */}
+      <section>
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-ink-900 dark:text-slate-100">부작용으로 고민 중이세요?</h2>
+          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">실제 발생 시점·지속 기간·대처법</p>
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+          {[
+            { id: 'nausea',       label: '오심', icon: '🤢' },
+            { id: 'vomiting',     label: '구토', icon: '🤮' },
+            { id: 'constipation', label: '변비', icon: '🚽' },
+            { id: 'diarrhea',     label: '설사', icon: '💧' },
+            { id: 'fatigue',      label: '피로', icon: '😴' },
+            { id: 'headache',     label: '두통', icon: '🤕' },
+          ].map(s => (
+            <button key={s.id} onClick={() => navigate(`effect/${s.id}`)}
+                    className="card !p-3 text-center hover:shadow-cardHover transition group">
+              <div className="text-xl mb-0.5">{s.icon}</div>
+              <div className="text-xs font-semibold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                {s.label}
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 상황별 가이드 + 계산기 (페르소나별 진입) */}
+      <section>
+        <div className="text-center mb-4">
           <h2 className="text-2xl font-bold text-ink-900 dark:text-slate-100">이런 분께 추천해요</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <PersonaCard icon="🤔" title="처음 알게 된 분"
-                       desc="가입 없이 위 시뮬레이터로 예상 효과를 먼저 확인하세요." />
-          <PersonaCard icon="😟" title="부작용으로 고민 중"
-                       desc="같은 부작용을 겪은 사용자들의 발생 시점과 지속 기간 데이터를 봅니다." />
-          <PersonaCard icon="📈" title="감량 방법이 궁금"
-                       desc="잘 빠진 상위 25%의 운동·식단 패턴을 비교합니다." />
-          <PersonaCard icon="💬" title="주변에 물어보기 어려운 분"
-                       desc="실명 없이 익명 통계만으로 다른 사용자들의 데이터를 봅니다." />
+          <PersonaCardLink icon="🤔" title="아직 약 안 써본 분"
+                            desc="위 시뮬레이터로 본인 예상 결과부터 확인"
+                            onClick={() => document.getElementById('simulator-anchor')?.scrollIntoView({behavior: 'smooth'})} />
+          <PersonaCardLink icon="📋" title="시작하기 전 점검"
+                            desc="BMI·동반질환·예산·생활 체크리스트"
+                            onClick={() => navigate('guide/before-use')} />
+          <PersonaCardLink icon="📉" title="중단하고 요요 걱정"
+                            desc="중단 후 6개월 회복률 + 운동 효과 데이터"
+                            onClick={() => navigate('guide/after-stop')} />
+          <PersonaCardLink icon="🥗" title="약 없이 다이어트"
+                            desc="BMR·칼로리·식이·운동 가이드"
+                            onClick={() => navigate('guide/diet-only')} />
+          <PersonaCardLink icon="🍽️" title="주사 전후 식이 관리"
+                            desc="0-2일/3-6일/직전 — 시점별 식이 전략"
+                            onClick={() => navigate('guide/meal-timing')} />
+          <PersonaCardLink icon="💰" title="비용 부담이 걱정"
+                            desc="약·기간으로 총 비용 + 저렴 지역"
+                            onClick={() => navigate('calc/cost')} />
+        </div>
+      </section>
+
+      {/* 계산기 빠른 접근 */}
+      <section>
+        <div className="text-center mb-4">
+          <h2 className="text-2xl font-bold text-ink-900 dark:text-slate-100">🧮 계산기</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <PersonaCardLink icon="💰" title="약 비용" desc="약·기간 → 총 예상 비용" onClick={() => navigate('calc/cost')} />
+          <PersonaCardLink icon="🔥" title="기초대사량" desc="BMR/TDEE/감량 칼로리" onClick={() => navigate('calc/bmr')} />
+          <PersonaCardLink icon="🎯" title="목표 체중" desc="BMI 기준 정상·% 감량" onClick={() => navigate('calc/target')} />
         </div>
       </section>
 
@@ -224,6 +301,22 @@ function PersonaCard({ icon, title, desc }) {
         <div className="text-sm text-ink-500 dark:text-slate-400 mt-1 leading-snug">{desc}</div>
       </div>
     </div>
+  );
+}
+
+function PersonaCardLink({ icon, title, desc, onClick }) {
+  return (
+    <button onClick={onClick}
+            className="card flex gap-3 !p-4 text-left hover:shadow-cardHover hover:border-brand-300 dark:hover:border-brand-700 transition w-full">
+      <div className="text-2xl flex-shrink-0">{icon}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-bold text-ink-900 dark:text-slate-100 flex items-center justify-between gap-2">
+          <span>{title}</span>
+          <span className="text-brand-500 dark:text-brand-400 text-sm">→</span>
+        </div>
+        <div className="text-sm text-ink-500 dark:text-slate-400 mt-1 leading-snug">{desc}</div>
+      </div>
+    </button>
   );
 }
 
