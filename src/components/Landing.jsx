@@ -11,18 +11,19 @@ export function Landing({ navigate, onSignup }) {
 
   return (
     <div className="space-y-8 sm:space-y-10">
-      {/* Hero — 한 줄 카피 */}
+      {/* Hero — 차별화 명시 (단순 tracker가 아닌 리얼데이터 비교 플랫폼) */}
       <section className="text-center pt-4 sm:pt-8">
         <div className="inline-flex items-center gap-2 chip-brand mb-3">
-          <span>🟢</span>
-          <span>GLP-1 사용자 리얼데이터 플랫폼 · 베타</span>
+          <span>🇰🇷</span>
+          <span>한국 GLP-1 리얼데이터 플랫폼 · 베타</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-ink-900 dark:text-slate-100 leading-tight">
           위고비·마운자로,<br />
           <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은 얼마나 빠졌을까?
         </h1>
-        <p className="mt-3 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-xl mx-auto">
-          체중·약·부작용 익명 기록 + 실사용자 비교. 가입 없이 즉시 시뮬레이션부터.
+        <p className="mt-3 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+          단순 기록 앱이 아닌 <b className="text-ink-900 dark:text-slate-100">한국 사용자 익명 코호트 비교 플랫폼</b>.
+          마른 비만·지방간·격주 사용 등 한국 실사용 맥락 반영 — 가입 없이 즉시 시뮬레이션부터.
         </p>
       </section>
 

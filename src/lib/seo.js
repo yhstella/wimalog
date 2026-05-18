@@ -154,17 +154,24 @@ function buildJsonLd(route) {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       'name': '위마로그',
-      'alternateName': 'wimalog',
-      'description': '위고비·마운자로 사용자 리얼데이터 플랫폼',
+      'alternateName': ['wimalog', '위고비 리얼데이터', '마운자로 리얼데이터'],
+      'description': '한국 GLP-1(위고비·마운자로·삭센다) 사용자 익명 코호트 비교 플랫폼. 단순 기록 앱이 아닌 리얼월드 데이터 + AI 예측 시뮬레이터.',
       'url': 'https://wimalog.kr',
+      'inLanguage': 'ko-KR',
+      'audience': { '@type': 'Audience', 'audienceType': '한국 GLP-1 비만 치료제 사용자 및 검토자' },
+      'about': [
+        { '@type': 'MedicalCondition', 'name': '비만 (Obesity)' },
+        { '@type': 'MedicalCondition', 'name': '비알코올성 지방간 (NAFLD/MASLD)' },
+        { '@type': 'MedicalCondition', 'name': '알코올 사용장애 (AUD)' },
+      ],
     };
   }
   return null;
 }
 
 const SITE = '위마로그';
-const SUB = '위고비·마운자로 리얼데이터';
-const FALLBACK_DESC = '위고비·마운자로·삭센다 사용자의 실제 체중 감량, 부작용, 가격 데이터를 익명으로 비교·기록하는 플랫폼';
+const SUB = '한국 GLP-1 리얼데이터 비교 플랫폼';
+const FALLBACK_DESC = '위고비·마운자로 한국 사용자 익명 코호트 비교 플랫폼. 단순 기록 앱이 아닌 "나와 비슷한 사용자" 리얼월드 데이터 + 마른 비만·지방간·격주 사용 등 한국 실사용 맥락 + AI 예측 시뮬레이터.';
 
 function ensureMeta(name, content, attr = 'name') {
   let el = document.querySelector(`meta[${attr}="${name}"]`);
@@ -263,13 +270,13 @@ export function seoFor(route) {
   }
   const STATIC = {
     landing: { title: null, description: FALLBACK_DESC },
+    about:   { title: '소개 — 위마로그가 다른 점', description: '위마로그는 단순 GLP-1 tracker 앱이 아닌, 한국 사용자 익명 코호트 비교 플랫폼입니다. 해외 앱(Glapp·Shotsy 등)과의 4가지 차별화 — 한국 처방 현실·익명 비교·의사 관점 안전·구조화 데이터.' },
     onboarding: { title: '1분 가입' },
     dashboard: { title: '대시보드' },
     records: { title: '기록' },
     meds: { title: '약 관리' },
-    stats: { title: '통계', description: '위고비·마운자로·삭센다 사용자 1000명의 평균 감량률, 부작용, 가격, 중단 후 회복률.' },
+    stats: { title: '통계', description: '위고비·마운자로·삭센다 사용자 코호트의 평균 감량률, 부작용, 가격, 중단 후 회복률 — 한국 실사용 컨텍스트 반영.' },
     compare: { title: '약별 한눈 비교', description: '위고비 vs 마운자로 vs 삭센다 vs 오젬픽 vs 젭바운드 효과·부작용·가격 한 화면 비교.' },
-    about:   { title: '소개' },
     privacy: { title: '개인정보 처리방침' },
     terms:   { title: '이용약관' },
     profile: { title: '프로필' },

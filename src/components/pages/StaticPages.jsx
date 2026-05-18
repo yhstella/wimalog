@@ -7,29 +7,93 @@ export function AboutPage() {
     <div className="max-w-3xl mx-auto space-y-5">
       <header>
         <h1 className="text-3xl font-extrabold text-ink-900 dark:text-slate-100">위마로그 소개</h1>
-        <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">
-          GLP-1 비만 치료제(위고비·마운자로·삭센다·오젬픽·젭바운드) 사용자의
-          실제 체중·부작용·가격 데이터를 익명으로 기록하고 비교하는 플랫폼입니다.
+        <p className="text-base text-ink-700 dark:text-slate-300 mt-3 leading-relaxed">
+          위마로그는 위고비·마운자로 사용자를 위한 단순 기록 앱이 아니라,
+          <b className="text-brand-700 dark:text-brand-400"> 한국 GLP-1 사용자들의 실제 체중 변화와 부작용을 익명으로 비교하는 리얼데이터 플랫폼</b>입니다.
         </p>
       </header>
+
+      {/* 차별화 요약 — 한국 사용자가 기대하는 가치 */}
+      <section className="rounded-2xl bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/20 dark:to-slate-900 border-2 border-brand-200 dark:border-brand-800/40 p-5">
+        <h2 className="text-lg font-bold text-ink-900 dark:text-slate-100 mb-3">위마로그가 다른 점</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Bullet emoji="🇰🇷" title="한국어 + 국내 처방 현실">
+            국내 약제명·용량·가격·병원 주기·식사 패턴을 반영. 해외 앱(Glapp, Shotsy 등)은 한국 사용자 맥락이 부족합니다.
+          </Bullet>
+          <Bullet emoji="📊" title="앱이 아닌 리얼데이터 플랫폼">
+            개인 dose tracker가 아니라 "나와 비슷한 사람은 실제 얼마나 빠졌나"를 답하는 익명 코호트 비교가 중심.
+          </Bullet>
+          <Bullet emoji="🩺" title="의사 관점의 안전한 해석">
+            부작용 경고, 의료진 상담 기준, 진료용 PDF 리포트, 자가보고 한계 명시 — 약 추천이 아닌 기록·비교·교육 원칙.
+          </Bullet>
+          <Bullet emoji="🔒" title="자유게시판 아닌 구조화된 데이터">
+            후기·처방 문의·광고가 섞이는 커뮤니티 대신, 입력 → 익명 집계 그래프. 신뢰 가능한 통계가 목표.
+          </Bullet>
+        </div>
+      </section>
 
       <section className="card">
         <h2 className="section-title">🌱 미션</h2>
         <p className="mt-2 text-sm text-ink-700 dark:text-slate-300 leading-relaxed">
-          GLP-1 약제 시장이 빠르게 성장하고 있지만, 실제 사용자들의 솔직한 경험을 모은
-          한국어 데이터는 부족했습니다. 위마로그는 익명으로 모은 리얼월드 데이터로
-          "나와 비슷한 사용자는 어땠나"를 답하는 것이 목표입니다.
+          GLP-1 약제 시장이 빠르게 성장 중이지만, 한국 사용자의 솔직한 경험을 모은 한국어 데이터는 부족합니다.
+          국내 처방은 BMI 30 미만이거나 마른 비만·지방간·근감소 동반자도 많아, 임상시험(BMI≥30 + 매주 풀 dose) 결과만으로는
+          현실을 설명하기 어렵습니다. 위마로그는 익명 리얼월드 데이터로 "나와 비슷한 사람은 어땠나"를 답합니다.
         </p>
       </section>
 
       <section className="card">
         <h2 className="section-title">📊 데이터 어디서 오나요?</h2>
         <ul className="mt-2 space-y-1 text-sm text-ink-700 dark:text-slate-300 list-disc list-inside">
-          <li>사용자 자가보고: 체중·약·용량·부작용·가격</li>
-          <li>임상시험 reference: STEP-1, SURMOUNT-5, SCALE, SUSTAIN</li>
-          <li>한국 약값 정보: 닥터나우, 지니어트, 뱅크샐러드 등 공개 시장 조사</li>
+          <li>사용자 자가보고: 체중·약·용량·빈도·부작용·가격·지역·운동·식단</li>
+          <li>임상시험 reference (참고만): STEP-1, SURMOUNT-1, SCALE, SUSTAIN</li>
+          <li>한국 약값 정보: 사용자가 입력한 처방 지역·용량별 실제 가격</li>
           <li>FDA / 한국 식약처 처방정보</li>
+          <li className="font-semibold text-brand-700 dark:text-brand-400">
+            ※ 현재 표시 통계는 시뮬레이션 코호트 데이터 — 가입자 누적되면 실사용자 데이터로 점진 대체
+          </li>
         </ul>
+      </section>
+
+      <section className="card">
+        <h2 className="section-title">🆚 해외 GLP-1 앱과의 차이</h2>
+        <div className="mt-2 overflow-x-auto -mx-2">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800">
+                <th className="py-2 px-2 font-medium">측면</th>
+                <th className="py-2 px-2 font-medium">해외 앱 (Glapp·Shotsy·Mounjaro Tracker 등)</th>
+                <th className="py-2 px-2 font-medium">위마로그</th>
+              </tr>
+            </thead>
+            <tbody className="text-ink-700 dark:text-slate-300">
+              <tr className="border-b border-ink-100 dark:border-slate-800">
+                <td className="py-1.5 px-2 font-semibold">언어·문화</td>
+                <td className="py-1.5 px-2">영어, 미국 처방·식단</td>
+                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">한국어, 국내 처방·회식·반주 문화 반영</td>
+              </tr>
+              <tr className="border-b border-ink-100 dark:border-slate-800">
+                <td className="py-1.5 px-2 font-semibold">중심 가치</td>
+                <td className="py-1.5 px-2">개인 dose·체중 tracker</td>
+                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">"비슷한 사람" 익명 코호트 비교</td>
+              </tr>
+              <tr className="border-b border-ink-100 dark:border-slate-800">
+                <td className="py-1.5 px-2 font-semibold">한국 특수 사례</td>
+                <td className="py-1.5 px-2">없음</td>
+                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">마른 비만·지방간·알코올·격주 사용 가이드</td>
+              </tr>
+              <tr className="border-b border-ink-100 dark:border-slate-800">
+                <td className="py-1.5 px-2 font-semibold">의학적 안전성</td>
+                <td className="py-1.5 px-2">사용자 편의 중심</td>
+                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">의료진 상담 기준·진료 리포트·red flag</td>
+              </tr>
+              <tr className="border-b border-ink-100 dark:border-slate-800">
+                <td className="py-1.5 px-2 font-semibold">콘텐츠 형식</td>
+                <td className="py-1.5 px-2">앱 다운로드 필요</td>
+                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">웹 — 설치 없이 즉시, 검색 진입 가능</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="card">
@@ -62,8 +126,20 @@ export function AboutPage() {
         </p>
       </section>
 
-      <ShareButtons title="위마로그 소개" text="위고비·마운자로 사용자 리얼데이터 플랫폼" />
+      <ShareButtons title="위마로그 — 한국 GLP-1 리얼데이터 플랫폼" text="위고비·마운자로 사용자 익명 비교 데이터" />
       <MedicalDisclaimer />
+    </div>
+  );
+}
+
+function Bullet({ emoji, title, children }) {
+  return (
+    <div className="flex gap-3">
+      <div className="text-2xl flex-shrink-0">{emoji}</div>
+      <div>
+        <div className="font-bold text-sm text-ink-900 dark:text-slate-100">{title}</div>
+        <div className="text-xs text-ink-700 dark:text-slate-300 mt-1 leading-snug">{children}</div>
+      </div>
     </div>
   );
 }
