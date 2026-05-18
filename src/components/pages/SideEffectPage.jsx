@@ -182,6 +182,18 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
         </ul>
       </section>
 
+      {/* FAQ */}
+      {content.faqs?.length > 0 && (
+        <section className="card" id="faq">
+          <h2 className="section-title">자주 묻는 질문 — {content.label}</h2>
+          <div className="mt-3 space-y-2">
+            {content.faqs.map((f, i) => (
+              <FaqItem key={i} q={f.q} a={f.a} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* CTA */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 text-white p-6 text-center">
         <h2 className="text-xl font-bold">{content.label}으로 고민 중이세요?</h2>
@@ -201,6 +213,24 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
 
       {showSignup && (
         <QuickSignupModal onClose={() => setShowSignup(false)} onComplete={(id) => { setShowSignup(false); onSignup?.(id); }} />
+      )}
+    </div>
+  );
+}
+
+function FaqItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-ink-200 dark:border-slate-700 overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+              className="w-full flex justify-between items-center text-left px-4 py-3 hover:bg-ink-100/40 dark:hover:bg-slate-800/40 transition">
+        <span className="font-semibold text-sm text-ink-900 dark:text-slate-100">{q}</span>
+        <span className="text-ink-500 dark:text-slate-400 flex-shrink-0 ml-2">{open ? '−' : '+'}</span>
+      </button>
+      {open && (
+        <div className="px-4 py-3 border-t border-ink-100 dark:border-slate-800 text-sm text-ink-700 dark:text-slate-300 leading-relaxed bg-ink-100/30 dark:bg-slate-800/30">
+          {a}
+        </div>
       )}
     </div>
   );

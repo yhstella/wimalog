@@ -68,6 +68,20 @@ function buildBreadcrumb(route) {
   };
 }
 
+// FAQ 배열 → FAQPage schema 변환
+function faqsToSchema(faqs) {
+  if (!faqs || !faqs.length) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    'mainEntity': faqs.map(f => ({
+      '@type': 'Question',
+      'name': f.q,
+      'acceptedAnswer': { '@type': 'Answer', 'text': f.a },
+    })),
+  };
+}
+
 function buildJsonLd(route) {
   if (route.startsWith('drug/')) {
     const id = route.slice(5);
@@ -172,16 +186,26 @@ function setCanonical(href) {
   link.href = href;
 }
 
-// 라우트별 JSON-LD + BreadcrumbList 결합
-function setRouteJsonLd(route) {
-  const main = buildJsonLd(route);
-  const crumb = buildBreadcrumb(route);
-  if (!main && !crumb) { setJsonLd(null); return; }
-  if (main && crumb) {
-    setJsonLd({ '@context': 'https://schema.org', '@graph': [main, crumb] });
-  } else {
-    setJsonLd(main || crumb);
+// 라우트별 FAQ schema 자동 (drug/effect 페이지)
+function buildFaqSchema(route) {
+  if (route.startsWith('drug/')) {
+    const d = DRUG_CONTENT[route.slice(5)];
+    return d?.faqs ? faqsToSchema(d.faqs) : null;
   }
+  if (route.startsWith('effect/')) {
+    const s = SIDE_EFFECT_CONTENT[route.slice(7)];
+    return s?.faqs ? faqsToSchema(s.faqs) : null;
+  }
+  return null;
+}
+
+// 라우트별 JSON-LD + BreadcrumbList + FAQPage 결합
+function setRouteJsonLd(route) {
+  const items = [buildJsonLd(route), buildBreadcrumb(route), buildFaqSchema(route)]
+    .filter(Boolean);
+  if (!items.length) { setJsonLd(null); return; }
+  if (items.length === 1) { setJsonLd(items[0]); return; }
+  setJsonLd({ '@context': 'https://schema.org', '@graph': items });
 }
 
 export function setSEO({ title, description, ogTitle, ogDescription, canonical, route }) {
