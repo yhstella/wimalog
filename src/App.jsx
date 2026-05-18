@@ -21,6 +21,7 @@ import { DoctorReport } from './components/DoctorReport.jsx';
 import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { bootstrapAuth, onAuthChange, signOut as supaSignOut } from './lib/auth.js';
 
 // path 우선 + hash 호환 — SEO 봇은 path로 접근, 기존 사용자 hash URL도 동작
 function readRoute() {
@@ -50,7 +51,23 @@ export default function App() {
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
     // 시드는 main.jsx에서 React mount 전에 이미 호출됨 (sync) — 여기선 보장만
-    return unwatch;
+
+    // OAuth 콜백 후 자동 세션 복원 (Supabase가 URL의 token 처리 → session 발급)
+    bootstrapAuth().then((oauthUser) => {
+      if (oauthUser) {
+        setUserId(oauthUser.id);
+        // URL의 ?auth=callback 흔적 정리
+        if (window.location.search.includes('auth=callback')) {
+          window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        }
+      }
+    }).catch(() => {});
+    // 세션 변경 (다른 탭에서 로그인/아웃) 자동 동기화
+    const unsubAuth = onAuthChange((u) => {
+      if (u) setUserId(u.id);
+      // signOut은 다른 곳에서 명시적으로 처리하므로 여기선 setUserId(null) 안 함
+    });
+    return () => { unwatch?.(); unsubAuth?.(); };
   }, []);
 
   // 라우트가 바뀔 때 SEO 메타 갱신 + 방문 기록
@@ -91,7 +108,8 @@ export default function App() {
     }
   }, [userId, user]);
 
-  const logout = () => {
+  const logout = async () => {
+    try { await supaSignOut(); } catch {}
     Storage.setSession(null);
     setUserId(null);
     navigate('landing');
