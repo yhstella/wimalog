@@ -637,7 +637,7 @@ export function platformScale() {
 }
 
 // 사용자 입력 깊이 점수 (0-100) + 잠금 해제 단계
-// 단계: 0 (시작) → 25 (체중 추세) → 50 (코호트 비교) → 75 (성공 패턴) → 100 (개인 백분위)
+// 입력 종류가 다양할수록 AI 예측 정확도 ↑
 export function inputDepth(user) {
   if (!user) return { score: 0, level: 0, milestones: [] };
   const logs = Storage.getLogsByUser(user.id);
@@ -645,6 +645,12 @@ export function inputDepth(user) {
   const doses = Storage.getDosesByUser(user.id);
   const exercises = Storage.getExercisesByUser(user.id);
   const diets = Storage.getDietsByUser(user.id);
+  const health = Storage.getHealthMetricsByUser(user.id);
+  const inbody = health.filter(h => h.category === 'inbody').length;
+  const blood = health.filter(h => h.category === 'blood').length;
+  const bp = health.filter(h => h.category === 'bp').length;
+  const alcohol = health.filter(h => h.category === 'alcohol').length;
+  const sleep = health.filter(h => h.category === 'sleep').length;
   // 마일스톤: 각각의 기록 카운트와 잠금 해제 인사이트
   const milestones = [
     {
@@ -666,6 +672,26 @@ export function inputDepth(user) {
     {
       key: 'diet',    icon: '🍽️', label: '식단 기록',
       done: diets.length, need: 5, unlocks: '투약 직후 vs 평소 식이 비교 활성화',
+    },
+    {
+      key: 'inbody',  icon: '💪', label: '인바디 기록',
+      done: inbody, need: 1, unlocks: '근손실/마른비만 분석 활성화',
+    },
+    {
+      key: 'blood',   icon: '🩸', label: '혈액검사 기록',
+      done: blood, need: 1, unlocks: 'ALT/AST/HbA1c 추이 → 지방간 코호트와 비교',
+    },
+    {
+      key: 'bp',      icon: '❤️', label: '혈압 기록',
+      done: bp, need: 1, unlocks: '대사증후군 동반자 코호트 비교',
+    },
+    {
+      key: 'alcohol', icon: '🍺', label: '음주 기록',
+      done: alcohol, need: 1, unlocks: '알코올 갈망 변화 → GLP-1 효과 분석',
+    },
+    {
+      key: 'sleep',   icon: '😴', label: '수면·스트레스 기록',
+      done: sleep, need: 1, unlocks: '스트레스 vs 정체기 상관관계 분석',
     },
     {
       key: 'history', icon: '📈', label: '체중 12주 기록',

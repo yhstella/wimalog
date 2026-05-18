@@ -14,6 +14,7 @@ const TABS = [
   { id: 'dose',     label: '투약',     icon: '💊' },
   { id: 'exercise', label: '운동',     icon: '🏃' },
   { id: 'diet',     label: '식단',     icon: '🍽️' },
+  { id: 'health',   label: '건강 지표', icon: '🩺' },
 ];
 
 export function Records({ user, navigate, initialTab = 'weight' }) {
@@ -44,6 +45,7 @@ export function Records({ user, navigate, initialTab = 'weight' }) {
       {tab === 'dose'     && <DoseTab user={user} version={version} refresh={refresh} navigate={navigate} />}
       {tab === 'exercise' && <ExerciseTab user={user} version={version} refresh={refresh} />}
       {tab === 'diet'     && <DietTab user={user} version={version} refresh={refresh} />}
+      {tab === 'health'   && <HealthTab user={user} version={version} refresh={refresh} navigate={navigate} />}
     </div>
   );
 }
@@ -987,6 +989,222 @@ function DietTab({ user, version, refresh }) {
           </div>
         )}
       />
+    </div>
+  );
+}
+
+/* ============================================================
+   건강 지표 탭 — 인바디·혈액검사·혈압·음주 (덜 자주 입력, 가이드 페르소나 직접 연결)
+============================================================ */
+function HealthTab({ user, version, refresh, navigate }) {
+  const toast = useToast();
+  const allMetrics = useMemo(() => Storage.getHealthMetricsByUser(user.id), [user.id, version]);
+  const [date, setDate] = useState(todayISO());
+  const [category, setCategory] = useState('inbody');
+  // 인바디
+  const [bodyFatPct, setBodyFatPct] = useState('');
+  const [muscleKg, setMuscleKg] = useState('');
+  const [waistCm, setWaistCm] = useState('');
+  // 혈액검사
+  const [alt, setAlt] = useState('');
+  const [ast, setAst] = useState('');
+  const [hba1c, setHba1c] = useState('');
+  const [totalChol, setTotalChol] = useState('');
+  // 혈압
+  const [sbp, setSbp] = useState('');
+  const [dbp, setDbp] = useState('');
+  // 음주
+  const [alcoholDrinksPerWeek, setAlcoholDrinksPerWeek] = useState('');
+  const [alcoholCravingChange, setAlcoholCravingChange] = useState(3);
+  // 수면
+  const [sleepHours, setSleepHours] = useState('');
+  const [stressLevel, setStressLevel] = useState(3);
+
+  const CATEGORIES = [
+    { id: 'inbody',   label: '인바디',     icon: '💪', desc: '체지방률·근육량·허리둘레' },
+    { id: 'blood',    label: '혈액검사',   icon: '🩸', desc: 'ALT·AST·HbA1c·콜레스테롤' },
+    { id: 'bp',       label: '혈압',       icon: '❤️', desc: '수축기·이완기' },
+    { id: 'alcohol',  label: '음주',       icon: '🍺', desc: '주당 잔수·갈망 변화' },
+    { id: 'sleep',    label: '수면·스트레스', icon: '😴', desc: '수면 시간·스트레스' },
+  ];
+
+  const submit = () => {
+    let payload = null;
+    if (category === 'inbody') {
+      if (!bodyFatPct && !muscleKg && !waistCm) { toast.error('한 개 이상 입력해 주세요'); return; }
+      payload = { bodyFatPct: +bodyFatPct || null, muscleKg: +muscleKg || null, waistCm: +waistCm || null };
+    } else if (category === 'blood') {
+      if (!alt && !ast && !hba1c && !totalChol) { toast.error('한 개 이상 입력해 주세요'); return; }
+      payload = { alt: +alt || null, ast: +ast || null, hba1c: +hba1c || null, totalChol: +totalChol || null };
+    } else if (category === 'bp') {
+      if (!sbp || !dbp) { toast.error('수축기·이완기 모두 입력해 주세요'); return; }
+      payload = { sbp: +sbp, dbp: +dbp };
+    } else if (category === 'alcohol') {
+      if (!alcoholDrinksPerWeek && alcoholCravingChange === 3) { toast.error('주당 잔수 또는 갈망 변화 입력'); return; }
+      payload = { drinksPerWeek: +alcoholDrinksPerWeek || 0, cravingChange: alcoholCravingChange };
+    } else if (category === 'sleep') {
+      if (!sleepHours && stressLevel === 3) { toast.error('수면 시간 또는 스트레스 입력'); return; }
+      payload = { sleepHours: +sleepHours || null, stressLevel };
+    }
+    Storage.addHealthMetric({
+      id: uid('hm'),
+      userId: user.id,
+      seed: false,
+      date,
+      category,
+      ...payload,
+      createdAt: new Date().toISOString(),
+    });
+    // reset
+    setBodyFatPct(''); setMuscleKg(''); setWaistCm('');
+    setAlt(''); setAst(''); setHba1c(''); setTotalChol('');
+    setSbp(''); setDbp('');
+    setAlcoholDrinksPerWeek(''); setAlcoholCravingChange(3);
+    setSleepHours(''); setStressLevel(3);
+    refresh();
+    toast.success(`${CATEGORIES.find(c => c.id === category).label} 기록됨`);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="card space-y-4">
+        <div>
+          <div className="label">날짜</div>
+          <input type="date" className="input max-w-[180px]" value={date} max={todayISO()}
+                 onChange={e => setDate(e.target.value)} />
+        </div>
+
+        <div>
+          <div className="label">카테고리</div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+            {CATEGORIES.map(c => (
+              <button key={c.id} type="button" onClick={() => setCategory(c.id)}
+                      className={`px-2 py-2 rounded-xl text-xs font-medium border transition text-left
+                                  ${category === c.id
+                                    ? 'bg-brand-500 text-white border-brand-500'
+                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-300'}`}>
+                <div className="text-base">{c.icon}</div>
+                <div className="mt-0.5">{c.label}</div>
+              </button>
+            ))}
+          </div>
+          <p className="helptext !mt-2">{CATEGORIES.find(c => c.id === category)?.desc}</p>
+        </div>
+
+        {category === 'inbody' && (
+          <div className="grid grid-cols-3 gap-3">
+            <NumField label="체지방률" suffix="%" value={bodyFatPct} onChange={setBodyFatPct} placeholder="28.5" />
+            <NumField label="근육량" suffix="kg" value={muscleKg} onChange={setMuscleKg} placeholder="42.0" />
+            <NumField label="허리둘레" suffix="cm" value={waistCm} onChange={setWaistCm} placeholder="82" />
+          </div>
+        )}
+
+        {category === 'blood' && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <NumField label="ALT" suffix="U/L" value={alt} onChange={setAlt} placeholder="25" />
+            <NumField label="AST" suffix="U/L" value={ast} onChange={setAst} placeholder="22" />
+            <NumField label="HbA1c" suffix="%" value={hba1c} onChange={setHba1c} placeholder="5.7" />
+            <NumField label="총콜레스테롤" suffix="mg/dL" value={totalChol} onChange={setTotalChol} placeholder="180" />
+          </div>
+        )}
+
+        {category === 'bp' && (
+          <div className="grid grid-cols-2 gap-3">
+            <NumField label="수축기" suffix="mmHg" value={sbp} onChange={setSbp} placeholder="120" />
+            <NumField label="이완기" suffix="mmHg" value={dbp} onChange={setDbp} placeholder="80" />
+          </div>
+        )}
+
+        {category === 'alcohol' && (
+          <div className="space-y-3">
+            <NumField label="주당 음주 잔수 (소주 기준)" suffix="잔" value={alcoholDrinksPerWeek}
+                      onChange={setAlcoholDrinksPerWeek} placeholder="7" />
+            <Scale label="알코올 갈망 변화 (약 시작 전 대비)" value={alcoholCravingChange}
+                   onChange={setAlcoholCravingChange} minLabel="크게 감소" maxLabel="평소" />
+            <button onClick={() => navigate('guide/alcohol')}
+                    className="w-full text-xs text-brand-700 dark:text-brand-400 hover:underline py-1">
+              → GLP-1과 알코올 사용장애 가이드 보기
+            </button>
+          </div>
+        )}
+
+        {category === 'sleep' && (
+          <div className="space-y-3">
+            <NumField label="수면 시간" suffix="시간" value={sleepHours} onChange={setSleepHours} placeholder="7.5" />
+            <Scale label="스트레스" value={stressLevel} onChange={setStressLevel}
+                   minLabel="없음" maxLabel="매우 심함" />
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <button onClick={submit} className="btn-primary">기록 저장</button>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-brand-50/60 dark:bg-brand-900/20 border border-brand-200/50 dark:border-brand-800/40 px-3 py-2.5">
+        <div className="flex items-start gap-2">
+          <span className="text-base flex-shrink-0">🤖</span>
+          <p className="text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
+            <b>건강 지표를 추가할수록 AI 예측이 더 정밀해져요.</b> 인바디는 마른비만/근손실, 혈액검사는 지방간, 음주는 알코올 갈망 패턴 분석에 직접 활용됩니다.
+          </p>
+        </div>
+      </div>
+
+      <RecentList
+        items={allMetrics.slice().reverse().slice(0, 15)}
+        empty="아직 건강 지표 기록이 없습니다."
+        render={(m) => {
+          const cat = CATEGORIES.find(c => c.id === m.category);
+          const parts = [];
+          if (m.category === 'inbody') {
+            if (m.bodyFatPct) parts.push(`체지방 ${m.bodyFatPct}%`);
+            if (m.muscleKg) parts.push(`근육 ${m.muscleKg}kg`);
+            if (m.waistCm) parts.push(`허리 ${m.waistCm}cm`);
+          } else if (m.category === 'blood') {
+            if (m.alt) parts.push(`ALT ${m.alt}`);
+            if (m.ast) parts.push(`AST ${m.ast}`);
+            if (m.hba1c) parts.push(`HbA1c ${m.hba1c}%`);
+            if (m.totalChol) parts.push(`콜레스테롤 ${m.totalChol}`);
+          } else if (m.category === 'bp') {
+            parts.push(`${m.sbp}/${m.dbp} mmHg`);
+          } else if (m.category === 'alcohol') {
+            if (m.drinksPerWeek) parts.push(`주 ${m.drinksPerWeek}잔`);
+            if (m.cravingChange != null) parts.push(`갈망 ${m.cravingChange}/5`);
+          } else if (m.category === 'sleep') {
+            if (m.sleepHours) parts.push(`수면 ${m.sleepHours}시간`);
+            if (m.stressLevel != null) parts.push(`스트레스 ${m.stressLevel}/5`);
+          }
+          return (
+            <div className="flex justify-between items-center gap-3">
+              <div className="min-w-0 flex items-center gap-2">
+                <span className="text-base">{cat?.icon}</span>
+                <div>
+                  <div className="font-semibold text-sm text-ink-900 dark:text-slate-100">
+                    {cat?.label} <span className="text-xs text-ink-500 dark:text-slate-500 ml-1">{m.date}</span>
+                  </div>
+                  <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">{parts.join(' · ')}</div>
+                </div>
+              </div>
+              <button onClick={() => { Storage.deleteHealthMetric(m.id); refresh(); }}
+                      className="text-xs text-rose-600 hover:underline">삭제</button>
+            </div>
+          );
+        }}
+      />
+    </div>
+  );
+}
+
+function NumField({ label, suffix, value, onChange, placeholder }) {
+  return (
+    <div>
+      <div className="label">{label}</div>
+      <div className="relative">
+        <input type="number" inputMode="decimal" step="0.1"
+               className="input pr-12" value={value}
+               onChange={e => onChange(e.target.value)} placeholder={placeholder} />
+        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-500 dark:text-slate-500 pointer-events-none">{suffix}</span>}
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ const KEYS = {
   doses: 'gl_doses',           // 투약 기록
   exercises: 'gl_exercises',   // 운동 기록
   diets: 'gl_diets',           // 식단 기록
+  health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
   session: 'gl_session',
   seeded: 'gl_seeded_v7',  // v7: long-term 비율 추가 증가 (45% long) — 1년 추적자 충분
   migrated: 'gl_migrated_v2',
@@ -57,6 +58,7 @@ const medsCol      = makeCollection(KEYS.medCourses);
 const dosesCol     = makeCollection(KEYS.doses);
 const exercisesCol = makeCollection(KEYS.exercises);
 const dietsCol     = makeCollection(KEYS.diets);
+const healthCol    = makeCollection(KEYS.health);
 
 export const Storage = {
   // ---- users ----
@@ -78,6 +80,7 @@ export const Storage = {
     dosesCol.removeByUser(id);
     exercisesCol.removeByUser(id);
     dietsCol.removeByUser(id);
+    healthCol.removeByUser(id);
     if (Storage.getSession() === id) Storage.setSession(null);
   },
 
@@ -124,6 +127,13 @@ export const Storage = {
   addDiet: dietsCol.add,
   updateDiet: dietsCol.update,
   deleteDiet: dietsCol.remove,
+
+  // ---- health metrics (인바디·혈액검사·혈압·음주 등) ----
+  getHealthMetrics: healthCol.all,
+  getHealthMetricsByUser: healthCol.byUser,
+  addHealthMetric: healthCol.add,
+  updateHealthMetric: healthCol.update,
+  deleteHealthMetric: healthCol.remove,
 
   // ---- session ----
   getSession() { return read(KEYS.session, null); },
