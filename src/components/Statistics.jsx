@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats, fetchPlatformScale } from '../lib/supabaseStats.js';
+import { supabaseConfigured } from '../lib/supabaseClient.js';
 import {
   avgLossCurve, cohortSize, sideEffectRates, discontinuationStats,
   compareMedications, similarFilter, priceStats, exerciseStats, primaryCourse,
   reboundCurve, reboundByExercise, reboundByMedication,
   personalSummaryForCourse, sideEffectTiming, successPattern, personalPercentile,
-  cohortDietByPhase, exerciseDistribution,
+  cohortDietByPhase, exerciseDistribution, relaxFilter,
 } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
 import { LineChart, HBarChart, GroupBarChart } from './Chart.jsx';
@@ -33,7 +35,7 @@ export function Statistics({ user, navigate, onSignup }) {
     medication: 'all', gender: 'all', ageGroup: 'all', bmiRange: null, hasCondition: '',
   });
 
-  const cleanFilter = useMemo(() => {
+  const rawFilter = useMemo(() => {
     const f = { ...filter };
     delete f._similarApplied;
     if (f.medication === 'all') delete f.medication;
@@ -43,7 +45,11 @@ export function Statistics({ user, navigate, onSignup }) {
     return f;
   }, [filter]);
 
-  const n          = useMemo(() => cohortSize(cleanFilter), [cleanFilter]);
+  // 필터 자동 완화 — 데이터 부족 시 한 단계씩 (BMI 확장 → 동반질환 제거 → 나이대/성별 제거)
+  const relaxed = useMemo(() => relaxFilter(rawFilter, 30), [rawFilter]);
+  const cleanFilter = relaxed.filter;
+
+  const n          = relaxed.n;
   const curve      = useMemo(() => avgLossCurve(cleanFilter), [cleanFilter]);
   const sideRates  = useMemo(() => sideEffectRates(cleanFilter), [cleanFilter]);
   const stopStats  = useMemo(() => discontinuationStats(cleanFilter), [cleanFilter]);
@@ -115,6 +121,31 @@ export function Statistics({ user, navigate, onSignup }) {
     onSignup?.(userId);
   };
 
+  // Supabase 실시간 통계 (현재 필터로 조회) — 페이지 상단 요약 카드
+  const [supaSummary, setSupaSummary] = useState(null);
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [scale, curve12, curve24] = await Promise.all([
+          fetchPlatformScale(),
+          fetchAvgLossCurve(cleanFilter, [12]),
+          fetchAvgLossCurve(cleanFilter, [24]),
+        ]);
+        if (cancelled) return;
+        setSupaSummary({
+          totalPatients: scale?.totalPatients ?? null,
+          avg12: curve12?.[0],
+          avg24: curve24?.[0],
+        });
+      } catch (e) {
+        console.warn('[Statistics] supabase fetch failed', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [cleanFilter]);
+
   // 비가입자에겐 처음 4주차까지만 표시
   const visibleCurve = !user ? curve.slice(0, 3) : curve;
   const hiddenCurveCount = !user ? curve.length - 3 : 0;
@@ -151,6 +182,45 @@ export function Statistics({ user, navigate, onSignup }) {
           <button onClick={handleSignup} className="btn-primary !py-2 !px-3 text-sm flex-shrink-0">
             1분 가입 →
           </button>
+        </div>
+      )}
+
+      {/* Supabase 실시간 코호트 요약 — DB 11000명+ 진짜 통계 */}
+      {supaSummary && supaSummary.totalPatients > 0 && (
+        <div className="rounded-2xl bg-white dark:bg-slate-900 border-2 border-emerald-300 dark:border-emerald-800/50 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <h2 className="font-bold text-ink-900 dark:text-slate-100">실시간 DB 통계</h2>
+            <span className="text-[10px] text-ink-500 dark:text-slate-500">위마로그 익명 코호트</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            <div className="text-center rounded-xl bg-ink-100/40 dark:bg-slate-800/40 p-3">
+              <div className="text-xl sm:text-2xl font-extrabold tabular-nums text-ink-900 dark:text-slate-100">
+                {supaSummary.totalPatients.toLocaleString()}<span className="text-xs font-bold opacity-70 ml-0.5">명</span>
+              </div>
+              <div className="text-[10px] sm:text-[11px] text-ink-500 dark:text-slate-400 mt-1">전체 코호트</div>
+            </div>
+            <div className="text-center rounded-xl bg-ink-100/40 dark:bg-slate-800/40 p-3">
+              <div className="text-xl sm:text-2xl font-extrabold tabular-nums text-brand-700 dark:text-brand-400">
+                {supaSummary.avg12?.avg != null ? `−${Number(supaSummary.avg12.avg).toFixed(1)}` : '—'}
+                <span className="text-xs font-bold opacity-70 ml-0.5">%</span>
+              </div>
+              <div className="text-[10px] sm:text-[11px] text-ink-500 dark:text-slate-400 mt-1">12주 평균 감량</div>
+              {supaSummary.avg12?.n != null && (
+                <div className="text-[9px] text-ink-500 dark:text-slate-500">n={supaSummary.avg12.n}</div>
+              )}
+            </div>
+            <div className="text-center rounded-xl bg-ink-100/40 dark:bg-slate-800/40 p-3">
+              <div className="text-xl sm:text-2xl font-extrabold tabular-nums text-brand-700 dark:text-brand-400">
+                {supaSummary.avg24?.avg != null ? `−${Number(supaSummary.avg24.avg).toFixed(1)}` : '—'}
+                <span className="text-xs font-bold opacity-70 ml-0.5">%</span>
+              </div>
+              <div className="text-[10px] sm:text-[11px] text-ink-500 dark:text-slate-400 mt-1">24주 평균 감량</div>
+              {supaSummary.avg24?.n != null && (
+                <div className="text-[9px] text-ink-500 dark:text-slate-500">n={supaSummary.avg24.n}</div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -242,9 +312,21 @@ export function Statistics({ user, navigate, onSignup }) {
         </FilterRow>
       </div>
 
-      {n < 5 && n > 0 && (
-        <div className="rounded-xl bg-brand-50 dark:bg-brand-900/15 border border-brand-200 dark:border-brand-800/40 px-4 py-3 text-sm text-ink-700 dark:text-slate-300">
-          🔍 좁은 필터입니다. 더 정확한 비교를 위해 필터를 완화해 보세요.
+      {/* 자동 완화 안내 — 사용자 필터로 데이터 부족할 때 */}
+      {relaxed.stage !== 'original' && relaxed.originalN < 30 && (
+        <div className="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+          🔍 본인 조건과 정확히 일치하는 사용자가 적어 ({relaxed.originalN}명),
+          <b> 자동으로 필터 일부를 완화</b>해 {n}명의 통계를 보여드립니다.
+          {relaxed.relaxedFields.length > 0 && (
+            <span className="block mt-1 text-xs opacity-80">
+              완화된 항목:{' '}
+              {relaxed.relaxedFields.map(f => ({
+                hasCondition: '동반질환', ageGroup: '나이대', gender: '성별',
+                bmiRange: 'BMI', bmiRangeWidened: 'BMI 범위 확장',
+                medication: '약', all: '모두',
+              }[f] || f)).join(' · ')}
+            </span>
+          )}
         </div>
       )}
 

@@ -21,7 +21,7 @@ if (!URL || !KEY) {
 }
 
 const sb = createClient(URL, KEY, { auth: { persistSession: false } });
-const PATIENT_COUNT = parseInt(process.env.SEED_COUNT || '9000', 10);
+const PATIENT_COUNT = parseInt(process.env.SEED_COUNT || '11307', 10);
 const SEED = 20260518;
 
 // ============================================================
@@ -146,6 +146,12 @@ function generatePatient(idx) {
       thyroid:      rand() < 0.07,
     },
     purpose: pick(['weight','diabetes','fatty','doctor','other'], [0.70, 0.10, 0.10, 0.07, 0.03]),
+    occupation: pick(['office','service','manual','student','homemaker','medical','other'],
+                     [0.32, 0.18, 0.10, 0.10, 0.15, 0.05, 0.10]),
+    exercise_dedication: +exDedication.toFixed(2),
+    diet_dedication:     +dietDedication.toFixed(2),
+    smoker:  rand() < 0.18,
+    drinker_level: pick(['none','light','moderate','heavy'], [0.30, 0.40, 0.22, 0.08]),
     created_at: new Date(Date.parse(daysAgo(Math.round(gauss(60, 30))))).toISOString(),
   };
 
@@ -198,6 +204,12 @@ function generatePatient(idx) {
     }
 
     const courseId = randomUUID();
+    // 만족도 — 약효 좋고 부작용 적으면 ↑
+    const satisfactionRaw = 3 + (responseFactor - 1.0) * 2 - (sideSeverity - 1.0) * 1.5;
+    const satisfaction = clamp(Math.round(satisfactionRaw), 1, 5);
+    // 비용 부담도 — 매주 풀 dose면 ↑, 격주/가끔이면 ↓
+    const costBase = frequency === 'weekly' ? 4 : frequency === 'biweekly' ? 3 : frequency === 'occasional' ? 2 : 3;
+    const costBurden = clamp(Math.round(gauss(costBase, 0.8)), 1, 5);
     courses.push({
       id: courseId, patient_id: patientId,
       medication: med, frequency,
@@ -208,6 +220,9 @@ function generatePatient(idx) {
         ? pick(['cost','sideeffect','noeffect','goal','supply','doctor','other'], [0.30,0.30,0.15,0.08,0.07,0.05,0.05])
         : null,
       notes: numCourses > 1 ? (i === 0 ? '현재' : `이전 라운드 ${i+1}`) : null,
+      satisfaction,
+      cost_burden: costBurden,
+      side_severity: +sideSeverity.toFixed(2),
       created_at: new Date(Date.parse(courseStart)).toISOString(),
     });
     courseMeta.push({ id: courseId, med, profile, weeks, responseFactor, sideSeverity, frequency, discontinueWeek, startDate: courseStart, willExperience });
@@ -312,6 +327,9 @@ function generatePatient(idx) {
       satiety:         clamp(Math.round(gauss(active ? 4 : 3, 1)), 1, 5),
       meal_reduction:  clamp(Math.round(gauss(active ? 3.5 : 2.5, 1)), 1, 5),
       side_effects: sideEffects,
+      sleep_hours:  +clamp(gauss(7, 1.2), 4, 11).toFixed(1),
+      stress_level: clamp(Math.round(gauss(3, 1)), 1, 5),
+      mood:         clamp(Math.round(gauss(3, 1)), 1, 5),
       created_at: new Date(dateMs).toISOString(),
     });
 
@@ -320,29 +338,56 @@ function generatePatient(idx) {
     for (let i = 0; i < exerciseCount; i++) {
       const e = pick(EXERCISE_PATTERN, EXERCISE_PATTERN.map(x => x.weight));
       const dayOffset = Math.floor(rand() * 7);
+      const dur = Math.max(10, Math.round(gauss(e.durMean, e.durMean * 0.3)));
+      // 칼로리 소모 = 분 × MET 가중치 (운동 종류별)
+      const metByType = { walking: 4, home: 4, strength: 6, jogging: 8, yoga: 3, cycling: 7, hiking: 6, swimming: 8, sports: 7 };
+      const met = metByType[e.id] || 5;
+      const caloriesBurned = Math.round(met * 3.5 * startWeight / 200 * dur);
+      const location = pick(['outdoor','home','gym','park','studio'], [0.40, 0.30, 0.18, 0.08, 0.04]);
       exercises.push({
         id: randomUUID(), patient_id: patientId,
         date: new Date(dateMs - dayOffset * 86400000).toISOString().slice(0, 10),
         type: e.id,
-        duration_min: Math.max(10, Math.round(gauss(e.durMean, e.durMean * 0.3))),
+        duration_min: dur,
         intensity: clamp(Math.round(gauss(2 + exDedication * 2, 1)), 1, 5),
+        calories_burned: caloriesBurned,
+        location,
         created_at: new Date(dateMs).toISOString(),
       });
     }
 
-    // 식단
+    // 식단 — 카테고리/탄수화물/지방 추가
     if (rand() < dietDedication * 0.6) {
-      const SAMPLE = ['요거트+그래놀라','오트밀','계란+토스트','닭가슴살 샐러드','단백질 쉐이크','두부 덮밥','연어 포케','비빔밥(소량)','월남쌈','닭곰탕','두부 스테이크','계란찜+나물','연어구이','닭가슴살+브로콜리','저녁 거름','그릭요거트','아몬드 한 줌','단백질바'];
-      const mealTypes = ['breakfast','lunch','dinner','snack'];
-      const mealType = pick(mealTypes, [0.25, 0.3, 0.3, 0.15]);
+      // 카테고리 선택 — diet_dedication 높을수록 healthy 비중 ↑
+      const catWeights = dietDedication > 0.6
+        ? [0.55, 0.30, 0.10, 0.05]  // healthy/balanced/treat/light
+        : dietDedication > 0.3
+        ? [0.30, 0.45, 0.20, 0.05]
+        : [0.10, 0.40, 0.45, 0.05];
+      const category = pick(['healthy','balanced','treat','light'], catWeights);
+      const SAMPLES = {
+        healthy:  ['닭가슴살 샐러드','두부 스테이크','연어구이','단백질 쉐이크','그릭요거트','오트밀','계란찜+나물','연어 포케','두부 덮밥'],
+        balanced: ['김밥','제육볶음','비빔밥','백반','파스타','일식 정식','월남쌈','샌드위치','김치찌개'],
+        treat:    ['피자','치킨','햄버거','라면','짜장면','케이크','아이스크림','콜라','맥주'],
+        light:    ['아메리카노','녹차','단백질 쉐이크','바나나','사과','저녁 거름','간헐적 단식'],
+      };
+      const proteinMean = category === 'healthy' ? 35 : category === 'balanced' ? 22 : category === 'treat' ? 18 : 8;
+      const calMean = category === 'healthy' ? 380 : category === 'balanced' ? 550 : category === 'treat' ? 720 : 150;
+      const carbsMean = category === 'healthy' ? 30 : category === 'balanced' ? 60 : category === 'treat' ? 80 : 15;
+      const fatMean = category === 'healthy' ? 12 : category === 'balanced' ? 20 : category === 'treat' ? 35 : 3;
+      const mealType = pick(['breakfast','lunch','dinner','snack'], [0.25, 0.3, 0.3, 0.15]);
       const dayOffset = Math.floor(rand() * 7);
+      const items = SAMPLES[category];
       diets.push({
         id: randomUUID(), patient_id: patientId,
         date: new Date(dateMs - dayOffset * 86400000).toISOString().slice(0, 10),
         meal_type: mealType,
-        description: SAMPLE[Math.floor(rand() * SAMPLE.length)],
-        protein_g: rand() < 0.4 ? Math.round(gauss(25, 10)) : null,
-        est_calories: rand() < 0.3 ? Math.round(gauss(400, 150)) : null,
+        description: items[Math.floor(rand() * items.length)],
+        category,
+        protein_g:     rand() < 0.4 ? Math.max(0, Math.round(gauss(proteinMean, proteinMean * 0.3))) : null,
+        est_calories:  rand() < 0.3 ? Math.max(0, Math.round(gauss(calMean, calMean * 0.25))) : null,
+        carbs_g:       rand() < 0.25 ? Math.max(0, Math.round(gauss(carbsMean, carbsMean * 0.3))) : null,
+        fat_g:         rand() < 0.25 ? Math.max(0, Math.round(gauss(fatMean, fatMean * 0.3))) : null,
         created_at: new Date(dateMs).toISOString(),
       });
     }

@@ -131,6 +131,72 @@ export function cohortSize(filter) {
   return matchedCourses(filter).length;
 }
 
+// 필터가 너무 좁아 데이터 부족 시 단계적으로 완화 — 통계 페이지에서 사용
+// 반환: { filter (완화된), stage (어디까지 완화됐는지), n, relaxedFields[] }
+export function relaxFilter(filter, minN = 30) {
+  const original = { ...filter };
+  Object.keys(original).forEach(k => {
+    if (original[k] === undefined || original[k] === null || original[k] === '' || original[k] === 'all') {
+      delete original[k];
+    }
+  });
+
+  // 단계적 완화 stages — 가장 덜 중요한 것부터 제거
+  const stages = [
+    { name: 'original', label: null, filter: { ...original } },
+    // 1. hasCondition 제거 (동반질환은 부수적)
+    { name: 'noCondition', label: '동반질환', filter: (() => { const f = { ...original }; delete f.hasCondition; return f; })() },
+    // 2. BMI range 넓힘 (±3 → ±6)
+    { name: 'wideBmi', label: 'BMI 범위 확장', filter: (() => {
+      const f = { ...original }; delete f.hasCondition;
+      if (f.bmiRange) f.bmiRange = [Math.max(15, f.bmiRange[0] - 3), Math.min(50, f.bmiRange[1] + 3)];
+      return f;
+    })() },
+    // 3. ageGroup 제거
+    { name: 'noAge', label: '나이대', filter: (() => {
+      const f = { ...original }; delete f.hasCondition; delete f.ageGroup;
+      if (f.bmiRange) f.bmiRange = [Math.max(15, f.bmiRange[0] - 3), Math.min(50, f.bmiRange[1] + 3)];
+      return f;
+    })() },
+    // 4. gender 제거
+    { name: 'noGender', label: '성별', filter: (() => {
+      const f = { ...original }; delete f.hasCondition; delete f.ageGroup; delete f.gender;
+      if (f.bmiRange) f.bmiRange = [Math.max(15, f.bmiRange[0] - 3), Math.min(50, f.bmiRange[1] + 3)];
+      return f;
+    })() },
+    // 5. BMI 완전 제거
+    { name: 'noBmi', label: 'BMI 필터', filter: (() => {
+      const f = { ...original }; delete f.hasCondition; delete f.ageGroup; delete f.gender; delete f.bmiRange;
+      return f;
+    })() },
+    // 6. medication만 (있으면)
+    { name: 'medOnly', label: '약 외 모든 필터', filter: original.medication ? { medication: original.medication } : {} },
+    // 7. 모두 제거 (전체)
+    { name: 'all', label: '약 포함 모든 필터', filter: {} },
+  ];
+
+  let originalN = matchedCourses(original).length;
+  const relaxedFields = [];
+  for (const stage of stages) {
+    const n = matchedCourses(stage.filter).length;
+    if (n >= minN || stage.name === 'all') {
+      // 어떤 필드들이 완화됐는지 비교
+      for (const k of ['hasCondition', 'ageGroup', 'gender', 'bmiRange', 'medication']) {
+        if (original[k] !== undefined && stage.filter[k] === undefined) {
+          relaxedFields.push(k);
+        }
+      }
+      // BMI 범위가 넓어졌는지 체크
+      if (original.bmiRange && stage.filter.bmiRange &&
+          (stage.filter.bmiRange[0] < original.bmiRange[0] || stage.filter.bmiRange[1] > original.bmiRange[1])) {
+        if (!relaxedFields.includes('bmiRange')) relaxedFields.push('bmiRangeWidened');
+      }
+      return { filter: stage.filter, stage: stage.name, n, originalN, relaxedFields };
+    }
+  }
+  return { filter: {}, stage: 'all', n: matchedCourses({}).length, originalN, relaxedFields: ['all'] };
+}
+
 export function avgLossCurve(filter, weeks = [1, 2, 4, 8, 12, 16, 24, 36, 48]) {
   const matched = matchedCourses(filter);
   return weeks.map(w => {
