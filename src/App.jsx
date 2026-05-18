@@ -22,6 +22,7 @@ import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPage
 import { recordVisit } from './components/RecentPages.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { bootstrapAuth, onAuthChange, signOut as supaSignOut } from './lib/auth.js';
+import { startSupabaseSync, backfillUser } from './lib/supabaseSync.js';
 
 // path 우선 + hash 호환 — SEO 봇은 path로 접근, 기존 사용자 hash URL도 동작
 function readRoute() {
@@ -52,6 +53,9 @@ export default function App() {
     Storage.migrateV1ToV2();
     // 시드는 main.jsx에서 React mount 전에 이미 호출됨 (sync) — 여기선 보장만
 
+    // Supabase storage sync 시작 (모든 add/update/remove → Supabase 자동 push)
+    startSupabaseSync();
+
     // OAuth 콜백 후 자동 세션 복원 (Supabase가 URL의 token 처리 → session 발급)
     const wasOAuthCallback = window.location.search.includes('auth=callback')
       || window.location.hash.includes('access_token=')
@@ -59,6 +63,8 @@ export default function App() {
     bootstrapAuth().then((oauthUser) => {
       if (oauthUser) {
         setUserId(oauthUser.id);
+        // 기존 localStorage 데이터를 Supabase에 backfill (한 번만 OK, upsert)
+        backfillUser(oauthUser).catch(() => {});
         // OAuth callback이면 dashboard로 이동 + URL 정리 + 환영 toast
         if (wasOAuthCallback) {
           window.history.replaceState(null, '', '/#/dashboard');

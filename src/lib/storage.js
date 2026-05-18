@@ -24,7 +24,23 @@ function write(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-function makeCollection(key) {
+// 변경 이벤트 listener (Supabase sync 등 외부 layer가 구독)
+//   onStorageEvent('add'|'update'|'remove', (table, item) => {...})
+const storageListeners = { add: [], update: [], remove: [] };
+function emit(kind, table, item) {
+  for (const fn of storageListeners[kind]) {
+    try { fn(table, item); } catch (e) { console.warn('[storage event]', e); }
+  }
+}
+export function onStorageEvent(kind, fn) {
+  storageListeners[kind].push(fn);
+  return () => {
+    const idx = storageListeners[kind].indexOf(fn);
+    if (idx >= 0) storageListeners[kind].splice(idx, 1);
+  };
+}
+
+function makeCollection(key, tableName) {
   return {
     all: () => read(key, []),
     set: (list) => write(key, list),
@@ -35,16 +51,23 @@ function makeCollection(key) {
       const list = read(key, []);
       list.push(item);
       write(key, list);
+      if (tableName && !item.seed) emit('add', tableName, item);
       return item;
     },
     update: (item) => {
       const list = read(key, []);
       const idx = list.findIndex(x => x.id === item.id);
-      if (idx >= 0) list[idx] = { ...list[idx], ...item };
-      write(key, list);
+      if (idx >= 0) {
+        list[idx] = { ...list[idx], ...item };
+        write(key, list);
+        if (tableName && !list[idx].seed) emit('update', tableName, list[idx]);
+      }
     },
     remove: (id) => {
-      write(key, read(key, []).filter(x => x.id !== id));
+      const list = read(key, []);
+      const target = list.find(x => x.id === id);
+      write(key, list.filter(x => x.id !== id));
+      if (tableName && target && !target.seed) emit('remove', tableName, target);
     },
     removeByUser: (userId) => {
       write(key, read(key, []).filter(x => x.userId !== userId));
@@ -53,12 +76,12 @@ function makeCollection(key) {
 }
 
 const usersCol     = { all: () => read(KEYS.users, []), set: (l) => write(KEYS.users, l) };
-const logsCol      = makeCollection(KEYS.logs);
-const medsCol      = makeCollection(KEYS.medCourses);
-const dosesCol     = makeCollection(KEYS.doses);
-const exercisesCol = makeCollection(KEYS.exercises);
-const dietsCol     = makeCollection(KEYS.diets);
-const healthCol    = makeCollection(KEYS.health);
+const logsCol      = makeCollection(KEYS.logs,       'weight_logs');
+const medsCol      = makeCollection(KEYS.medCourses, 'med_courses');
+const dosesCol     = makeCollection(KEYS.doses,      'doses');
+const exercisesCol = makeCollection(KEYS.exercises,  'exercises');
+const dietsCol     = makeCollection(KEYS.diets,      'diets');
+const healthCol    = makeCollection(KEYS.health,     'health_metrics');
 
 export const Storage = {
   // ---- users ----
@@ -67,9 +90,11 @@ export const Storage = {
   upsertUser(user) {
     const list = usersCol.all();
     const idx = list.findIndex(u => u.id === user.id);
+    const isNew = idx < 0;
     if (idx >= 0) list[idx] = { ...list[idx], ...user };
     else list.push(user);
     usersCol.set(list);
+    if (!user.seed) emit(isNew ? 'add' : 'update', 'patients', list[isNew ? list.length - 1 : idx]);
     return user;
   },
   getUser(id) { return usersCol.all().find(u => u.id === id) || null; },
