@@ -235,6 +235,12 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="💉" title="매주 풀 dose가 부담?"
                             desc="격주/저용량/간헐 사용 — 한국 실사용 패턴 가이드"
                             onClick={() => navigate('guide/usage-patterns')} />
+          <PersonaCardLink icon="🫀" title="지방간 동반"
+                            desc="체중보다 간수치·내장지방 개선이 목적인 분"
+                            onClick={() => navigate('guide/fatty-liver')} />
+          <PersonaCardLink icon="🦴" title="마른 비만·근감소"
+                            desc="BMI는 정상이지만 체지방률·근감소 우려"
+                            onClick={() => navigate('guide/sarcopenia')} />
           <PersonaCardLink icon="🏥" title="처방받는 법"
                             desc="병원 선택·진료 준비·비용 — 한국 기준"
                             onClick={() => navigate('guide/prescription')} />
