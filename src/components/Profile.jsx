@@ -153,9 +153,9 @@ export function Profile({ user, navigate, onLogout, refresh }) {
           <h2 className="section-title">약 관리</h2>
           <p className="section-subtitle">
             {activeMeds.length > 0
-              ? `진행 중 ${activeMeds.length}개 · 누적 ${courses.length}개 코스`
+              ? `진행 중 ${activeMeds.length}개 · 누적 ${courses.length}개 사용 이력`
               : courses.length > 0
-                ? `진행 중 없음 · 과거 ${courses.length}개 코스`
+                ? `진행 중 없음 · 과거 ${courses.length}개 사용 이력`
                 : '아직 등록된 약이 없습니다'}
           </p>
         </div>
@@ -179,7 +179,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
         <p className="section-subtitle">현재 MVP는 모든 데이터를 본인 브라우저 localStorage에만 저장합니다.</p>
         <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-sm">
           <ReadRow k="체중·증상 기록" v={`${logs.length}건`} />
-          <ReadRow k="약 코스" v={`${courses.length}개`} />
+          <ReadRow k="약 사용 이력" v={`${courses.length}개`} />
           <ReadRow k="투약 기록" v={`${doses.length}건`} />
           <ReadRow k="운동 기록" v={`${exercises.length}건`} />
           <ReadRow k="식단 기록" v={`${diets.length}건`} />

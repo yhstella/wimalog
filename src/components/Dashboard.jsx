@@ -239,7 +239,7 @@ export function Dashboard({ user, navigate }) {
       {summary ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <SummaryCard
-            label={current ? '코스 누적 감량' : '시작 대비 감량'}
+            label={current ? '현재 약 누적 감량' : '시작 대비 감량'}
             value={`${summary.lossKg >= 0 ? '-' : '+'}${Math.abs(summary.lossKg).toFixed(1)} kg`}
             sub={`${Math.abs(summary.lossPct).toFixed(1)}%`}
             highlight={summary.lossKg > 0}
@@ -296,7 +296,7 @@ export function Dashboard({ user, navigate }) {
         <LineChart data={chartData} target={user.targetWeight} height={240} />
       </div>
 
-      {/* 활성 약 코스 */}
+      {/* 현재 사용 중인 약 */}
       {activeMeds.length > 0 && (
         <div className="card">
           <div className="flex justify-between items-center mb-3">

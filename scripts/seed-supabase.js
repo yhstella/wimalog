@@ -21,7 +21,7 @@ if (!URL || !KEY) {
 }
 
 const sb = createClient(URL, KEY, { auth: { persistSession: false } });
-const PATIENT_COUNT = parseInt(process.env.SEED_COUNT || '3000', 10);
+const PATIENT_COUNT = parseInt(process.env.SEED_COUNT || '9000', 10);
 const SEED = 20260518;
 
 // ============================================================
@@ -118,8 +118,14 @@ function generatePatient(idx) {
   const startBMI = clamp(gauss(31.5, 3.2), 25, 45);
   const startWeight = +(startBMI * (height / 100) ** 2).toFixed(1);
   const targetWeight = +(startWeight * (1 - clamp(gauss(0.18, 0.05), 0.08, 0.30))).toFixed(1);
-  const isUser = rand() < 0.80;
-  const numCourses = isUser ? (rand() < 0.18 ? 2 : 1) : 0;
+  const isUser = rand() < 0.85;
+  // numCourses 분포 — 중단 후 재시작/약 변경 케이스 다양화
+  // 1차만: 65%, 1차+2차(재시작/약 변경): 25%, 1차+2차+3차(반복 중단자): 10%
+  let numCourses = 0;
+  if (isUser) {
+    const r = rand();
+    numCourses = r < 0.65 ? 1 : r < 0.90 ? 2 : 3;
+  }
   const exDedication = clamp(gauss(0.45, 0.25), 0.05, 0.95);
   const dietDedication = clamp(gauss(0.40, 0.25), 0.05, 0.95);
 
@@ -152,8 +158,9 @@ function generatePatient(idx) {
   // 사용 기간 tier — long-term 비율 ↑
   const meds = ['wegovy','mounjaro','saxenda','ozempic','zepbound'];
   const medWeights = [0.45, 0.27, 0.15, 0.08, 0.05];
+  // 한국 실사용 빈도 분포 — 격주/저용량/가끔이 합쳐서 55% (월 평균 비용 30-60만원에 맞춤)
   const frequencies = ['weekly','biweekly','occasional','intro'];
-  const freqWeights = [0.55, 0.20, 0.10, 0.15];
+  const freqWeights = [0.40, 0.28, 0.15, 0.17];
 
   let totalSpan = 0;
   const courseMeta = [];
@@ -170,9 +177,21 @@ function generatePatient(idx) {
     const sideSeverity = clamp(gauss(1.0, 0.45), 0.2, 2.2);
     const frequency = pick(frequencies, freqWeights);
     const isCurrent = i === 0;
-    const discontinueChance = 0.04 + (responseFactor < 0.7 ? 0.10 : 0) + (sideSeverity > 1.5 ? 0.10 : 0);
-    const discontinued = !isCurrent || (rand() < discontinueChance && weeks > 4);
-    const discontinueWeek = discontinued ? Math.round(4 + rand() * (weeks - 4)) : null;
+    // 중단 확률 다양화 — 비반응자/심한 부작용/비용 부담/목표 도달 등
+    let discontinueChance = 0.08;
+    if (responseFactor < 0.7) discontinueChance += 0.15;  // 약효 약함
+    if (sideSeverity > 1.5)   discontinueChance += 0.15;  // 부작용 심함
+    if (frequency === 'occasional') discontinueChance += 0.05;  // 가끔 사용자는 더 쉽게 중단
+    const discontinued = !isCurrent || (rand() < discontinueChance && weeks > 3);
+    // 중단 시점 — 초기(4-8주, 적응 못 함) / 중기(8-24주, 부작용 누적) / 후기(24주+, 목표 도달)
+    let discontinueWeek = null;
+    if (discontinued) {
+      const tier = rand();
+      if (tier < 0.30) discontinueWeek = Math.round(3 + rand() * 5);          // 초기 중단 30%
+      else if (tier < 0.70) discontinueWeek = Math.round(8 + rand() * 16);    // 중기 중단 40%
+      else discontinueWeek = Math.round(Math.min(weeks - 1, 24 + rand() * 24)); // 장기 중단 30%
+      discontinueWeek = Math.min(discontinueWeek, weeks - 1);
+    }
     const willExperience = {};
     for (const [k, base] of Object.entries(profile.sideRates)) {
       willExperience[k] = rand() < clamp(base * sideSeverity, 0.02, 0.95);
@@ -193,16 +212,21 @@ function generatePatient(idx) {
     });
     courseMeta.push({ id: courseId, med, profile, weeks, responseFactor, sideSeverity, frequency, discontinueWeek, startDate: courseStart, willExperience });
 
-    // doses
+    // doses — frequency에 따라 stride 조정 (격주/가끔 사용자는 doses 갯수 ↓ → 월 비용 ↓)
     const startMs = Date.parse(courseStart);
     const endMs = discontinued ? Date.parse(daysAgo(totalSpan * 7 - discontinueWeek * 7)) : Date.now();
-    const stride = profile.intervalDays === 1 ? 7 : profile.intervalDays;
+    const baseStride = profile.intervalDays === 1 ? 7 : profile.intervalDays;
+    const freqMultiplier = frequency === 'biweekly' ? 2 : frequency === 'occasional' ? 3 : 1;
+    const stride = baseStride * freqMultiplier;
     const doseCountPerEntry = profile.intervalDays === 1 ? 7 : 1;
     let day = 0;
     while (true) {
       const dateMs = startMs + day * 86400000;
       if (dateMs > endMs) break;
-      const escalationStep = Math.floor(day / 28);
+      // intro (저용량 유지) — escalation 안 함, 0.25-0.5mg 유지
+      const escalationStep = frequency === 'intro'
+        ? Math.min(1, Math.floor(day / 56))
+        : Math.floor(day / 28);
       const doseIdx = Math.min(escalationStep, profile.doses.length - 1);
       const dose = profile.doses[doseIdx];
       const regionEntry = pick(REGION_PROFILE.map(r => r), REGION_PROFILE.map(r => r.weight));

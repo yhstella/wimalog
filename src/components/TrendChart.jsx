@@ -17,7 +17,7 @@ export function DrugStartTrendChart({ navigate }) {
   return (
     <div className="card">
       <h2 className="section-title">📈 최근 6개월 약별 시작 사용자 추이</h2>
-      <p className="section-subtitle">월별 신규 시작 코스 수</p>
+      <p className="section-subtitle">월별 신규 시작 사용자 수</p>
       <div className="mt-4 flex items-end gap-2 h-40">
         {data.map((b, i) => {
           const total = Object.values(b.counts).reduce((s, x) => s + x, 0);

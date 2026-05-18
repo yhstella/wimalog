@@ -658,7 +658,7 @@ export function inputDepth(user) {
       done: logs.length, need: 5, unlocks: '본인 추세선이 차트에 표시',
     },
     {
-      key: 'course',  icon: '💊', label: '약 코스 등록',
+      key: 'course',  icon: '💊', label: '약 등록',
       done: courses.length, need: 1, unlocks: '같은 약 사용자와 비교',
     },
     {

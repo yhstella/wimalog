@@ -19,7 +19,7 @@ export function MedManager({ user }) {
         <div>
           <h1 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">약 관리</h1>
           <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">
-            현재 사용 중이거나 과거에 사용한 약을 코스 단위로 관리합니다.
+            현재 사용 중이거나 과거에 사용한 약을 사용 기간별로 관리합니다.
             여러 약을 동시에 사용 중이라면 각각 추가하세요.
           </p>
         </div>
@@ -61,7 +61,7 @@ export function MedManager({ user }) {
 
       {past.length > 0 && (
         <section>
-          <h2 className="section-title mb-3">📚 과거 코스 ({past.length})</h2>
+          <h2 className="section-title mb-3">📚 과거 사용 이력 ({past.length})</h2>
           <div className="space-y-3">
             {past.map(c => <CourseCard key={c.id} course={c} user={user} refresh={refresh} collapsed />)}
           </div>
@@ -134,7 +134,7 @@ function CourseCard({ course, user, refresh, collapsed: initiallyCollapsed = fal
               {showDoseForm ? '취소' : '+ 투약 기록 추가'}
             </button>
             <button onClick={() => setShowEdit(s => !s)} className="btn-secondary !py-2 !px-3 text-sm">
-              {showEdit ? '닫기' : '코스 편집'}
+              {showEdit ? '닫기' : '편집'}
             </button>
             {!course.endDate && (
               <button onClick={() => setShowEdit(true)} className="btn-secondary !py-2 !px-3 text-sm">
@@ -197,9 +197,20 @@ function CourseCard({ course, user, refresh, collapsed: initiallyCollapsed = fal
   );
 }
 
+// 사용 빈도 옵션 — stats.js의 USAGE_FREQUENCIES와 동일 구조 (여기서 직접 정의해 import 줄임)
+const FREQ_OPTIONS = [
+  { id: 'weekly',     label: '매주',     desc: '주 1회 권장 용법' },
+  { id: 'biweekly',   label: '격주',     desc: '2주에 1회 사용' },
+  { id: 'occasional', label: '가끔',     desc: '월 1-2회 사용' },
+  { id: 'intro',      label: '저용량 유지', desc: '시작 용량 그대로' },
+];
+
 function NewCourseForm({ user, onCancel, onSaved }) {
   const [med, setMed] = useState('wegovy');
   const [startDate, setStartDate] = useState(todayISO());
+  const [stillUsing, setStillUsing] = useState(true);   // 진행 중 vs 종료
+  const [endDate, setEndDate] = useState(todayISO());
+  const [frequency, setFrequency] = useState('weekly');
   const [initialDose, setInitialDose] = useState(MED_BY_ID.wegovy.doses[0]);
   const [notes, setNotes] = useState('');
 
@@ -211,8 +222,9 @@ function NewCourseForm({ user, onCancel, onSaved }) {
       userId: user.id,
       seed: false,
       medication: med,
+      frequency,
       startDate,
-      endDate: null,
+      endDate: stillUsing ? null : endDate,
       initialDose,
       notes: notes.trim(),
       discontinueReason: null,
@@ -223,7 +235,8 @@ function NewCourseForm({ user, onCancel, onSaved }) {
 
   return (
     <div className="card space-y-4 border-2 border-brand-200">
-      <h3 className="font-bold text-ink-900">새 약 코스 시작</h3>
+      <h3 className="font-bold text-ink-900">새 약 등록</h3>
+
       <div>
         <div className="label">약제</div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -238,34 +251,70 @@ function NewCourseForm({ user, onCancel, onSaved }) {
             </button>
           ))}
         </div>
-        {m.frequency && <p className="helptext">투약 주기: {m.frequency}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="label">시작일</div>
-          <input type="date" className="input" max={todayISO()}
-                 value={startDate} onChange={e => setStartDate(e.target.value)} />
+      {/* 사용 빈도 chip — 한국 실사용 반영 */}
+      <div>
+        <div className="label">사용 빈도</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {FREQ_OPTIONS.map(f => (
+            <button key={f.id} type="button"
+                    onClick={() => setFrequency(f.id)}
+                    title={f.desc}
+                    className={`px-3 py-2 rounded-xl text-sm border transition
+                                ${frequency === f.id
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white text-ink-700 border-ink-300 hover:border-brand-400'}`}>
+              {f.label}
+            </button>
+          ))}
         </div>
-        <div>
-          <div className="label">시작 용량</div>
-          <select className="input" value={initialDose}
-                  onChange={e => setInitialDose(e.target.value)}>
-            {m.doses.map(d => <option key={d} value={d}>{d}</option>)}
-          </select>
+      </div>
+
+      {/* 사용 기간 — 시작일 + 진행 중/종료 토글 */}
+      <div>
+        <div className="label">사용 기간</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">시작일</div>
+            <input type="date" className="input" max={todayISO()}
+                   value={startDate} onChange={e => setStartDate(e.target.value)} />
+          </div>
+          <div>
+            <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">종료일</div>
+            {stillUsing ? (
+              <div className="input bg-ink-100 dark:bg-slate-800 text-ink-500 dark:text-slate-400 flex items-center">진행 중</div>
+            ) : (
+              <input type="date" className="input" max={todayISO()} min={startDate}
+                     value={endDate} onChange={e => setEndDate(e.target.value)} />
+            )}
+          </div>
         </div>
+        <label className="flex items-center gap-2 mt-2 text-sm cursor-pointer">
+          <input type="checkbox" className="w-4 h-4 accent-brand-500"
+                 checked={stillUsing} onChange={e => setStillUsing(e.target.checked)} />
+          <span>현재도 사용 중 (종료 안 함)</span>
+        </label>
+      </div>
+
+      <div>
+        <div className="label">시작 용량</div>
+        <select className="input" value={initialDose}
+                onChange={e => setInitialDose(e.target.value)}>
+          {m.doses.map(d => <option key={d} value={d}>{d}</option>)}
+        </select>
       </div>
 
       <div>
         <div className="label">메모 (선택)</div>
         <input type="text" className="input" maxLength={50}
                value={notes} onChange={e => setNotes(e.target.value)}
-               placeholder="예: 첫 번째 라운드, OO병원" />
+               placeholder="예: OO병원 처방, 첫 사용" />
       </div>
 
       <div className="flex justify-end gap-2 pt-2">
         <button onClick={onCancel} className="btn-secondary">취소</button>
-        <button onClick={save} className="btn-primary">코스 시작</button>
+        <button onClick={save} className="btn-primary">등록</button>
       </div>
     </div>
   );
@@ -375,7 +424,7 @@ function CourseEditForm({ course, onSaved, onDelete }) {
   };
 
   const removeCourse = () => {
-    if (!confirm('이 약 코스와 모든 투약 기록을 삭제합니다. 계속하시겠습니까?')) return;
+    if (!confirm('이 약 사용 기록과 모든 투약 기록을 삭제합니다. 계속하시겠습니까?')) return;
     Storage.deleteMedCourse(course.id);
     onDelete();
   };
@@ -406,7 +455,7 @@ function CourseEditForm({ course, onSaved, onDelete }) {
         )}
       </div>
       <div className="flex justify-between gap-2">
-        <button onClick={removeCourse} className="text-xs text-rose-600 hover:underline">코스 삭제</button>
+        <button onClick={removeCourse} className="text-xs text-rose-600 hover:underline">삭제</button>
         <button onClick={save} className="btn-primary !py-2 !px-3 text-sm">저장</button>
       </div>
     </div>

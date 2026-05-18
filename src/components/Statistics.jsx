@@ -378,7 +378,7 @@ export function Statistics({ user, navigate, onSignup }) {
             <div>
               <h2 className="section-title">약 중단 후 체중은 어떻게 될까?</h2>
               <p className="section-subtitle">
-                중단된 코스 데이터를 기반으로 한 평균적인 회복 곡선입니다.
+                중단된 사용자 데이터를 기반으로 한 평균적인 회복 곡선입니다.
                 개인차가 크며, 운동·식이 지속 여부가 큰 영향을 줍니다.
               </p>
             </div>
@@ -631,7 +631,7 @@ export function Statistics({ user, navigate, onSignup }) {
           <div>
             <h2 className="section-title">부작용 발생률 + 시점 분포</h2>
             <p className="section-subtitle">
-              해당 코스 중 한 번이라도 보고된 비율 — <b className="text-brand-600 dark:text-brand-400">막대를 클릭</b>하면 발생 시점/지속 기간 상세
+              해당 사용 기간 중 한 번이라도 보고된 비율 — <b className="text-brand-600 dark:text-brand-400">막대를 클릭</b>하면 발생 시점/지속 기간 상세
               {!user && <> · <b>상위 3개만 미리 보기</b></>}
             </p>
           </div>
@@ -664,7 +664,7 @@ export function Statistics({ user, navigate, onSignup }) {
         <div className="flex justify-between items-start mb-3 flex-wrap gap-2">
           <div>
             <h2 className="section-title">중단률 + 중단 이유</h2>
-            <p className="section-subtitle">필터된 코스 기준</p>
+            <p className="section-subtitle">필터된 사용자 기준</p>
           </div>
           {can(user, 'discontinuation') && (
             <div className="text-right">
