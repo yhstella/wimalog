@@ -115,9 +115,15 @@ export function CohortLive({ navigate, onSignup }) {
         </div>
       )}
 
-      <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-3 text-center">
-        ※ 위 데이터는 위마로그 익명 코호트({trend.totalUsers.toLocaleString()}명) 실시간 집계 — 외부 임상값과 별개
-      </p>
+      <div className="mt-3 rounded-xl bg-brand-50/50 dark:bg-brand-900/15 px-3 py-2.5 border border-brand-200/40 dark:border-brand-800/30">
+        <div className="flex items-start gap-2">
+          <span className="text-base flex-shrink-0">🤖</span>
+          <p className="text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
+            <b>본인 데이터를 추가할수록 AI 예측이 정밀해져요.</b>
+            <span className="text-ink-500 dark:text-slate-400"> 체중·약·운동·식단·부작용·생활 패턴까지 활용 — 가입 후 자세히 기록할수록 본인만의 맞춤 예측이 가능해집니다.</span>
+          </p>
+        </div>
+      </div>
     </section>
   );
 }

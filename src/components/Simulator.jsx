@@ -181,10 +181,16 @@ export function Simulator({ onSignup, compact = false }) {
           내 데이터로 더 정확하게 보기 →
         </button>
       )}
-      <p className="text-[10px] text-center mt-2 opacity-70 leading-relaxed">
-        ⚠ 위마로그 익명 코호트 1,031명의 실제 기록에서 추출 · BMI/빈도 보정 적용.
-        개인차 큼 · 약제 사용은 의료진 상의 필요.
-      </p>
+      <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">
+        <div className="flex items-start gap-2">
+          <span className="text-base flex-shrink-0">🤖</span>
+          <p className="text-[11px] leading-relaxed">
+            <b>입력이 자세할수록 AI 예측이 정확해져요.</b><br />
+            지금은 키·체중·약·빈도만 사용 중 — 가입 후 본인 체중 추이·운동·식단·부작용·동반질환까지 추가하면
+            본인 조건에 맞춘 정밀 예측으로 바뀝니다.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
