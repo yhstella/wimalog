@@ -642,8 +642,8 @@ export function simulateTimeline({ height, startWeight, medication, weeks = [12,
 }
 
 // 약제별 빠른 프로필 (비용 + 상위 부작용) — Simulator 결과 카드에서 사용
-// 시드 코호트에서 직접 추출 — 우리 사이트 데이터 반영
-export function medQuickProfile(medication) {
+// 빈도(frequency) 따라 월 비용 조정: 매주 ×4, 격주 ×2, 가끔 ×1.3, 저용량 매주 ×4
+export function medQuickProfile(medication, frequency = 'weekly') {
   if (!medication) return null;
   const filter = { medication };
   // 부작용: 시드 코호트의 실제 발생률 (sideEffectRates는 코스 중 1회 이상 보고 비율)
@@ -653,19 +653,22 @@ export function medQuickProfile(medication) {
     .sort((a, b) => b.rate - a.rate)
     .slice(0, 3)
     .map(s => ({ label: s.label, rate: s.rate }));
-  // 비용: priceStats에서 1회분 평균 → 주1회 사용으로 환산
+  // 비용: priceStats에서 1회분 평균
   const price = priceStats(filter);
   let monthlyAvg = null;
   if (price.avg != null && price.n >= 5) {
-    const med = MED_BY_ID[medication];
-    // 위고비·마운자로·오젬픽·젭바운드: 주1회 → 월 4회
-    // 삭센다: 매일이지만 dose entry는 7일 묶음 → 1회 entry = 1주치
-    const perMonth = 4;
-    monthlyAvg = Math.round(price.avg * perMonth / 10000) * 10000;
+    // 빈도별 월 사용 횟수
+    const perMonth = frequency === 'biweekly'   ? 2
+                   : frequency === 'occasional' ? 1.3
+                   : 4;  // weekly, intro (둘 다 매주 사용)
+    // intro(저용량 유지)는 1회 가격이 더 저렴할 가능성 — 대략 80%로 보정
+    const doseMultiplier = frequency === 'intro' ? 0.8 : 1.0;
+    monthlyAvg = Math.round(price.avg * perMonth * doseMultiplier / 10000) * 10000;
   }
   return {
     topSideEffects: sides,
     monthlyAvgKrw: monthlyAvg,
+    frequency,
   };
 }
 

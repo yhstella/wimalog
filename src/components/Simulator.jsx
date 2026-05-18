@@ -26,7 +26,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
     () => simulateTimeline({ height, startWeight, medication, frequency }),
     [height, startWeight, medication, frequency, seedTick]
   );
-  const profile = useMemo(() => medQuickProfile(medication), [medication, seedTick]);
+  const profile = useMemo(() => medQuickProfile(medication, frequency), [medication, frequency, seedTick]);
 
   const medLabel = MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '') || '';
   const freqLabel = USAGE_FREQUENCIES.find(f => f.id === frequency)?.shortLabel || '매주';
