@@ -44,12 +44,9 @@ export default function App() {
     applyTheme();
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
-    // 시드 1000명 생성은 메인 스레드 차단 — 첫 페인트 후 다음 tick에 비동기 실행
-    if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(() => seedIfNeeded(1031), { timeout: 1500 });
-    } else {
-      setTimeout(() => seedIfNeeded(1031), 0);
-    }
+    // 시드 1031명 생성은 메인 스레드 차단 (~1초) — 첫 페인트 후 즉시 실행
+    // idleCallback은 모바일에서 너무 늦게 실행돼 첫 방문자가 빈 데이터를 봄
+    setTimeout(() => seedIfNeeded(1031), 0);
     return unwatch;
   }, []);
 

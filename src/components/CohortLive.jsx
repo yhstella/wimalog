@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { recentTrend, avgLossCurve, exerciseStats, anonymousNotes } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
+import { seedIfNeeded } from '../lib/seedData.js';
 import { MED_BY_ID } from '../lib/constants.js';
 
 // "지금 위마로그 코호트" — 우리 사이트의 실제 데이터를 강조
 // 첫 방문자가 "가짜 사이트"라 느끼지 않도록 실시간 우리 데이터 노출
+// 시드 안 되어 있으면 마운트 시 즉시 시드 시작 (App의 idleCallback 보완)
 export function CohortLive({ navigate, onSignup }) {
   const [data, setData] = useState(null);
 
@@ -20,11 +22,16 @@ export function CohortLive({ navigate, onSignup }) {
   };
 
   useEffect(() => {
+    // 시드 즉시 trigger — App의 setTimeout과 함께 보장
+    if (!Storage.isSeeded()) {
+      try { seedIfNeeded(1031); } catch (e) { /* QuotaExceeded 등은 무시 */ }
+    }
     refresh();
+    // 시드 진행 중일 수도 있어 polling으로 backup
     if (Storage.isSeeded()) return;
     const id = setInterval(() => {
       if (Storage.isSeeded()) { refresh(); clearInterval(id); }
-    }, 400);
+    }, 200);
     return () => clearInterval(id);
   }, []);
 
