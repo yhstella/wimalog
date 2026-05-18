@@ -47,7 +47,7 @@ export function DoctorReport({ user, onBack }) {
             <p className="text-sm text-gray-600">위마로그에서 생성 · {new Date().toLocaleDateString('ko-KR')}</p>
           </div>
           <div className="text-right text-xs text-gray-500">
-            wimalog.vercel.app
+            wimalog.kr
           </div>
         </div>
       </header>
@@ -174,7 +174,7 @@ export function DoctorReport({ user, onBack }) {
       {/* footer */}
       <footer className="mt-8 pt-4 border-t border-gray-300 text-xs text-gray-500">
         <p>본 리포트는 사용자가 직접 기록한 자가보고 데이터로 작성됐습니다. 의학적 판단의 일부 참고용이며, 처방·치료 결정은 의료진의 진단을 따라야 합니다.</p>
-        <p className="mt-1">위마로그 (wimalog.vercel.app) · 생성일 {new Date().toISOString().slice(0, 10)}</p>
+        <p className="mt-1">위마로그 (wimalog.kr) · 생성일 {new Date().toISOString().slice(0, 10)}</p>
       </footer>
 
       {/* 인쇄 스타일 */}

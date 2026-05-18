@@ -1,7 +1,7 @@
 // 라우트별 SEO 메타 갱신 (title + description). OG 태그도 함께 갱신.
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT, GUIDE_CONTENT } from './content.js';
 
-const SITE_URL = 'https://wimalog.vercel.app';
+const SITE_URL = 'https://wimalog.kr';
 
 // JSON-LD 구조화 데이터 주입/제거 (라우트별)
 function setJsonLd(data) {
@@ -156,7 +156,7 @@ function buildJsonLd(route) {
       'name': '위마로그',
       'alternateName': 'wimalog',
       'description': '위고비·마운자로 사용자 리얼데이터 플랫폼',
-      'url': 'https://wimalog.vercel.app',
+      'url': 'https://wimalog.kr',
     };
   }
   return null;

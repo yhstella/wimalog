@@ -33,4 +33,4 @@ Allow: /
 User-agent: PerplexityBot
 Allow: /
 
-Sitemap: https://wimalog.vercel.app/sitemap.xml
+Sitemap: https://wimalog.kr/sitemap.xml

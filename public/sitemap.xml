@@ -1,50 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <!-- 메인 -->
-  <url><loc>https://wimalog.vercel.app/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
-  <url><loc>https://wimalog.vercel.app/stats</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
-  <url><loc>https://wimalog.vercel.app/compare</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://wimalog.vercel.app/info</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/</loc><changefreq>daily</changefreq><priority>1.0</priority></url>
+  <url><loc>https://wimalog.kr/stats</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://wimalog.kr/compare</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://wimalog.kr/info</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 
   <!-- 약별 상세 -->
-  <url><loc>https://wimalog.vercel.app/drug/wegovy</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
-  <url><loc>https://wimalog.vercel.app/drug/mounjaro</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
-  <url><loc>https://wimalog.vercel.app/drug/saxenda</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
-  <url><loc>https://wimalog.vercel.app/drug/ozempic</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://wimalog.vercel.app/drug/zepbound</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/drug/wegovy</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/drug/mounjaro</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/drug/saxenda</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/drug/ozempic</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/drug/zepbound</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 
   <!-- 부작용별 -->
-  <url><loc>https://wimalog.vercel.app/effect/nausea</loc><priority>0.8</priority></url>
-  <url><loc>https://wimalog.vercel.app/effect/vomiting</loc><priority>0.7</priority></url>
-  <url><loc>https://wimalog.vercel.app/effect/constipation</loc><priority>0.7</priority></url>
-  <url><loc>https://wimalog.vercel.app/effect/diarrhea</loc><priority>0.7</priority></url>
-  <url><loc>https://wimalog.vercel.app/effect/fatigue</loc><priority>0.6</priority></url>
-  <url><loc>https://wimalog.vercel.app/effect/headache</loc><priority>0.6</priority></url>
+  <url><loc>https://wimalog.kr/effect/nausea</loc><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/effect/vomiting</loc><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/effect/constipation</loc><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/effect/diarrhea</loc><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/effect/fatigue</loc><priority>0.6</priority></url>
+  <url><loc>https://wimalog.kr/effect/headache</loc><priority>0.6</priority></url>
 
   <!-- 한국 실사용 핵심 가이드 -->
-  <url><loc>https://wimalog.vercel.app/guide/usage-patterns</loc><priority>0.95</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/fatty-liver</loc><priority>0.95</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/sarcopenia</loc><priority>0.95</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/alcohol</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/usage-patterns</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/fatty-liver</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/sarcopenia</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/alcohol</loc><priority>0.95</priority></url>
 
   <!-- 기본 가이드 -->
-  <url><loc>https://wimalog.vercel.app/guide/before-use</loc><priority>0.85</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/first-month</loc><priority>0.85</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/prescription</loc><priority>0.85</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/after-stop</loc><priority>0.85</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/nausea-foods</loc><priority>0.8</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/exercise-types</loc><priority>0.8</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/injection-tips</loc><priority>0.75</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/diet-only</loc><priority>0.75</priority></url>
-  <url><loc>https://wimalog.vercel.app/guide/meal-timing</loc><priority>0.75</priority></url>
+  <url><loc>https://wimalog.kr/guide/before-use</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/first-month</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/prescription</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/after-stop</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/nausea-foods</loc><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/guide/exercise-types</loc><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/guide/injection-tips</loc><priority>0.75</priority></url>
+  <url><loc>https://wimalog.kr/guide/diet-only</loc><priority>0.75</priority></url>
+  <url><loc>https://wimalog.kr/guide/meal-timing</loc><priority>0.75</priority></url>
 
   <!-- 계산기 -->
-  <url><loc>https://wimalog.vercel.app/calc/cost</loc><priority>0.75</priority></url>
-  <url><loc>https://wimalog.vercel.app/calc/bmr</loc><priority>0.65</priority></url>
-  <url><loc>https://wimalog.vercel.app/calc/target</loc><priority>0.65</priority></url>
+  <url><loc>https://wimalog.kr/calc/cost</loc><priority>0.75</priority></url>
+  <url><loc>https://wimalog.kr/calc/bmr</loc><priority>0.65</priority></url>
+  <url><loc>https://wimalog.kr/calc/target</loc><priority>0.65</priority></url>
 
   <!-- 정적 -->
-  <url><loc>https://wimalog.vercel.app/about</loc><priority>0.5</priority></url>
-  <url><loc>https://wimalog.vercel.app/privacy</loc><priority>0.3</priority></url>
-  <url><loc>https://wimalog.vercel.app/terms</loc><priority>0.3</priority></url>
+  <url><loc>https://wimalog.kr/about</loc><priority>0.5</priority></url>
+  <url><loc>https://wimalog.kr/privacy</loc><priority>0.3</priority></url>
+  <url><loc>https://wimalog.kr/terms</loc><priority>0.3</priority></url>
 </urlset>
