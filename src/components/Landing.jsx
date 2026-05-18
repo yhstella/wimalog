@@ -241,6 +241,9 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="🦴" title="마른 비만·근감소"
                             desc="BMI는 정상이지만 체지방률·근감소 우려"
                             onClick={() => navigate('guide/sarcopenia')} />
+          <PersonaCardLink icon="🍺" title="음주·알코올 사용장애"
+                            desc="GLP-1이 알코올 갈망도 줄인다는 최신 임상 (JAMA 2025)"
+                            onClick={() => navigate('guide/alcohol')} />
           <PersonaCardLink icon="🏥" title="처방받는 법"
                             desc="병원 선택·진료 준비·비용 — 한국 기준"
                             onClick={() => navigate('guide/prescription')} />

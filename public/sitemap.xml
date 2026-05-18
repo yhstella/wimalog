@@ -58,6 +58,7 @@
   <url><loc>https://wimalog.vercel.app/#/guide/usage-patterns</loc><priority>0.9</priority></url>
   <url><loc>https://wimalog.vercel.app/#/guide/fatty-liver</loc><priority>0.9</priority></url>
   <url><loc>https://wimalog.vercel.app/#/guide/sarcopenia</loc><priority>0.9</priority></url>
+  <url><loc>https://wimalog.vercel.app/#/guide/alcohol</loc><priority>0.9</priority></url>
   <url><loc>https://wimalog.vercel.app/#/calc/cost</loc><priority>0.7</priority></url>
   <url><loc>https://wimalog.vercel.app/#/calc/bmr</loc><priority>0.6</priority></url>
   <url><loc>https://wimalog.vercel.app/#/calc/target</loc><priority>0.6</priority></url>
