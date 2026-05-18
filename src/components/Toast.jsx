@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const ToastContext = createContext({ success: () => {}, info: () => {}, error: () => {} });
 
@@ -26,6 +26,16 @@ export function ToastProvider({ children }) {
     error:   (m, d) => show(m, 'error', d ?? 5000),
     dismiss,
   }), [show, dismiss]);
+
+  // 컴포넌트 외부에서 toast 띄울 수 있게 (예: App.jsx의 OAuth bootstrap)
+  useEffect(() => {
+    const onToast = (e) => {
+      const { kind = 'info', msg, duration } = e.detail || {};
+      show(msg, kind, duration);
+    };
+    window.addEventListener('wimalog:toast', onToast);
+    return () => window.removeEventListener('wimalog:toast', onToast);
+  }, [show]);
 
   return (
     <ToastContext.Provider value={api}>

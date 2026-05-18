@@ -53,15 +53,36 @@ export default function App() {
     // 시드는 main.jsx에서 React mount 전에 이미 호출됨 (sync) — 여기선 보장만
 
     // OAuth 콜백 후 자동 세션 복원 (Supabase가 URL의 token 처리 → session 발급)
+    const wasOAuthCallback = window.location.search.includes('auth=callback')
+      || window.location.hash.includes('access_token=')
+      || window.location.hash.includes('error=');
     bootstrapAuth().then((oauthUser) => {
       if (oauthUser) {
         setUserId(oauthUser.id);
-        // URL의 ?auth=callback 흔적 정리
-        if (window.location.search.includes('auth=callback')) {
-          window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        // OAuth callback이면 dashboard로 이동 + URL 정리 + 환영 toast
+        if (wasOAuthCallback) {
+          window.history.replaceState(null, '', '/#/dashboard');
+          setRoute('dashboard');
+          // 다음 tick에 toast (ToastProvider mount 후)
+          setTimeout(() => {
+            try {
+              const evt = new CustomEvent('wimalog:toast', { detail: { kind: 'success', msg: `환영합니다, ${oauthUser.nickname || '익명'}님! 🎉` } });
+              window.dispatchEvent(evt);
+            } catch {}
+          }, 100);
         }
+      } else if (wasOAuthCallback) {
+        // OAuth는 시도됐지만 사용자 못 만듦 — 에러 표시
+        setTimeout(() => {
+          try {
+            const evt = new CustomEvent('wimalog:toast', { detail: { kind: 'error', msg: '로그인 처리 실패 — 다시 시도해 주세요' } });
+            window.dispatchEvent(evt);
+          } catch {}
+        }, 100);
       }
-    }).catch(() => {});
+    }).catch((e) => {
+      console.error('[oauth] bootstrap failed', e);
+    });
     // 세션 변경 (다른 탭에서 로그인/아웃) 자동 동기화
     const unsubAuth = onAuthChange((u) => {
       if (u) setUserId(u.id);

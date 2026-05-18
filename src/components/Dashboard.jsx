@@ -120,9 +120,33 @@ export function Dashboard({ user, navigate }) {
   const completed = tourTasks.filter(t => t.done).length;
   const showTour = !dismissedTour && completed < tourTasks.length;
 
+  // OAuth 가입자는 profileIncomplete=true (height/startWeight 없음)
+  const needsProfile = user.profileIncomplete || !user.height || !user.startWeight;
+
   return (
     <div className="space-y-6">
       <WelcomeTour user={user} navigate={navigate} />
+
+      {/* OAuth 가입자 — 프로필 미완성 안내 (키/체중 입력 유도) */}
+      {needsProfile && (
+        <div className="card border-2 border-amber-300 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/20 dark:to-slate-900">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">👋</div>
+            <div className="flex-1">
+              <h2 className="font-bold text-ink-900 dark:text-slate-100">프로필을 완성하면 본인 맞춤 데이터가 보입니다</h2>
+              <p className="text-sm text-ink-700 dark:text-slate-300 mt-1 leading-snug">
+                키·시작 체중·성별·나이대만 알려주시면 비슷한 사용자 코호트 비교, BMI 추적, 약 시뮬레이션이 즉시 활성화됩니다.
+                <br />입력은 30초입니다.
+              </p>
+              <button onClick={() => navigate('profile')}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 text-sm font-semibold transition">
+                프로필 완성하기 →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 dark:text-slate-100">

@@ -71,7 +71,24 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
               {theme === 'light' ? '☀️' : theme === 'dark' ? '🌙' : '🖥️'}
             </button>
             {user ? (
-              <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
+              <div className="flex items-center gap-1.5">
+                {/* 로그인 상태 명확히 표시 — 아바타 + 닉네임 (sm 이상) */}
+                <button onClick={() => navigate('profile')}
+                        title={user.email || user.nickname}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-ink-100 dark:hover:bg-slate-800 transition">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                  ) : (
+                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-500 text-white text-[10px] font-bold">
+                      {(user.nickname || user.email || '나').charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="hidden sm:inline text-xs font-medium text-ink-900 dark:text-slate-100 max-w-[100px] truncate">
+                    {user.nickname || user.email?.split('@')[0] || '나'}
+                  </span>
+                </button>
+                <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
+              </div>
             ) : (
               <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">
                 가입하기
