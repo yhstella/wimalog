@@ -3,14 +3,18 @@ import { recentTrend, avgLossCurve, exerciseStats, anonymousNotes } from '../lib
 import { Storage } from '../lib/storage.js';
 import { seedIfNeeded } from '../lib/seedData.js';
 import { MED_BY_ID } from '../lib/constants.js';
+import {
+  fetchPlatformScale, fetchAvgLossCurve, fetchTopRecentMedications,
+} from '../lib/supabaseStats.js';
+import { supabaseConfigured } from '../lib/supabaseClient.js';
 
-// "지금 위마로그 코호트" — 우리 사이트의 실제 데이터를 강조
-// 첫 방문자가 "가짜 사이트"라 느끼지 않도록 실시간 우리 데이터 노출
-// 시드 안 되어 있으면 마운트 시 즉시 시드 시작 (App의 idleCallback 보완)
+// "지금 위마로그 코호트" — Supabase 3000명+ 실제 데이터를 우선 표시
+// Supabase 미설정/연결 실패 시 localStorage 시드(1031명)로 자동 fallback
 export function CohortLive({ navigate, onSignup, user = null }) {
   const [data, setData] = useState(null);
+  const [source, setSource] = useState('seed'); // 'supabase' | 'seed'
 
-  const refresh = () => {
+  const refreshFromSeed = () => {
     const trend = recentTrend();
     const curve12 = avgLossCurve({}, [12]);
     const curve24 = avgLossCurve({}, [24]);
@@ -18,21 +22,64 @@ export function CohortLive({ navigate, onSignup, user = null }) {
     const notes = anonymousNotes({}, 2);
     setData({
       trend, curve12, curve24, ex, notes,
+      isSupabase: false,
     });
+    setSource('seed');
+  };
+
+  const refreshFromSupabase = async () => {
+    try {
+      const [scale, curve12, curve24, topMeds] = await Promise.all([
+        fetchPlatformScale(),
+        fetchAvgLossCurve({}, [12]),
+        fetchAvgLossCurve({}, [24]),
+        fetchTopRecentMedications(30),
+      ]);
+      if (!scale) return false;
+      // notes는 supabase에 따로 RPC 없음 → localStorage 메모 사용
+      const notes = anonymousNotes({}, 2);
+      setData({
+        // shape adapted to original Supabase data
+        trend: {
+          totalUsers: scale.totalPatients,
+          activeUsers7d: scale.activeUsers7d,
+          newUsers7d: scale.newPatients7d,
+          logs7d: scale.totalWeightLogs,  // 7일 한정 데이터 별도 RPC 필요 시 추가
+          doses7d: scale.totalDoses,
+          topMedsNow: topMeds || [],
+        },
+        curve12: curve12 || [],
+        curve24: curve24 || [],
+        ex: { n: scale.totalPatients, avgMinPerWeek: null, withExercise: null },
+        notes,
+        isSupabase: true,
+        scale,
+      });
+      setSource('supabase');
+      return true;
+    } catch (e) {
+      console.warn('[CohortLive] supabase fetch failed', e);
+      return false;
+    }
   };
 
   useEffect(() => {
-    // 시드 즉시 trigger — App의 setTimeout과 함께 보장
+    // 1. localStorage 시드 즉시 표시 (offline OK)
     if (!Storage.isSeeded()) {
-      try { seedIfNeeded(1031); } catch (e) { /* QuotaExceeded 등은 무시 */ }
+      try { seedIfNeeded(1031); } catch {}
     }
-    refresh();
-    // 시드 진행 중일 수도 있어 polling으로 backup
-    if (Storage.isSeeded()) return;
-    const id = setInterval(() => {
-      if (Storage.isSeeded()) { refresh(); clearInterval(id); }
-    }, 200);
-    return () => clearInterval(id);
+    refreshFromSeed();
+    // 시드 진행 중이면 backup polling
+    if (!Storage.isSeeded()) {
+      const id = setInterval(() => {
+        if (Storage.isSeeded()) { refreshFromSeed(); clearInterval(id); }
+      }, 200);
+      setTimeout(() => clearInterval(id), 5000);
+    }
+    // 2. Supabase 통계 시도 — 성공 시 위 데이터 교체
+    if (supabaseConfigured) {
+      refreshFromSupabase();
+    }
   }, []);
 
   if (!data) return null;
@@ -48,7 +95,9 @@ export function CohortLive({ navigate, onSignup, user = null }) {
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <h2 className="font-bold text-ink-900 dark:text-slate-100">지금 위마로그 코호트</h2>
-          <span className="text-[10px] text-ink-500 dark:text-slate-500">실시간 익명 집계</span>
+          <span className="text-[10px] text-ink-500 dark:text-slate-500">
+            {source === 'supabase' ? '실시간 DB 집계' : '실시간 익명 집계'}
+          </span>
         </div>
         <button onClick={() => navigate('stats')} className="text-xs text-brand-700 dark:text-brand-400 font-semibold hover:underline">
           전체 통계 →
