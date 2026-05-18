@@ -5,9 +5,13 @@ import { Simulator } from './Simulator.jsx';
 import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
 
-export function Landing({ navigate, onSignup }) {
+export function Landing({ navigate, onSignup, user }) {
   const [showSignup, setShowSignup] = useState(false);
-  const handleSignup = () => setShowSignup(true);
+  // 로그인 사용자가 클릭하면 가입 모달 대신 dashboard로 이동
+  const handleSignup = () => {
+    if (user) navigate('dashboard');
+    else setShowSignup(true);
+  };
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -32,11 +36,11 @@ export function Landing({ navigate, onSignup }) {
 
       {/* 시뮬레이터 — 첫 인터랙션 */}
       <section className="max-w-2xl mx-auto" id="simulator-anchor">
-        <Simulator onSignup={handleSignup} />
+        <Simulator onSignup={handleSignup} user={user} />
       </section>
 
       {/* 위마로그 코호트 LIVE — 우리 데이터 강조 (가짜 사이트 느낌 방지) */}
-      <CohortLive navigate={navigate} onSignup={handleSignup} />
+      <CohortLive navigate={navigate} onSignup={handleSignup} user={user} />
 
       {/* 약별 빠른 진입 */}
       <section>
@@ -131,15 +135,19 @@ export function Landing({ navigate, onSignup }) {
         </div>
       </section>
 
-      {/* 하단 CTA */}
+      {/* 하단 CTA — 로그인 상태 따라 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 text-center">
-        <h2 className="text-xl font-extrabold">내 데이터로 더 정확한 비교</h2>
+        <h2 className="text-xl font-extrabold">
+          {user ? `${user.nickname || '나'}님 환영합니다 👋` : '내 데이터로 더 정확한 비교'}
+        </h2>
         <p className="mt-2 text-slate-300 text-xs">
-          나와 같은 약·BMI·성별 사용자 평균 · 약 중단 후 회복률 · 지역별 가격
+          {user
+            ? '대시보드에서 본인 데이터 + 비슷한 사용자 평균을 확인하세요'
+            : '나와 같은 약·BMI·성별 사용자 평균 · 약 중단 후 회복률 · 지역별 가격'}
         </p>
-        <button onClick={handleSignup}
+        <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold hover:bg-brand-600 transition">
-          1분 가입 →
+          {user ? '내 대시보드 →' : '1분 가입 →'}
         </button>
       </section>
 

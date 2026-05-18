@@ -307,15 +307,19 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </section>
       )}
 
-      {/* CTA */}
+      {/* CTA — 로그인 상태 따라 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 text-white p-6 text-center">
-        <h2 className="text-xl font-bold">{drug.label} 사용 중이거나 고민 중이신가요?</h2>
+        <h2 className="text-xl font-bold">
+          {user ? `${drug.label} 본인 데이터 보기` : `${drug.label} 사용 중이거나 고민 중이신가요?`}
+        </h2>
         <p className="mt-2 text-slate-300 text-sm">
-          익명으로 본인 정보를 등록하면 비슷한 사용자 데이터와 비교됩니다.
+          {user
+            ? '대시보드에서 본인 진척도 + 비슷한 사용자 비교를 확인하세요.'
+            : '익명으로 본인 정보를 등록하면 비슷한 사용자 데이터와 비교됩니다.'}
         </p>
-        <button onClick={handleSignup}
+        <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          1분 가입하기 →
+          {user ? '내 대시보드 →' : '1분 가입하기 →'}
         </button>
       </section>
 

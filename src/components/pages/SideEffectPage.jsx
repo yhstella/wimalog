@@ -194,15 +194,19 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
         </section>
       )}
 
-      {/* CTA */}
+      {/* CTA — 로그인 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 text-white p-6 text-center">
-        <h2 className="text-xl font-bold">{content.label}으로 고민 중이세요?</h2>
+        <h2 className="text-xl font-bold">
+          {user ? `${content.label} 본인 기록 보기` : `${content.label}으로 고민 중이세요?`}
+        </h2>
         <p className="mt-2 text-slate-300 text-sm">
-          본인의 약·용량·기간과 함께 기록하면 비슷한 사용자의 회복 패턴을 볼 수 있어요.
+          {user
+            ? '기록 탭에서 부작용을 입력하면 비슷한 사용자 회복 패턴이 자동 비교됩니다.'
+            : '본인의 약·용량·기간과 함께 기록하면 비슷한 사용자의 회복 패턴을 볼 수 있어요.'}
         </p>
-        <button onClick={handleSignup}
+        <button onClick={() => user ? navigate('records') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          1분 가입하기 →
+          {user ? '기록하러 가기 →' : '1분 가입하기 →'}
         </button>
       </section>
 

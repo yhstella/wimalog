@@ -4,13 +4,16 @@ import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 
-export function GuidePage({ guideId, navigate, onSignup }) {
+export function GuidePage({ guideId, navigate, onSignup, user }) {
   const guide = GUIDE_CONTENT[guideId];
   const [showSignup, setShowSignup] = useState(false);
 
   if (!guide) return <div className="card text-center py-10">가이드를 찾을 수 없습니다</div>;
 
-  const handleSignup = () => setShowSignup(true);
+  const handleSignup = () => {
+    if (user) navigate('dashboard');
+    else setShowSignup(true);
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -37,12 +40,12 @@ export function GuidePage({ guideId, navigate, onSignup }) {
         </section>
       ))}
 
-      {/* CTA */}
+      {/* CTA — 로그인 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-6 text-center">
         <p className="text-base font-semibold leading-relaxed">{guide.cta}</p>
         <button onClick={handleSignup}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-white text-brand-700 px-6 py-3 font-bold hover:bg-brand-50 transition">
-          1분 가입하고 데이터 보기 →
+          {user ? '내 대시보드 →' : '1분 가입하고 데이터 보기 →'}
         </button>
       </section>
 

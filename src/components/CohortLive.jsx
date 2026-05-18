@@ -7,7 +7,7 @@ import { MED_BY_ID } from '../lib/constants.js';
 // "지금 위마로그 코호트" — 우리 사이트의 실제 데이터를 강조
 // 첫 방문자가 "가짜 사이트"라 느끼지 않도록 실시간 우리 데이터 노출
 // 시드 안 되어 있으면 마운트 시 즉시 시드 시작 (App의 idleCallback 보완)
-export function CohortLive({ navigate, onSignup }) {
+export function CohortLive({ navigate, onSignup, user = null }) {
   const [data, setData] = useState(null);
 
   const refresh = () => {
@@ -120,7 +120,13 @@ export function CohortLive({ navigate, onSignup }) {
           <span className="text-base flex-shrink-0">🤖</span>
           <p className="text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
             <b>본인 데이터를 추가할수록 AI 예측이 정밀해져요.</b>
-            <span className="text-ink-500 dark:text-slate-400"> 체중·약·운동·식단·부작용·생활 패턴까지 활용 — 가입 후 자세히 기록할수록 본인만의 맞춤 예측이 가능해집니다.</span>
+            <span className="text-ink-500 dark:text-slate-400">
+              {' '}체중·약·운동·식단·부작용·생활 패턴까지 활용 —
+              {user
+                ? <> 기록 탭에서 자세히 입력할수록 본인만의 맞춤 예측이 가능해집니다.</>
+                : <> 가입 후 자세히 기록할수록 본인만의 맞춤 예측이 가능해집니다.</>
+              }
+            </span>
           </p>
         </div>
       </div>

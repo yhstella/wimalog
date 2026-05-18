@@ -6,7 +6,7 @@ import { MEDS, MED_BY_ID } from '../lib/constants.js';
 // 슬라이더 + 즉시 예측 결과 위젯
 // P1(처음 접속), P4(주변 못 물어보는 사람)을 위한 핵심 위젯
 // 3시점(3개월/6개월/1년) + 약별 비용/부작용 + 사용 빈도(매주/격주/가끔) 한국 실사용 반영
-export function Simulator({ onSignup, compact = false }) {
+export function Simulator({ onSignup, compact = false, user = null }) {
   const [height, setHeight] = useState(162);
   const [startWeight, setStartWeight] = useState(78);
   const [medication, setMedication] = useState('wegovy');
@@ -178,7 +178,7 @@ export function Simulator({ onSignup, compact = false }) {
       {onSignup && (
         <button onClick={onSignup}
                 className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-3 font-bold hover:bg-brand-50 transition">
-          내 데이터로 더 정확하게 보기 →
+          {user ? '내 대시보드 보기 →' : '내 데이터로 더 정확하게 보기 →'}
         </button>
       )}
       <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">
@@ -186,8 +186,10 @@ export function Simulator({ onSignup, compact = false }) {
           <span className="text-base flex-shrink-0">🤖</span>
           <p className="text-[11px] leading-relaxed">
             <b>입력이 자세할수록 AI 예측이 정확해져요.</b><br />
-            지금은 키·체중·약·빈도만 사용 중 — 가입 후 본인 체중 추이·운동·식단·부작용·동반질환까지 추가하면
-            본인 조건에 맞춘 정밀 예측으로 바뀝니다.
+            {user
+              ? <>본인 체중 추이·운동·식단·부작용·동반질환을 더 입력할수록 본인 조건에 맞춘 정밀 예측으로 바뀝니다.</>
+              : <>지금은 키·체중·약·빈도만 사용 중 — 가입 후 본인 체중 추이·운동·식단·부작용·동반질환까지 추가하면 본인 조건에 맞춘 정밀 예측으로 바뀝니다.</>
+            }
           </p>
         </div>
       </div>

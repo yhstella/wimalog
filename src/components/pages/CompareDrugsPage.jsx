@@ -122,15 +122,19 @@ export function CompareDrugsPage({ navigate, user }) {
         <p className="helptext mt-3">⚠️ 최종 약 선택은 반드시 담당 의료진과 상의해야 합니다.</p>
       </section>
 
-      {/* CTA */}
+      {/* CTA — 로그인 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-6 text-center">
-        <h2 className="text-xl font-bold">고민 중인 약을 알려주세요</h2>
+        <h2 className="text-xl font-bold">
+          {user ? '본인 약 등록하고 비교 시작' : '고민 중인 약을 알려주세요'}
+        </h2>
         <p className="mt-2 text-brand-50 text-sm">
-          1분 가입 후 약 시작 시 비슷한 사용자 데이터와 본인 진척도가 자동 비교됩니다.
+          {user
+            ? '약 탭에서 본인이 사용하는 약을 등록하면 비슷한 사용자 데이터와 자동 비교.'
+            : '1분 가입 후 약 시작 시 비슷한 사용자 데이터와 본인 진척도가 자동 비교됩니다.'}
         </p>
-        <button onClick={() => setShowSignup(true)}
+        <button onClick={() => user ? navigate('meds') : setShowSignup(true)}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-white text-brand-700 px-6 py-3 font-bold hover:bg-brand-50 transition">
-          1분 가입 →
+          {user ? '약 관리로 →' : '1분 가입 →'}
         </button>
       </section>
 

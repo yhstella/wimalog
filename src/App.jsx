@@ -121,6 +121,14 @@ export default function App() {
     }
   }, [userId]);
 
+  // 로그인 사용자가 landing/onboarding으로 가면 dashboard로 자동 이동 (가입한 사람에게 가입 화면 안 보이게)
+  useEffect(() => {
+    if (userId && (route === 'landing' || route === 'onboarding')) {
+      writeRoute('dashboard');
+      setRoute('dashboard');
+    }
+  }, [userId, route]);
+
   const user = userId ? Storage.getUser(userId) : null;
   useEffect(() => {
     if (userId && !user) {
@@ -156,7 +164,7 @@ export default function App() {
       <Layout route={effectiveRoute} navigate={navigate} user={user} onLogout={logout} onSignup={onSignupGo}>
         {/* ErrorBoundary key=route — 라우트 변경 시 boundary state 리셋 */}
         <ErrorBoundary key={effectiveRoute}>
-          {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} />}
+          {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} user={user} />}
           {effectiveRoute === 'onboarding' && <Onboarding navigate={navigate} onComplete={onSignupGo} />}
           {effectiveRoute === 'dashboard'  && user && <Dashboard user={user} navigate={navigate} />}
           {effectiveRoute === 'records'    && user && <Records user={user} navigate={navigate} />}
@@ -179,7 +187,7 @@ export default function App() {
           {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
           {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
-          {guideId  && <GuidePage guideId={guideId} navigate={navigate} onSignup={onSignupStay} />}
+          {guideId  && <GuidePage guideId={guideId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
         </ErrorBoundary>
       </Layout>
