@@ -83,7 +83,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 
   const handleReseed = () => {
     if (!confirm('시드(샘플) 데이터를 재생성합니다. 본인 데이터는 보존됩니다.')) return;
-    reseed(1031);
+    reseed();
     refresh();
     toast.success('시드 데이터 재생성 완료');
   };

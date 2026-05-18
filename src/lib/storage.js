@@ -8,7 +8,7 @@ const KEYS = {
   diets: 'gl_diets',           // 식단 기록
   health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
   session: 'gl_session',
-  seeded: 'gl_seeded_v7',  // v7: long-term 비율 추가 증가 (45% long) — 1년 추적자 충분
+  seeded: 'gl_seeded_v8',  // v8: localStorage 시드 size 축소 (300명) — quota 안전. 실제 통계는 Supabase 3000명+ 사용
   migrated: 'gl_migrated_v2',
 };
 

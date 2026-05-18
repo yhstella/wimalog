@@ -5,10 +5,10 @@ import { Storage } from './lib/storage.js'
 import { seedIfNeeded } from './lib/seedData.js'
 import './index.css'
 
-// React mount 전 시드 보장 — Simulator/CohortLive useMemo 첫 호출부터 데이터 있음
-// 첫 paint 1-2초 지연되지만 빈 데이터 표시 문제 완전 제거
+// React mount 전 localStorage 시드 보장 — Simulator/CohortLive useMemo 첫 호출부터 데이터 있음
+// 작은 사이즈(300명)로 quota 안전. 실제 통계는 Supabase 3000명+ 코호트에서 supabaseStats.js로 가져옴.
 try {
-  if (!Storage.isSeeded()) seedIfNeeded(1031);
+  if (!Storage.isSeeded()) seedIfNeeded();
 } catch (e) {
   // QuotaExceededError 등은 무시 — 부분 시드라도 진행
   console.warn('Seed bootstrap warning:', e?.message || e);

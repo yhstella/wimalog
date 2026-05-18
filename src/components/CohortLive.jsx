@@ -66,7 +66,7 @@ export function CohortLive({ navigate, onSignup, user = null }) {
   useEffect(() => {
     // 1. localStorage 시드 즉시 표시 (offline OK)
     if (!Storage.isSeeded()) {
-      try { seedIfNeeded(1031); } catch {}
+      try { seedIfNeeded(); } catch {}
     }
     refreshFromSeed();
     // 시드 진행 중이면 backup polling
