@@ -121,6 +121,11 @@ export function Simulator({ onSignup, compact = false }) {
                   <div className={`text-[10px] ${isHighlight ? 'opacity-70' : 'opacity-60'} tabular-nums`}>
                     → {target} kg
                   </div>
+                  {s.n > 0 && (
+                    <div className={`text-[9px] mt-1 ${isHighlight ? 'opacity-60' : 'opacity-60'} tabular-nums`}>
+                      n={s.n}
+                    </div>
+                  )}
                 </div>
               );
             })}

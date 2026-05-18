@@ -232,12 +232,12 @@ function generateOne(rand, index, out) {
     const med = pick(rand, meds, medWeights);
     const profile = MED_PROFILE[med];
     // 사용 기간 분포 — long-term 사용자(1년+) 비율 늘려 통계 신뢰도 ↑
-    // 30%는 short(4-12주), 40%는 mid(12-30주), 30%는 long(30-52주)
+    // 20%는 short(4-12주), 35%는 mid(12-30주), 45%는 long(30-56주, 1년 추적자 충분)
     const tier = rand();
     let weeks;
-    if (tier < 0.30) weeks = Math.round(clamp(gauss(rand, 8, 3), 3, 12));
-    else if (tier < 0.70) weeks = Math.round(clamp(gauss(rand, 20, 5), 12, 30));
-    else weeks = Math.round(clamp(gauss(rand, 42, 6), 30, 56));
+    if (tier < 0.20) weeks = Math.round(clamp(gauss(rand, 8, 3), 3, 12));
+    else if (tier < 0.55) weeks = Math.round(clamp(gauss(rand, 20, 5), 12, 30));
+    else weeks = Math.round(clamp(gauss(rand, 46, 5), 30, 56));
     totalSpanWeeks += weeks;
     const courseStart = daysAgo(totalSpanWeeks * 7);
     const responseFactor = clamp(gauss(rand, 1.0, 0.30), 0.4, 1.7);
@@ -501,6 +501,14 @@ function generateLifestyle(rand, user, courses, out, opts = {}) {
 
 export function seedIfNeeded(count = 1031, seed = 20260518) {
   if (Storage.isSeeded()) return;
+  // 시드 버전 업그레이드 시 기존 seed 데이터 제거 (중복 방지)
+  Storage.setUsers(Storage.getUsers().filter(u => !u.seed));
+  Storage.setLogs(Storage.getLogs().filter(l => !l.seed));
+  Storage.setMedCourses(Storage.getMedCourses().filter(c => !c.seed));
+  localStorage.setItem('gl_doses',     JSON.stringify(Storage.getDoses().filter(d => !d.seed)));
+  localStorage.setItem('gl_exercises', JSON.stringify(Storage.getExercises().filter(e => !e.seed)));
+  localStorage.setItem('gl_diets',     JSON.stringify(Storage.getDiets().filter(d => !d.seed)));
+
   const rand = mulberry32(seed);
   const out = {
     users: Storage.getUsers(),

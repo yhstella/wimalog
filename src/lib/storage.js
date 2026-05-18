@@ -7,7 +7,7 @@ const KEYS = {
   exercises: 'gl_exercises',   // 운동 기록
   diets: 'gl_diets',           // 식단 기록
   session: 'gl_session',
-  seeded: 'gl_seeded_v6',  // v6: long-term 비율 증가 + 부작용 prevalence 임상값 일치
+  seeded: 'gl_seeded_v7',  // v7: long-term 비율 추가 증가 (45% long) — 1년 추적자 충분
   migrated: 'gl_migrated_v2',
 };
 
