@@ -62,25 +62,29 @@ export function Landing({ navigate, onSignup }) {
         </p>
       </section>
 
-      {/* Hero stats — 신뢰도 큰 숫자 */}
+      {/* Hero stats — 임상 1년 평균 + 한국 실사용 맥락 */}
       {scale && (
         <section>
           <div className="rounded-2xl bg-gradient-to-br from-brand-50 via-white to-brand-50/40 dark:from-brand-900/30 dark:via-slate-900 dark:to-brand-900/20 border border-brand-200/60 dark:border-brand-800/40 p-5 sm:p-6">
             <div className="text-center text-xs font-semibold text-brand-700 dark:text-brand-300 uppercase tracking-wider">
-              지금까지 위마로그가 모은 데이터
+              임상 시험 1년 평균 감량 (이상적 조건)
             </div>
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <HeroStat value={scale.users.toLocaleString()} unit="명" label="익명 사용자" highlight />
-              <HeroStat value={scale.records.toLocaleString()} unit="건" label="누적 익명 기록" />
-              <HeroStat
-                value={success5pct?.rate != null ? `${Math.round(success5pct.rate * 100)}` : '—'}
-                unit="%" label="12주 5% 이상 감량" />
-              <HeroStat
-                value={success10pct?.rate != null ? `${Math.round(success10pct.rate * 100)}` : '—'}
-                unit="%" label="24주 10% 이상 감량" />
+            <div className="mt-3 grid grid-cols-3 gap-2 sm:gap-3">
+              <HeroStat value="−14.9" unit="%" label="위고비 (STEP-1)" highlight />
+              <HeroStat value="−20.9" unit="%" label="마운자로 (SURMOUNT)" highlight />
+              <HeroStat value="−8.0" unit="%" label="삭센다 (SCALE)" />
             </div>
-            <p className="text-[11px] text-center text-ink-500 dark:text-slate-500 mt-3">
-              ※ 실제 임상 데이터(STEP-1, SURMOUNT-5, SCALE) 기반으로 시뮬레이션된 익명 코호트입니다.
+            <div className="mt-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-3 py-2 text-xs text-amber-900 dark:text-amber-200 leading-snug">
+              💡 임상은 <b>BMI≥30 + 매주 풀 dose</b> 기준. 한국 실사용자는 BMI 25-30 + 격주/가끔 사용도 많아
+              실제 감량률은 이보다 작은 게 정상입니다. 위 시뮬레이터에서 본인 조건으로 추정해보세요.
+            </div>
+            <div className="mt-3 pt-3 border-t border-brand-200/40 dark:border-brand-800/30 flex items-center justify-center gap-4 sm:gap-6 text-xs text-ink-500 dark:text-slate-400">
+              <span><b className="text-ink-900 dark:text-slate-100 tabular-nums">{scale.users.toLocaleString()}</b>명 코호트 데이터</span>
+              <span className="opacity-50">·</span>
+              <span><b className="text-ink-900 dark:text-slate-100 tabular-nums">{scale.records.toLocaleString()}</b>건 누적 기록</span>
+            </div>
+            <p className="text-[11px] text-center text-ink-500 dark:text-slate-500 mt-2">
+              ※ 위마로그는 실제 임상 데이터 기반 시뮬레이션 코호트 + 한국 실사용 컨텍스트 보정
             </p>
           </div>
         </section>
@@ -228,6 +232,9 @@ export function Landing({ navigate, onSignup }) {
           <PersonaCardLink icon="🤔" title="아직 약 안 써본 분"
                             desc="위 시뮬레이터로 본인 예상 결과부터 확인"
                             onClick={() => document.getElementById('simulator-anchor')?.scrollIntoView({behavior: 'smooth'})} />
+          <PersonaCardLink icon="💉" title="매주 풀 dose가 부담?"
+                            desc="격주/저용량/간헐 사용 — 한국 실사용 패턴 가이드"
+                            onClick={() => navigate('guide/usage-patterns')} />
           <PersonaCardLink icon="🏥" title="처방받는 법"
                             desc="병원 선택·진료 준비·비용 — 한국 기준"
                             onClick={() => navigate('guide/prescription')} />

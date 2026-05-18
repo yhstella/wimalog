@@ -1,14 +1,16 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { simulateOutcome, bmi, bmiCategory } from '../lib/stats.js';
+import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
 import { MEDS, MED_BY_ID } from '../lib/constants.js';
 
 // 슬라이더 + 즉시 예측 결과 위젯
 // P1(처음 접속), P4(주변 못 물어보는 사람)을 위한 핵심 위젯
+// 3시점(3개월/6개월/1년) + 약별 비용/부작용 + 사용 빈도(매주/격주/가끔) 한국 실사용 반영
 export function Simulator({ onSignup, compact = false }) {
   const [height, setHeight] = useState(162);
   const [startWeight, setStartWeight] = useState(78);
   const [medication, setMedication] = useState('wegovy');
+  const [frequency, setFrequency] = useState('weekly');
   // 시드가 비동기로 끝나면 재계산
   const [seedTick, setSeedTick] = useState(0);
   useEffect(() => {
@@ -20,10 +22,14 @@ export function Simulator({ onSignup, compact = false }) {
   }, []);
 
   const myBmi = useMemo(() => bmi(startWeight, height), [startWeight, height]);
-  const result = useMemo(
-    () => simulateOutcome({ height, startWeight, medication }),
-    [height, startWeight, medication, seedTick]
+  const timeline = useMemo(
+    () => simulateTimeline({ height, startWeight, medication, frequency }),
+    [height, startWeight, medication, frequency, seedTick]
   );
+  const profile = useMemo(() => medQuickProfile(medication), [medication, seedTick]);
+
+  const medLabel = MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '') || '';
+  const freqLabel = USAGE_FREQUENCIES.find(f => f.id === frequency)?.shortLabel || '매주';
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6 shadow-cardHover">
@@ -33,8 +39,8 @@ export function Simulator({ onSignup, compact = false }) {
       </div>
       <div className="text-xs text-brand-50 mb-4 opacity-90">
         {compact
-          ? '실제 사용자 데이터로 즉시 예측 — 가입 없이도 사용 가능'
-          : '키·체중·약을 선택하면 비슷한 사용자들의 평균 결과를 즉시 보여줍니다'}
+          ? '키·체중·약 한 번에 — 가입 없이 즉시 미리보기'
+          : '키·체중·약을 선택하면 3개월/6개월/1년 평균 감량 + 비용 + 부작용까지 즉시 확인'}
       </div>
 
       <div className="space-y-3">
@@ -56,6 +62,24 @@ export function Simulator({ onSignup, compact = false }) {
             ))}
           </div>
         </div>
+        <div>
+          <div className="text-xs font-semibold mb-1.5 opacity-90 flex items-center gap-1.5">
+            <span>사용 빈도</span>
+            <span className="text-[10px] font-normal opacity-70">— 한국은 격주·간헐 사용도 흔함</span>
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
+            {USAGE_FREQUENCIES.map(f => (
+              <button key={f.id} type="button" onClick={() => setFrequency(f.id)}
+                      title={f.desc}
+                      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border
+                                  ${frequency === f.id
+                                    ? 'bg-white text-brand-700 border-white'
+                                    : 'bg-white/10 text-white border-white/30 hover:bg-white/20'}`}>
+                {f.shortLabel}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {myBmi != null && (
@@ -64,45 +88,45 @@ export function Simulator({ onSignup, compact = false }) {
         </div>
       )}
 
-      {/* 예측 결과 — 항상 표시 (좁은 코호트 → 약 전체 → 전체 fallback) */}
-      <div className="mt-4 rounded-xl bg-white/15 backdrop-blur p-4 text-center">
-        <div className="text-xs opacity-80">비슷한 사용자의 12주 평균</div>
-        {result.lossPct != null ? (
-          <>
-            <div className="mt-1">
-              <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none animate-celebrate" key={`${result.lossPct.toFixed(1)}`}>
-                −{result.lossPct.toFixed(1)}%
-              </div>
-              <div className="text-base mt-1">
-                약 <b className="tabular-nums">{Math.abs(result.lossKg).toFixed(1)} kg</b> 감량
-                <span className="opacity-70 ml-1">→ {(startWeight + result.lossKg).toFixed(1)} kg</span>
-              </div>
-            </div>
-
-            {/* 성공률 — percentage 핵심 표시 */}
-            {result.successRate > 0 && (
-              <div className="mt-3 pt-3 border-t border-white/20">
-                <div className="text-2xl font-extrabold tabular-nums">
-                  {Math.round(result.successRate * 100)}%
+      {/* 3시점 감량 결과 — 빈도/BMI 보정된 한국 실사용 추정치 */}
+      <div className="mt-4">
+        <div className="text-xs opacity-80 mb-2 text-center">{medLabel} · {freqLabel} 사용 시 예상 감량</div>
+        {timeline.series?.some(s => s?.lossPct != null) ? (
+          <div className="grid grid-cols-3 gap-2">
+            {timeline.series.map((s, i) => {
+              if (!s || s.lossPct == null) {
+                return (
+                  <div key={i} className="rounded-xl bg-white/10 p-3 text-center">
+                    <div className="text-[10px] opacity-70">
+                      {[12, 24, 48][i] === 12 ? '3개월' : [12, 24, 48][i] === 24 ? '6개월' : '1년'}
+                    </div>
+                    <div className="text-xl font-extrabold mt-1 opacity-50">—</div>
+                  </div>
+                );
+              }
+              const label = s.week === 12 ? '3개월' : s.week === 24 ? '6개월' : '1년';
+              const isHighlight = s.week === 48; // 1년 강조
+              const kg = Math.abs(s.lossKg);
+              const target = (startWeight - kg).toFixed(1);
+              return (
+                <div key={i}
+                     className={`rounded-xl p-3 text-center ${isHighlight ? 'bg-white text-brand-700 shadow-lg' : 'bg-white/15 backdrop-blur'}`}>
+                  <div className={`text-[10px] ${isHighlight ? 'opacity-100 font-semibold' : 'opacity-80'}`}>{label}</div>
+                  <div className={`font-extrabold tabular-nums leading-none mt-1 ${isHighlight ? 'text-3xl sm:text-4xl' : 'text-xl sm:text-2xl'}`}>
+                    −{s.lossPct.toFixed(1)}<span className="text-xs">%</span>
+                  </div>
+                  <div className={`text-xs mt-1 tabular-nums ${isHighlight ? 'font-semibold' : 'opacity-90'}`}>
+                    −{kg.toFixed(1)} kg
+                  </div>
+                  <div className={`text-[10px] ${isHighlight ? 'opacity-70' : 'opacity-60'} tabular-nums`}>
+                    → {target} kg
+                  </div>
                 </div>
-                <div className="text-xs opacity-90 mt-0.5">
-                  비슷한 조건의 사용자 중 <b>5% 이상</b> 감량한 비율
-                </div>
-              </div>
-            )}
-
-            {/* fallback 안내 — 부드럽게 */}
-            {result.fallback && result.level !== 'none' && (
-              <div className="text-[10px] opacity-70 mt-2">
-                ※ {result.level === 'medOnly'
-                      ? `${MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '')} 사용자 전체 평균 기준`
-                      : '전체 사용자 평균 기준'}
-                {' '}— 본인 조건에 더 가까운 데이터는 가입 후 표시됩니다
-              </div>
-            )}
-          </>
+              );
+            })}
+          </div>
         ) : (
-          <div className="mt-2 py-3">
+          <div className="rounded-xl bg-white/15 backdrop-blur p-4 text-center">
             <div className="inline-flex items-center gap-2 text-sm opacity-90">
               <span className="inline-block w-3 h-3 rounded-full bg-white/60 animate-pulse" />
               데이터 준비 중…
@@ -111,14 +135,50 @@ export function Simulator({ onSignup, compact = false }) {
         )}
       </div>
 
+      {/* 약 빠른 프로필 — 비용 + 주요 부작용 */}
+      {profile && (profile.monthlyAvgKrw || profile.topSideEffects?.length) && (
+        <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-4 py-3">
+          <div className="grid grid-cols-2 gap-3 items-start">
+            {/* 비용 */}
+            <div>
+              <div className="text-[10px] opacity-70 mb-0.5">💰 월 평균 비용</div>
+              {profile.monthlyAvgKrw != null ? (
+                <div className="text-base font-bold tabular-nums leading-tight">
+                  {(profile.monthlyAvgKrw / 10000).toFixed(0)}만원
+                  <span className="text-[10px] font-normal opacity-70 ml-1">/월</span>
+                </div>
+              ) : (
+                <div className="text-xs opacity-60">데이터 준비 중</div>
+              )}
+            </div>
+            {/* 주요 부작용 — 상위 2개만 */}
+            <div>
+              <div className="text-[10px] opacity-70 mb-0.5">⚠ 주요 부작용</div>
+              {profile.topSideEffects?.length > 0 ? (
+                <div className="space-y-0.5">
+                  {profile.topSideEffects.slice(0, 2).map((s, i) => (
+                    <div key={i} className="text-xs leading-tight">
+                      {s.label.replace('(메스꺼움)', '')} <span className="opacity-70 tabular-nums">{Math.round(s.rate * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs opacity-60">데이터 준비 중</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {onSignup && (
         <button onClick={onSignup}
                 className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-3 font-bold hover:bg-brand-50 transition">
-          이 결과를 내 데이터로 확인 →
+          내 데이터로 더 정확하게 보기 →
         </button>
       )}
-      <p className="text-[10px] text-center mt-2 opacity-70">
-        ⚠ 자가보고 기반 평균. 개인 반응은 다를 수 있으며, 약제 사용은 의료진과 상의해야 합니다.
+      <p className="text-[10px] text-center mt-2 opacity-70 leading-relaxed">
+        ⚠ 임상값은 BMI≥30 매주 풀 dose 기준. 한국은 BMI 25-30 + 빈도 조절 사용이 흔해
+        실제 감량률은 임상값보다 작은 게 정상입니다. 개인차 큼 · 의료진 상의 필요.
       </p>
     </div>
   );
