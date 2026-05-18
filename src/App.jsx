@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Storage } from './lib/storage.js';
-import { seedIfNeeded } from './lib/seedData.js';
 import { applyTheme, watchSystemTheme } from './lib/theme.js';
 import { seoFor, setSEO } from './lib/seo.js';
 import { Layout } from './components/Layout.jsx';
@@ -44,9 +43,7 @@ export default function App() {
     applyTheme();
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
-    // 시드 1031명 생성은 메인 스레드 차단 (~1초) — 첫 페인트 후 즉시 실행
-    // idleCallback은 모바일에서 너무 늦게 실행돼 첫 방문자가 빈 데이터를 봄
-    setTimeout(() => seedIfNeeded(1031), 0);
+    // 시드는 main.jsx에서 React mount 전에 이미 호출됨 (sync) — 여기선 보장만
     return unwatch;
   }, []);
 
