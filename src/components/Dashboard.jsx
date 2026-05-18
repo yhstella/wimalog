@@ -14,6 +14,7 @@ import { StreakCard, WeeklySummaryCard, BadgesRow, DiscontinuerPanel } from './R
 import { WelcomeTour } from './WelcomeTour.jsx';
 import { GoalWidget } from './GoalWidget.jsx';
 import { InputProgressCard } from './InputProgressCard.jsx';
+import { NotificationBanner } from './NotificationBanner.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
