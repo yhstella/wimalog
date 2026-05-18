@@ -7,7 +7,8 @@
     "dev": "vite --host",
     "build": "vite build",
     "preview": "vite preview --host",
-    "seed:supabase": "node scripts/seed-supabase.js"
+    "seed:supabase": "node scripts/seed-supabase.js",
+    "export:supabase": "node scripts/export-supabase.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
