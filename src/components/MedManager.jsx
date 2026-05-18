@@ -131,7 +131,7 @@ function CourseCard({ course, user, refresh, collapsed: initiallyCollapsed = fal
 
           <div className="flex gap-2 flex-wrap">
             <button onClick={() => setShowDoseForm(s => !s)} className="btn-primary !py-2 !px-3 text-sm">
-              {showDoseForm ? '취소' : '+ 투약 기록 추가'}
+              {showDoseForm ? '취소' : '+ 처방 기록 추가'}
             </button>
             <button onClick={() => setShowEdit(s => !s)} className="btn-secondary !py-2 !px-3 text-sm">
               {showEdit ? '닫기' : '편집'}
@@ -350,9 +350,12 @@ function NewDoseForm({ course, user, onSaved }) {
 
   return (
     <div className="space-y-3 p-3 rounded-xl bg-ink-100/40 border border-ink-200">
+      <div className="rounded-lg bg-brand-50 dark:bg-brand-900/15 px-3 py-2 text-[11px] text-brand-800 dark:text-brand-200 leading-relaxed">
+        💡 <b>1회 처방 = 4주치 박스(1팩)</b>. 매주 사용 시 한 박스가 4주 분량입니다. 가격은 박스 단위로 입력해 주세요.
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="label">투약일</div>
+          <div className="label">처방일</div>
           <input type="date" className="input" max={todayISO()}
                  value={date} onChange={e => setDate(e.target.value)} />
         </div>
@@ -372,10 +375,10 @@ function NewDoseForm({ course, user, onSaved }) {
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <div className="label">구매 가격 (원, 1회)</div>
+          <div className="label">박스 가격 (원, 4주치)</div>
           <input type="number" inputMode="numeric" className="input"
                  value={price} onChange={e => setPrice(e.target.value)}
-                 placeholder="예: 50000" />
+                 placeholder="예: 350000" />
         </div>
         <div>
           <div className="label">구매 지역</div>

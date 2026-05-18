@@ -37,18 +37,20 @@ function gauss(rand, mean, sd) {
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 // 약제별 프로파일 — 실제 임상값 기반
+// ⚠ 가격은 1박스(4주치) 처방 단위. intervalDays = 박스 처방 주기(약 4주).
 const MED_PROFILE = {
   wegovy: {
     label: '위고비',
     maxLossPct: 0.149,      // STEP-1 평균
-    tauWeeks: 32,           // 도달까지 약 5-6개월
-    intervalDays: 7,
+    tauWeeks: 32,
+    intervalDays: 28,       // 4주마다 1박스 처방
     doses: ['0.25mg', '0.5mg', '1.0mg', '1.7mg', '2.4mg'],
+    // 한국 실제 박스(4주치) 가격: 매주 사용 시 30-60만원/월
     priceByDose: {
-      '0.25mg': 250000, '0.5mg': 270000, '1.0mg': 320000,
-      '1.7mg': 380000, '2.4mg': 470000,
+      '0.25mg': 280000, '0.5mg': 300000, '1.0mg': 360000,
+      '1.7mg': 450000, '2.4mg': 560000,
     },
-    sideRates: {  // 실 임상 STEP-1 부작용 발생률
+    sideRates: {
       nausea: 0.44, vomiting: 0.24, constipation: 0.24, diarrhea: 0.30,
       fatigue: 0.11, dizziness: 0.08, abdomenPain: 0.20, hairLoss: 0.03,
       reflux: 0.10, headache: 0.14,
@@ -56,13 +58,14 @@ const MED_PROFILE = {
   },
   mounjaro: {
     label: '마운자로',
-    maxLossPct: 0.202,      // SURMOUNT-5 평균
+    maxLossPct: 0.202,
     tauWeeks: 32,
-    intervalDays: 7,
+    intervalDays: 28,
     doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'],
+    // 한국 실제 박스(4주치) 가격: 40-70만원/월
     priceByDose: {
-      '2.5mg': 290000, '5mg': 380000, '7.5mg': 540000,
-      '10mg': 650000, '12.5mg': 750000, '15mg': 820000,
+      '2.5mg': 400000, '5mg': 460000, '7.5mg': 540000,
+      '10mg': 620000, '12.5mg': 680000, '15mg': 750000,
     },
     sideRates: {
       nausea: 0.31, vomiting: 0.15, constipation: 0.17, diarrhea: 0.23,
@@ -72,13 +75,14 @@ const MED_PROFILE = {
   },
   saxenda: {
     label: '삭센다',
-    maxLossPct: 0.080,      // SCALE
+    maxLossPct: 0.080,
     tauWeeks: 28,
-    intervalDays: 1,
+    intervalDays: 28,       // 매일 사용이지만 처방은 4주치 펜 단위
     doses: ['0.6mg', '1.2mg', '1.8mg', '2.4mg', '3.0mg'],
-    priceByDose: {  // 매일 사용이라 1회분이 작음 (월 ~35만원 기준)
-      '0.6mg': 9000, '1.2mg': 10000, '1.8mg': 11000,
-      '2.4mg': 12000, '3.0mg': 12000,
+    // 4주치 펜 — 35-45만원
+    priceByDose: {
+      '0.6mg': 320000, '1.2mg': 350000, '1.8mg': 380000,
+      '2.4mg': 410000, '3.0mg': 440000,
     },
     sideRates: {
       nausea: 0.39, vomiting: 0.16, constipation: 0.19, diarrhea: 0.21,
@@ -90,10 +94,11 @@ const MED_PROFILE = {
     label: '오젬픽',
     maxLossPct: 0.110,
     tauWeeks: 30,
-    intervalDays: 7,
+    intervalDays: 28,
     doses: ['0.25mg', '0.5mg', '1.0mg', '2.0mg'],
+    // 박스(4주치) — 25-45만원
     priceByDose: {
-      '0.25mg': 200000, '0.5mg': 230000, '1.0mg': 290000, '2.0mg': 380000,
+      '0.25mg': 250000, '0.5mg': 280000, '1.0mg': 350000, '2.0mg': 450000,
     },
     sideRates: {
       nausea: 0.38, vomiting: 0.20, constipation: 0.22, diarrhea: 0.27,
@@ -105,11 +110,12 @@ const MED_PROFILE = {
     label: '젭바운드',
     maxLossPct: 0.195,
     tauWeeks: 32,
-    intervalDays: 7,
+    intervalDays: 28,
     doses: ['2.5mg', '5mg', '7.5mg', '10mg', '12.5mg', '15mg'],
+    // 박스(4주치) — 40-70만원
     priceByDose: {
-      '2.5mg': 280000, '5mg': 360000, '7.5mg': 510000,
-      '10mg': 620000, '12.5mg': 720000, '15mg': 790000,
+      '2.5mg': 390000, '5mg': 450000, '7.5mg': 530000,
+      '10mg': 610000, '12.5mg': 670000, '15mg': 730000,
     },
     sideRates: {
       nausea: 0.30, vomiting: 0.14, constipation: 0.16, diarrhea: 0.22,
@@ -248,11 +254,14 @@ function generateOne(rand, index, out) {
     const discontinued = !isCurrent || (rand() < discontinueChance && weeks > 4);
     const discontinueWeek = discontinued ? Math.round(4 + rand() * (weeks - 4)) : null;
 
+    // 빈도 분포 — 한국 실사용 패턴
+    const frequency = pick(rand, ['weekly','biweekly','occasional','intro'], [0.40, 0.28, 0.15, 0.17]);
     courses.push({
       id: uid('mc'),
       userId,
       seed: true,
       medication: med,
+      frequency,
       startDate: courseStart,
       endDate: discontinued ? daysAgo(totalSpanWeeks * 7 - discontinueWeek * 7) : null,
       initialDose: profile.doses[0],
@@ -267,6 +276,7 @@ function generateOne(rand, index, out) {
       _responseFactor: responseFactor,
       _sideSeverity: sideSeverity,
       _discontinueWeek: discontinueWeek,
+      _frequency: frequency,
     });
   }
   courses.sort((a, b) => a.startDate.localeCompare(b.startDate));
@@ -292,16 +302,18 @@ function generateOne(rand, index, out) {
   generateLifestyle(rand, user, courses, out, { exReduce: 1, dietReduce: 1 });
 }
 
-// 약 코스의 투약 기록 (간격 + 가격 + 지역 + 용량 증량)
+// 약 처방 기록 — 1 dose entry = 1박스(4주치) 처방. 한국 실제 처방 단위와 일치.
+// 빈도(course._frequency) 따라 박스 처방 주기 조절:
+//   weekly: 매월 1박스 (28일), biweekly: 2개월 1박스 (56일), occasional: 4개월 1박스 (112일), intro: 매월 1박스
 function generateDoses(rand, user, course, out) {
   const p = course._profile;
   const startMs = new Date(course.startDate).getTime();
   const endMs = course.endDate ? new Date(course.endDate).getTime() : Date.now();
-  const intervalMs = p.intervalDays * 86400000;
 
-  // 매일 투약(삭센다)은 표본 부담 큼 → 7일 단위로 묶어 저장 (사용자가 보기에 평균값)
-  const stride = p.intervalDays === 1 ? 7 : p.intervalDays;
-  const doseCountPerEntry = p.intervalDays === 1 ? 7 : 1;
+  // 빈도에 따른 박스 처방 주기 (일 단위)
+  const freq = course._frequency || 'weekly';
+  const stride = freq === 'biweekly' ? 56 : freq === 'occasional' ? 112 : 28;
+  const doseCountPerEntry = 1;  // 1박스 = 1 entry
 
   let day = 0;
   while (true) {

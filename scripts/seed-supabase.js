@@ -53,21 +53,22 @@ function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 // ============================================================
 // 약별 임상 프로파일 (seedData.js와 동일)
 // ============================================================
+// ⚠ priceByDose = 1박스(4주치) 가격. intervalDays = 박스 처방 주기.
 const MED_PROFILE = {
-  wegovy:   { maxLossPct: 0.149, tauWeeks: 32, intervalDays: 7, doses: ['0.25mg','0.5mg','1.0mg','1.7mg','2.4mg'],
-              priceByDose: { '0.25mg':250000,'0.5mg':270000,'1.0mg':320000,'1.7mg':380000,'2.4mg':470000 },
+  wegovy:   { maxLossPct: 0.149, tauWeeks: 32, intervalDays: 28, doses: ['0.25mg','0.5mg','1.0mg','1.7mg','2.4mg'],
+              priceByDose: { '0.25mg':280000,'0.5mg':300000,'1.0mg':360000,'1.7mg':450000,'2.4mg':560000 },
               sideRates: { nausea:0.44, vomiting:0.24, diarrhea:0.30, constipation:0.24, headache:0.14, abdomenPain:0.20, fatigue:0.11, dizziness:0.08, reflux:0.10, hairLoss:0.03 } },
-  mounjaro: { maxLossPct: 0.209, tauWeeks: 32, intervalDays: 7, doses: ['2.5mg','5mg','7.5mg','10mg','12.5mg','15mg'],
-              priceByDose: { '2.5mg':290000,'5mg':380000,'7.5mg':540000,'10mg':650000,'12.5mg':750000,'15mg':820000 },
+  mounjaro: { maxLossPct: 0.209, tauWeeks: 32, intervalDays: 28, doses: ['2.5mg','5mg','7.5mg','10mg','12.5mg','15mg'],
+              priceByDose: { '2.5mg':400000,'5mg':460000,'7.5mg':540000,'10mg':620000,'12.5mg':680000,'15mg':750000 },
               sideRates: { nausea:0.31, vomiting:0.15, diarrhea:0.23, constipation:0.17, headache:0.10, abdomenPain:0.12, fatigue:0.09, dizziness:0.06, reflux:0.08, hairLoss:0.06 } },
-  saxenda:  { maxLossPct: 0.080, tauWeeks: 28, intervalDays: 1, doses: ['0.6mg','1.2mg','1.8mg','2.4mg','3.0mg'],
-              priceByDose: { '0.6mg':9000,'1.2mg':10000,'1.8mg':11000,'2.4mg':12000,'3.0mg':12000 },
+  saxenda:  { maxLossPct: 0.080, tauWeeks: 28, intervalDays: 28, doses: ['0.6mg','1.2mg','1.8mg','2.4mg','3.0mg'],
+              priceByDose: { '0.6mg':320000,'1.2mg':350000,'1.8mg':380000,'2.4mg':410000,'3.0mg':440000 },
               sideRates: { nausea:0.39, vomiting:0.16, diarrhea:0.21, constipation:0.19, headache:0.14, abdomenPain:0.18, fatigue:0.13, dizziness:0.10, reflux:0.09, hairLoss:0.04 } },
-  ozempic:  { maxLossPct: 0.110, tauWeeks: 30, intervalDays: 7, doses: ['0.25mg','0.5mg','1.0mg','2.0mg'],
-              priceByDose: { '0.25mg':200000,'0.5mg':230000,'1.0mg':290000,'2.0mg':380000 },
+  ozempic:  { maxLossPct: 0.110, tauWeeks: 30, intervalDays: 28, doses: ['0.25mg','0.5mg','1.0mg','2.0mg'],
+              priceByDose: { '0.25mg':250000,'0.5mg':280000,'1.0mg':350000,'2.0mg':450000 },
               sideRates: { nausea:0.38, vomiting:0.20, diarrhea:0.27, constipation:0.22, headache:0.13, abdomenPain:0.18, fatigue:0.10, dizziness:0.07, reflux:0.10, hairLoss:0.03 } },
-  zepbound: { maxLossPct: 0.195, tauWeeks: 32, intervalDays: 7, doses: ['2.5mg','5mg','7.5mg','10mg','12.5mg','15mg'],
-              priceByDose: { '2.5mg':280000,'5mg':360000,'7.5mg':510000,'10mg':620000,'12.5mg':720000,'15mg':790000 },
+  zepbound: { maxLossPct: 0.195, tauWeeks: 32, intervalDays: 28, doses: ['2.5mg','5mg','7.5mg','10mg','12.5mg','15mg'],
+              priceByDose: { '2.5mg':390000,'5mg':450000,'7.5mg':530000,'10mg':610000,'12.5mg':670000,'15mg':730000 },
               sideRates: { nausea:0.30, vomiting:0.14, diarrhea:0.22, constipation:0.16, headache:0.10, abdomenPain:0.12, fatigue:0.09, dizziness:0.06, reflux:0.08, hairLoss:0.06 } },
 };
 
@@ -227,13 +228,12 @@ function generatePatient(idx) {
     });
     courseMeta.push({ id: courseId, med, profile, weeks, responseFactor, sideSeverity, frequency, discontinueWeek, startDate: courseStart, willExperience });
 
-    // doses — frequency에 따라 stride 조정 (격주/가끔 사용자는 doses 갯수 ↓ → 월 비용 ↓)
+    // doses — 1박스(4주치) 단위. 빈도에 따라 박스 처방 주기 조정.
     const startMs = Date.parse(courseStart);
     const endMs = discontinued ? Date.parse(daysAgo(totalSpan * 7 - discontinueWeek * 7)) : Date.now();
-    const baseStride = profile.intervalDays === 1 ? 7 : profile.intervalDays;
-    const freqMultiplier = frequency === 'biweekly' ? 2 : frequency === 'occasional' ? 3 : 1;
-    const stride = baseStride * freqMultiplier;
-    const doseCountPerEntry = profile.intervalDays === 1 ? 7 : 1;
+    // weekly: 4주마다 1박스, biweekly: 8주, occasional: 16주, intro: 4주
+    const stride = frequency === 'biweekly' ? 56 : frequency === 'occasional' ? 112 : 28;
+    const doseCountPerEntry = 1;
     let day = 0;
     while (true) {
       const dateMs = startMs + day * 86400000;

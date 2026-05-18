@@ -8,7 +8,7 @@ const KEYS = {
   diets: 'gl_diets',           // 식단 기록
   health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
   session: 'gl_session',
-  seeded: 'gl_seeded_v8',  // v8: localStorage 시드 size 축소 (300명) — quota 안전. 실제 통계는 Supabase 3000명+ 사용
+  seeded: 'gl_seeded_v9',  // v9: dose = 1박스(4주치) 단위로 변경, 가격은 한국 실제 박스 가격 (30-60만원)
   migrated: 'gl_migrated_v2',
 };
 

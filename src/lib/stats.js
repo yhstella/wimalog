@@ -642,28 +642,29 @@ export function simulateTimeline({ height, startWeight, medication, weeks = [12,
 }
 
 // 약제별 빠른 프로필 (비용 + 상위 부작용) — Simulator 결과 카드에서 사용
-// 빈도(frequency) 따라 월 비용 조정: 매주 ×4, 격주 ×2, 가끔 ×1.3, 저용량 매주 ×4
+// price.avg = 1박스(4주치) 평균 가격. 빈도에 따라 박스 사용 주기 조정:
+//   weekly: 1박스/4주 = 박스가격/월
+//   biweekly: 1박스/8주 = 박스가격/2개월
+//   occasional: 1박스/~16주
+//   intro: 저용량 매주 = 박스가격 × 0.8/월
 export function medQuickProfile(medication, frequency = 'weekly') {
   if (!medication) return null;
   const filter = { medication };
-  // 부작용: 시드 코호트의 실제 발생률 (sideEffectRates는 코스 중 1회 이상 보고 비율)
   const allSides = sideEffectRates(filter);
   const sides = allSides
     .filter(s => s.rate > 0.05)
     .sort((a, b) => b.rate - a.rate)
     .slice(0, 3)
     .map(s => ({ label: s.label, rate: s.rate }));
-  // 비용: priceStats에서 1회분 평균
   const price = priceStats(filter);
   let monthlyAvg = null;
   if (price.avg != null && price.n >= 5) {
-    // 빈도별 월 사용 횟수
-    const perMonth = frequency === 'biweekly'   ? 2
-                   : frequency === 'occasional' ? 1.3
-                   : 4;  // weekly, intro (둘 다 매주 사용)
-    // intro(저용량 유지)는 1회 가격이 더 저렴할 가능성 — 대략 80%로 보정
-    const doseMultiplier = frequency === 'intro' ? 0.8 : 1.0;
-    monthlyAvg = Math.round(price.avg * perMonth * doseMultiplier / 10000) * 10000;
+    // 박스 가격 → 월 비용 환산 (박스 = 4주치)
+    const monthlyFactor = frequency === 'biweekly'   ? 0.5    // 박스 1개 = 2개월
+                        : frequency === 'occasional' ? 0.25   // 박스 1개 = 4개월
+                        : frequency === 'intro'      ? 0.8    // 저용량 매주
+                        : 1.0;  // weekly: 박스/월
+    monthlyAvg = Math.round(price.avg * monthlyFactor / 10000) * 10000;
   }
   return {
     topSideEffects: sides,

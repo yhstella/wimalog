@@ -33,12 +33,15 @@ function CostCalculator({ navigate }) {
     return () => { cancelled = true; };
   }, [med]);
 
-  // 빈도에 따른 월 사용 횟수 — 시드 doses 생성과 동일 로직
-  const freqMultiplier = freq === 'weekly' ? 4 : freq === 'biweekly' ? 2 : freq === 'occasional' ? 1.3 : 4;
-  const avgDose = priceData?.avg || 0;
-  const monthlyAvg = Math.round(avgDose * freqMultiplier);
+  // 1박스(4주치) 기준 — 빈도에 따라 월 박스 사용량 환산
+  const monthlyFactor = freq === 'biweekly'   ? 0.5     // 박스 1개 = 2개월
+                      : freq === 'occasional' ? 0.25    // 박스 1개 = 4개월
+                      : freq === 'intro'      ? 0.8     // 저용량 매주
+                      : 1.0;  // weekly: 매월 1박스
+  const boxPrice = priceData?.avg || 0;
+  const monthlyAvg = Math.round(boxPrice * monthlyFactor);
   const total = monthlyAvg * months;
-  const cheapByRegion = priceData?.byRegion?.[0]; // 가장 저렴한 지역
+  const cheapByRegion = priceData?.byRegion?.[0];
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -110,8 +113,8 @@ function CostCalculator({ navigate }) {
         )}
         {cheapByRegion && (
           <div className="text-xs text-ink-500 dark:text-slate-400 mt-3 leading-relaxed">
-            가장 저렴한 지역: <b>{cheapByRegion.region}</b> 평균 {Math.round(cheapByRegion.avg).toLocaleString()}원/회
-            <br />→ {months}개월 약 <b className="text-brand-700 dark:text-brand-400">{Math.round(cheapByRegion.avg * freqMultiplier * months).toLocaleString()}원</b> 절약 가능
+            가장 저렴한 지역: <b>{cheapByRegion.region}</b> 평균 {Math.round(cheapByRegion.avg).toLocaleString()}원/박스(4주치)
+            <br />→ {months}개월 약 <b className="text-brand-700 dark:text-brand-400">{Math.round(cheapByRegion.avg * monthlyFactor * months).toLocaleString()}원</b>
           </div>
         )}
       </div>
@@ -119,7 +122,7 @@ function CostCalculator({ navigate }) {
       {/* 지역별 상위 5개 가격 — 누구나 볼 수 있게 */}
       {priceData?.byRegion?.length > 0 && (
         <div className="card">
-          <h3 className="font-bold text-ink-900 dark:text-slate-100 mb-3">📍 지역별 1회분 평균 가격</h3>
+          <h3 className="font-bold text-ink-900 dark:text-slate-100 mb-3">📍 지역별 1박스(4주치) 평균 가격</h3>
           <div className="space-y-2">
             {priceData.byRegion.slice(0, 5).map((r, i) => (
               <div key={r.region} className="flex justify-between items-center text-sm">
