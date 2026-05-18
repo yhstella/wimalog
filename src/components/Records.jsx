@@ -64,6 +64,8 @@ function WeightTab({ user, version, refresh, navigate }) {
   const [mealReduction, setMealReduction] = useState(3);
   const [sideEffects, setSideEffects] = useState({});
   const [notes, setNotes] = useState('');
+  // 부담 줄이기 — 체중만 핵심, 나머지는 펼쳐서 입력
+  const [showDetail, setShowDetail] = useState(false);
 
   const toggleSide = (id) => setSideEffects(s => ({ ...s, [id]: !s[id] }));
   const totalSideCount = Object.values(sideEffects).filter(Boolean).length;
@@ -83,16 +85,18 @@ function WeightTab({ user, version, refresh, navigate }) {
     const delta = lastLog ? +weight - lastLog.weight : 0;
     setSideEffects({});
     setNotes('');
+    setShowDetail(false);
     refresh();
     toast.success(`체중 ${(+weight).toFixed(1)} kg 기록됨${lastLog ? ` · 지난 기록 대비 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} kg` : ''}`);
   };
 
   return (
     <div className="space-y-4">
-      <div className="card space-y-4">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="card space-y-3">
+        {/* 핵심 한 줄: 날짜 + 체중 + 저장 */}
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
           <div>
-            <div className="label">기록 날짜</div>
+            <div className="label">날짜</div>
             <input type="date" className="input" value={date} max={todayISO()}
                    onChange={e => setDate(e.target.value)} />
           </div>
@@ -101,66 +105,73 @@ function WeightTab({ user, version, refresh, navigate }) {
             <input type="number" inputMode="decimal" min={30} max={250} step="0.1"
                    className="input" value={weight}
                    onChange={e => setWeight(e.target.value)} />
-            {lastLog && +weight && (
-              <p className="helptext">지난 기록 대비 {(+weight - lastLog.weight).toFixed(1)} kg</p>
-            )}
           </div>
+          <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 h-fit">저장</button>
         </div>
+        {lastLog && +weight && +weight !== lastLog.weight && (
+          <p className="helptext !mt-1">지난 기록 대비 {(+weight - lastLog.weight) >= 0 ? '+' : ''}{(+weight - lastLog.weight).toFixed(1)} kg</p>
+        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <Scale label="식욕 변화" value={appetiteChange} onChange={setAppetiteChange}
-                 minLabel="평소" maxLabel="크게 감소" />
-          <Scale label="포만감" value={satiety} onChange={setSatiety}
-                 minLabel="평소" maxLabel="금방 배부름" />
-          <Scale label="식사량 감소" value={mealReduction} onChange={setMealReduction}
-                 minLabel="평소" maxLabel="크게 감소" />
-        </div>
+        {/* 펼치기 토글 — 부작용/식욕/메모 (선택) */}
+        <button type="button" onClick={() => setShowDetail(s => !s)}
+                className="w-full mt-2 py-2 rounded-lg text-xs font-medium text-ink-500 dark:text-slate-400 hover:text-brand-700 dark:hover:text-brand-400 border border-dashed border-ink-200 dark:border-slate-700 hover:border-brand-300 transition">
+          {showDetail ? '− 상세 접기' : `+ 부작용·식욕·메모 추가하기 (선택)${totalSideCount > 0 ? ` · 부작용 ${totalSideCount}개 선택됨` : ''}`}
+        </button>
 
-        <div>
-          <div className="label flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              부작용 {totalSideCount > 0 && <span className="chip">{totalSideCount}개</span>}
+        {showDetail && (
+          <div className="space-y-4 pt-3 border-t border-ink-100 dark:border-slate-800">
+            <div>
+              <div className="label flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  부작용 {totalSideCount > 0 && <span className="chip">{totalSideCount}개</span>}
+                </div>
+                <div className="flex gap-1">
+                  {lastLog && Object.values(lastLog.sideEffects || {}).filter(Boolean).length > 0 && (
+                    <button type="button"
+                            onClick={() => setSideEffects({ ...lastLog.sideEffects })}
+                            className="text-xs px-2 py-1 rounded-lg border border-brand-300 text-brand-700 hover:bg-brand-50 transition">
+                      ↩ 지난번 그대로
+                    </button>
+                  )}
+                  {totalSideCount > 0 && (
+                    <button type="button"
+                            onClick={() => setSideEffects({})}
+                            className="text-xs px-2 py-1 rounded-lg border border-ink-300 text-ink-500 hover:bg-ink-100 transition">
+                      모두 해제
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {SIDE_EFFECTS.map(s => (
+                  <button key={s.id} type="button" onClick={() => toggleSide(s.id)}
+                          className={`px-3 py-2 rounded-xl text-sm border transition text-left
+                                      ${sideEffects[s.id]
+                                        ? 'bg-rose-500 text-white border-rose-500'
+                                        : 'bg-white text-ink-700 border-ink-300 hover:border-rose-300'}`}>
+                    {s.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-1">
-              {lastLog && Object.values(lastLog.sideEffects || {}).filter(Boolean).length > 0 && (
-                <button type="button"
-                        onClick={() => setSideEffects({ ...lastLog.sideEffects })}
-                        className="text-xs px-2 py-1 rounded-lg border border-brand-300 text-brand-700 hover:bg-brand-50 transition">
-                  ↩ 지난번 그대로
-                </button>
-              )}
-              {totalSideCount > 0 && (
-                <button type="button"
-                        onClick={() => setSideEffects({})}
-                        className="text-xs px-2 py-1 rounded-lg border border-ink-300 text-ink-500 hover:bg-ink-100 transition">
-                  모두 해제
-                </button>
-              )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Scale label="식욕 변화" value={appetiteChange} onChange={setAppetiteChange}
+                     minLabel="평소" maxLabel="크게 감소" />
+              <Scale label="포만감" value={satiety} onChange={setSatiety}
+                     minLabel="평소" maxLabel="금방 배부름" />
+              <Scale label="식사량 감소" value={mealReduction} onChange={setMealReduction}
+                     minLabel="평소" maxLabel="크게 감소" />
+            </div>
+
+            <div>
+              <div className="label">메모</div>
+              <textarea className="input min-h-[60px] resize-none" maxLength={300}
+                        value={notes} onChange={e => setNotes(e.target.value)}
+                        placeholder="이번 주 컨디션·특이사항" />
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {SIDE_EFFECTS.map(s => (
-              <button key={s.id} type="button" onClick={() => toggleSide(s.id)}
-                      className={`px-3 py-2 rounded-xl text-sm border transition text-left
-                                  ${sideEffects[s.id]
-                                    ? 'bg-rose-500 text-white border-rose-500'
-                                    : 'bg-white text-ink-700 border-ink-300 hover:border-rose-300'}`}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <div className="label">메모 (선택)</div>
-          <textarea className="input min-h-[60px] resize-none" maxLength={300}
-                    value={notes} onChange={e => setNotes(e.target.value)}
-                    placeholder="이번 주 컨디션, 특이사항 등" />
-        </div>
-
-        <div className="flex justify-end">
-          <button onClick={submit} disabled={!weight} className="btn-primary">기록 저장</button>
-        </div>
+        )}
       </div>
 
       {totalSideCount >= 3 && <RedFlagBanner />}
