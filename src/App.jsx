@@ -22,19 +22,25 @@ import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPage
 import { recordVisit } from './components/RecentPages.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 
-function readRouteFromHash() {
+// path 우선 + hash 호환 — SEO 봇은 path로 접근, 기존 사용자 hash URL도 동작
+function readRoute() {
+  // 우선: hash가 있으면 hash (사용자 기존 bookmark 호환)
   const h = (window.location.hash || '').replace(/^#\/?/, '');
-  return h || 'landing';
+  if (h) return h;
+  // 그 다음: path (검색봇/sitemap path URL 진입)
+  const p = window.location.pathname.replace(/^\//, '').replace(/\/$/, '');
+  return p || 'landing';
 }
-function writeRouteToHash(route) {
-  const target = '#/' + route;
-  if (window.location.hash !== target) {
+function writeRoute(route) {
+  // 내부 navigate: path 사용 (SEO 친화), hash 자동 제거
+  const target = '/' + route;
+  if (window.location.pathname + window.location.hash !== target) {
     window.history.pushState(null, '', target);
   }
 }
 
 export default function App() {
-  const [route, setRoute] = useState(readRouteFromHash);
+  const [route, setRoute] = useState(readRoute);
   const [userId, setUserId] = useState(() => Storage.getSession());
   const [, setTick] = useState(0);
   const refresh = useCallback(() => setTick(t => t + 1), []);
@@ -56,12 +62,12 @@ export default function App() {
 
   const navigate = useCallback((r) => {
     setRoute(r);
-    writeRouteToHash(r);
+    writeRoute(r);
     window.scrollTo({ top: 0 });
   }, []);
 
   useEffect(() => {
-    const onPop = () => setRoute(readRouteFromHash());
+    const onPop = () => setRoute(readRoute());
     window.addEventListener('popstate', onPop);
     window.addEventListener('hashchange', onPop);
     return () => {
@@ -71,7 +77,10 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!window.location.hash) writeRouteToHash(userId ? 'dashboard' : 'landing');
+    // 첫 진입 시 path가 / 이면 사용자 상태에 맞게 redirect
+    if (window.location.pathname === '/' && !window.location.hash) {
+      writeRoute(userId ? 'dashboard' : 'landing');
+    }
   }, [userId]);
 
   const user = userId ? Storage.getUser(userId) : null;

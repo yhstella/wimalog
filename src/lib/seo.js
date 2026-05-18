@@ -1,7 +1,9 @@
 // 라우트별 SEO 메타 갱신 (title + description). OG 태그도 함께 갱신.
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT, GUIDE_CONTENT } from './content.js';
 
-// JSON-LD 구조화 데이터 주입/제거
+const SITE_URL = 'https://wimalog.vercel.app';
+
+// JSON-LD 구조화 데이터 주입/제거 (라우트별)
 function setJsonLd(data) {
   let el = document.getElementById('json-ld');
   if (data) {
@@ -15,6 +17,55 @@ function setJsonLd(data) {
   } else if (el) {
     el.remove();
   }
+}
+
+// 라우트 → canonical URL (path 기반, hash 제거)
+function canonicalForRoute(route) {
+  if (!route || route === 'landing') return SITE_URL + '/';
+  return SITE_URL + '/' + route;
+}
+
+// BreadcrumbList 자동 생성 (drug/wegovy → 홈 > 약 정보 > 위고비 같은 구조)
+function buildBreadcrumb(route) {
+  const items = [{ name: '홈', url: SITE_URL + '/' }];
+  if (route.startsWith('drug/')) {
+    const id = route.slice(5);
+    const d = DRUG_CONTENT[id];
+    items.push({ name: '약별 비교', url: SITE_URL + '/compare' });
+    if (d) items.push({ name: d.label, url: SITE_URL + '/' + route });
+  } else if (route.startsWith('effect/')) {
+    const id = route.slice(7);
+    const s = SIDE_EFFECT_CONTENT[id];
+    items.push({ name: '부작용 정보', url: SITE_URL + '/info' });
+    if (s) items.push({ name: s.label, url: SITE_URL + '/' + route });
+  } else if (route.startsWith('guide/')) {
+    const id = route.slice(6);
+    const g = GUIDE_CONTENT[id];
+    items.push({ name: '가이드', url: SITE_URL + '/' });
+    if (g) items.push({ name: g.title, url: SITE_URL + '/' + route });
+  } else if (route.startsWith('calc/')) {
+    items.push({ name: '계산기', url: SITE_URL + '/' });
+    items.push({ name: route.slice(5), url: SITE_URL + '/' + route });
+  } else if (route === 'compare') {
+    items.push({ name: '약별 한눈 비교', url: SITE_URL + '/compare' });
+  } else if (route === 'stats') {
+    items.push({ name: '통계', url: SITE_URL + '/stats' });
+  } else if (route === 'info') {
+    items.push({ name: '안전 정보 + FAQ', url: SITE_URL + '/info' });
+  } else {
+    return null;
+  }
+  if (items.length < 2) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    'itemListElement': items.map((it, i) => ({
+      '@type': 'ListItem',
+      'position': i + 1,
+      'name': it.name,
+      'item': it.url,
+    })),
+  };
 }
 
 function buildJsonLd(route) {
@@ -111,31 +162,47 @@ function ensureMeta(name, content, attr = 'name') {
   el.setAttribute('content', content);
 }
 
+function setCanonical(href) {
+  let link = document.querySelector('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'canonical';
+    document.head.appendChild(link);
+  }
+  link.href = href;
+}
+
+// 라우트별 JSON-LD + BreadcrumbList 결합
+function setRouteJsonLd(route) {
+  const main = buildJsonLd(route);
+  const crumb = buildBreadcrumb(route);
+  if (!main && !crumb) { setJsonLd(null); return; }
+  if (main && crumb) {
+    setJsonLd({ '@context': 'https://schema.org', '@graph': [main, crumb] });
+  } else {
+    setJsonLd(main || crumb);
+  }
+}
+
 export function setSEO({ title, description, ogTitle, ogDescription, canonical, route }) {
   const fullTitle = title ? `${title} — ${SITE}` : `${SITE} · ${SUB}`;
   const desc = description || FALLBACK_DESC;
+  const url = canonical || canonicalForRoute(route);
   document.title = fullTitle;
   ensureMeta('description', desc);
   ensureMeta('og:title', ogTitle || fullTitle, 'property');
   ensureMeta('og:description', ogDescription || desc, 'property');
   ensureMeta('og:type', 'website', 'property');
   ensureMeta('og:site_name', SITE, 'property');
-  ensureMeta('og:image', 'https://wimalog.vercel.app/og.svg', 'property');
+  ensureMeta('og:url', url, 'property');
+  ensureMeta('og:image', SITE_URL + '/og.svg', 'property');
+  ensureMeta('og:locale', 'ko_KR', 'property');
   ensureMeta('twitter:card', 'summary_large_image');
   ensureMeta('twitter:title', ogTitle || fullTitle);
   ensureMeta('twitter:description', ogDescription || desc);
-  ensureMeta('twitter:image', 'https://wimalog.vercel.app/og.svg');
-  if (canonical) {
-    let link = document.querySelector('link[rel="canonical"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'canonical';
-      document.head.appendChild(link);
-    }
-    link.href = canonical;
-  }
-  // JSON-LD
-  if (route) setJsonLd(buildJsonLd(route));
+  ensureMeta('twitter:image', SITE_URL + '/og.svg');
+  setCanonical(url);
+  if (route) setRouteJsonLd(route);
 }
 
 export function seoFor(route) {

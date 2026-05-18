@@ -1,3 +1,36 @@
+# wimalog robots.txt
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /records
+Disallow: /meds
+Disallow: /profile
+Disallow: /doctor-report
+
+# 검색 엔진 크롤러 친화
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: NaverBot
+Allow: /
+
+User-agent: Yeti
+Allow: /
+
+User-agent: Daum
+Allow: /
+
+# AI/LLM 크롤러 — 정보 공개 사이트이므로 허용
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
 Sitemap: https://wimalog.vercel.app/sitemap.xml
