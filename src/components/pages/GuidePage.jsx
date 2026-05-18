@@ -3,6 +3,7 @@ import { GUIDE_CONTENT } from '../../lib/content.js';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
+import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
 export function GuidePage({ guideId, navigate, onSignup, user }) {
   const guide = GUIDE_CONTENT[guideId];
@@ -25,6 +26,9 @@ export function GuidePage({ guideId, navigate, onSignup, user }) {
           {guide.summary}
         </p>
       </header>
+
+      {/* 시뮬레이터 빠른 진입 — P3 페르소나 (마른 비만/지방간/알코올 등 한국 특수) */}
+      <SimulatorCTA navigate={navigate} user={user} context="guide" />
 
       {guide.sections.map((section, i) => (
         <section key={i} className="card">

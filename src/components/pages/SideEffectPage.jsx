@@ -6,6 +6,7 @@ import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 import { InterestButton } from '../InterestButton.jsx';
 import { TestimonialBox } from '../TestimonialBox.jsx';
+import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
 // 부작용별 상세 페이지 — SEO + 약별 발생률 + 시점 분포 + 자가 관리
 export function SideEffectPage({ effectId, navigate, user, onSignup }) {
@@ -61,6 +62,9 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
           <InterestButton topicId={`effect:${effectId}`} label="저도 겪고 있어요" />
         </div>
       </header>
+
+      {/* 시뮬레이터 빠른 진입 — P2 페르소나 */}
+      <SimulatorCTA navigate={navigate} user={user} context="effect" />
 
       {/* 핵심 숫자 */}
       <section className="grid grid-cols-2 gap-3">

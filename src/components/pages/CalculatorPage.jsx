@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import { bmi, bmiCategory } from '../../lib/stats.js';
+import React, { useState, useMemo, useEffect } from 'react';
+import { bmi, bmiCategory, priceStats } from '../../lib/stats.js';
 import { DRUG_CONTENT } from '../../lib/content.js';
+import { fetchPriceStats } from '../../lib/supabaseStats.js';
+import { supabaseConfigured } from '../../lib/supabaseClient.js';
 
 // 계산기: 비용 / BMR / 목표체중 — SEO 랜딩 + 가입 유도
 export function CalculatorPage({ kind, navigate, user }) {
@@ -13,20 +15,37 @@ export function CalculatorPage({ kind, navigate, user }) {
 function CostCalculator({ navigate }) {
   const [med, setMed] = useState('wegovy');
   const [months, setMonths] = useState(6);
+  const [freq, setFreq] = useState('weekly');
   const drug = DRUG_CONTENT[med];
-  // 평균 가격 (각 약 priceRange 중간값 추정)
-  const avgPriceByMed = {
-    wegovy: 320000, mounjaro: 450000, saxenda: 350000,
-    ozempic: 280000, zepbound: 480000,
-  };
-  const total = avgPriceByMed[med] * months;
-  const cheapTotal = total * 0.78; // 대학로 등 저렴 지역 적용 시
+
+  // Supabase + localStorage 시드에서 실제 가격 통계
+  const [priceData, setPriceData] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    const localData = priceStats({ medication: med });
+    if (!cancelled) setPriceData({ ...localData, _source: 'seed' });
+    if (supabaseConfigured) {
+      fetchPriceStats(med).then(remote => {
+        if (cancelled || !remote || remote.n < 10) return;
+        setPriceData({ ...remote, _source: 'supabase' });
+      }).catch(() => {});
+    }
+    return () => { cancelled = true; };
+  }, [med]);
+
+  // 빈도에 따른 월 사용 횟수 — 시드 doses 생성과 동일 로직
+  const freqMultiplier = freq === 'weekly' ? 4 : freq === 'biweekly' ? 2 : freq === 'occasional' ? 1.3 : 4;
+  const avgDose = priceData?.avg || 0;
+  const monthlyAvg = Math.round(avgDose * freqMultiplier);
+  const total = monthlyAvg * months;
+  const cheapByRegion = priceData?.byRegion?.[0]; // 가장 저렴한 지역
+
   return (
     <div className="max-w-2xl mx-auto space-y-5">
       <header>
         <h1 className="text-3xl font-extrabold text-ink-900 dark:text-slate-100">💰 약 비용 계산기</h1>
         <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">
-          약별 평균 가격과 기간을 곱해 예상 총 비용을 계산합니다.
+          실제 사용자 코호트의 평균 가격 + 본인 사용 빈도로 예상 총 비용 추정.
         </p>
       </header>
 
@@ -45,6 +64,27 @@ function CostCalculator({ navigate }) {
             ))}
           </div>
         </div>
+
+        <div>
+          <div className="label">사용 빈도</div>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { id: 'weekly',     label: '매주' },
+              { id: 'biweekly',   label: '격주' },
+              { id: 'occasional', label: '가끔' },
+              { id: 'intro',      label: '저용량' },
+            ].map(f => (
+              <button key={f.id} type="button" onClick={() => setFreq(f.id)}
+                      className={`px-3 py-2 rounded-xl text-sm font-medium border transition
+                                  ${freq === f.id
+                                    ? 'bg-brand-500 text-white border-brand-500'
+                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div>
           <div className="label">사용 기간 (개월)</div>
           <input type="range" min={1} max={24} step={1}
@@ -57,20 +97,49 @@ function CostCalculator({ navigate }) {
       </div>
 
       <div className="card text-center">
-        <div className="text-xs text-ink-500 dark:text-slate-400">{drug.label} {months}개월 예상 비용</div>
+        <div className="text-xs text-ink-500 dark:text-slate-400">
+          {drug.label} · {freq === 'weekly' ? '매주' : freq === 'biweekly' ? '격주' : freq === 'occasional' ? '가끔' : '저용량'} 사용 · {months}개월
+        </div>
         <div className="text-4xl font-extrabold text-brand-600 dark:text-brand-400 mt-2 tabular-nums">
-          {total.toLocaleString()}원
+          {total > 0 ? `${total.toLocaleString()}원` : '데이터 모이는 중'}
         </div>
-        <div className="text-xs text-ink-500 dark:text-slate-400 mt-2">
-          서울 대학로 등 저렴 지역 이용 시 약 <b>{Math.round(cheapTotal).toLocaleString()}원</b>
-        </div>
-        <div className="mt-4 text-sm text-ink-700 dark:text-slate-300">
-          {drug.priceRange} 기준 평균값. 실제 가격은 용량·지역·약국에 따라 다릅니다.
-        </div>
+        {monthlyAvg > 0 && (
+          <div className="text-sm text-ink-700 dark:text-slate-300 mt-2">
+            월 평균 <b className="tabular-nums">{monthlyAvg.toLocaleString()}원</b>
+          </div>
+        )}
+        {cheapByRegion && (
+          <div className="text-xs text-ink-500 dark:text-slate-400 mt-3 leading-relaxed">
+            가장 저렴한 지역: <b>{cheapByRegion.region}</b> 평균 {Math.round(cheapByRegion.avg).toLocaleString()}원/회
+            <br />→ {months}개월 약 <b className="text-brand-700 dark:text-brand-400">{Math.round(cheapByRegion.avg * freqMultiplier * months).toLocaleString()}원</b> 절약 가능
+          </div>
+        )}
       </div>
 
+      {/* 지역별 상위 5개 가격 — 누구나 볼 수 있게 */}
+      {priceData?.byRegion?.length > 0 && (
+        <div className="card">
+          <h3 className="font-bold text-ink-900 dark:text-slate-100 mb-3">📍 지역별 1회분 평균 가격</h3>
+          <div className="space-y-2">
+            {priceData.byRegion.slice(0, 5).map((r, i) => (
+              <div key={r.region} className="flex justify-between items-center text-sm">
+                <span className="text-ink-700 dark:text-slate-300">
+                  {i === 0 && '🥇 '}{i === 1 && '🥈 '}{i === 2 && '🥉 '}{r.region}
+                </span>
+                <span className="tabular-nums font-semibold text-ink-900 dark:text-slate-100">
+                  {Math.round(r.avg).toLocaleString()}원
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-3">
+            ※ 위마로그 익명 코호트 실측 평균. 지역·약국·할인에 따라 다를 수 있습니다.
+          </p>
+        </div>
+      )}
+
       <button onClick={() => navigate('stats')} className="btn-secondary w-full">
-        지역별 실제 가격 통계 →
+        전체 지역별 + 약별 상세 통계 →
       </button>
     </div>
   );

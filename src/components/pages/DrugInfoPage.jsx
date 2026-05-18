@@ -8,6 +8,7 @@ import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 import { InterestButton } from '../InterestButton.jsx';
 import { TestimonialBox } from '../TestimonialBox.jsx';
+import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
 // 약별 상세 페이지 — SEO 랜딩 + 실시간 통계 + 가입 CTA
 export function DrugInfoPage({ medId, navigate, user, onSignup }) {
@@ -54,6 +55,9 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
           <InterestButton topicId={`drug:${drug.id}`} label="관심 있어요" />
         </div>
       </header>
+
+      {/* 시뮬레이터 빠른 진입 — P1 페르소나 */}
+      <SimulatorCTA navigate={navigate} user={user} context="drug" />
 
       {/* 효과 헤드라인 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6">
