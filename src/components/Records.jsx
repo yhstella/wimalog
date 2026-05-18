@@ -6,6 +6,9 @@ import {
 } from '../lib/constants.js';
 import { RedFlagBanner } from './SafetyBanner.jsx';
 import { useToast } from './Toast.jsx';
+import { DietHierarchyPicker } from './DietHierarchyPicker.jsx';
+import { DialInput } from './DialInput.jsx';
+import { WeightCurveInput } from './WeightCurveInput.jsx';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -68,6 +71,7 @@ function WeightTab({ user, version, refresh, navigate }) {
   const [notes, setNotes] = useState('');
   // 부담 줄이기 — 체중만 핵심, 나머지는 펼쳐서 입력
   const [showDetail, setShowDetail] = useState(false);
+  const [showCurve, setShowCurve] = useState(false);
 
   const toggleSide = (id) => setSideEffects(s => ({ ...s, [id]: !s[id] }));
   const totalSideCount = Object.values(sideEffects).filter(Boolean).length;
@@ -103,13 +107,30 @@ function WeightTab({ user, version, refresh, navigate }) {
                    onChange={e => setDate(e.target.value)} />
           </div>
           <div>
-            <div className="label">체중 (kg)</div>
+            <div className="label flex items-center justify-between gap-2">
+              <span>체중 (kg)</span>
+              <button type="button" onClick={() => setShowCurve(true)}
+                      className="text-[10px] text-brand-700 dark:text-brand-400 hover:underline font-medium">
+                ✏️ 그래프로 입력
+              </button>
+            </div>
             <input type="number" inputMode="decimal" min={30} max={250} step="0.1"
                    className="input" value={weight}
                    onChange={e => setWeight(e.target.value)} />
           </div>
           <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 h-fit">저장</button>
         </div>
+
+        {/* DialInput 모드 — 체중 정밀 조절 */}
+        <details className="text-xs">
+          <summary className="cursor-pointer text-ink-500 dark:text-slate-400 hover:text-brand-700">🎛 다이얼로 정밀 조정</summary>
+          <div className="mt-2 rounded-xl border border-ink-200 dark:border-slate-700 p-3">
+            <DialInput label="체중 정밀 조정" unit="kg"
+                       value={+weight || defaultWeight}
+                       onChange={(v) => setWeight(String(v))}
+                       min={30} max={250} step={0.1} majorTick={1} highlight />
+          </div>
+        </details>
         {lastLog && +weight && +weight !== lastLog.weight && (
           <p className="helptext !mt-1">지난 기록 대비 {(+weight - lastLog.weight) >= 0 ? '+' : ''}{(+weight - lastLog.weight).toFixed(1)} kg</p>
         )}
@@ -177,6 +198,15 @@ function WeightTab({ user, version, refresh, navigate }) {
       </div>
 
       {totalSideCount >= 3 && <RedFlagBanner />}
+
+      {/* 체중 곡선 그리기 모달 */}
+      {showCurve && (
+        <WeightCurveInput
+          user={user}
+          onClose={() => setShowCurve(false)}
+          onSaved={(n) => { refresh(); toast.success(`${n}개 체중 기록 저장됨`); }}
+        />
+      )}
 
       <RecentList
         items={allLogs.slice().reverse().slice(0, 10)}
@@ -724,9 +754,13 @@ function ExerciseTab({ user, version, refresh }) {
                 </button>
               ))}
             </div>
-            <input type="number" inputMode="numeric" min={1} max={600} step="5"
-                   className="input" value={durationMin}
-                   onChange={e => setDurationMin(e.target.value)} />
+            <details className="text-xs">
+              <summary className="cursor-pointer text-ink-500 dark:text-slate-400 hover:text-brand-700">🎛 다이얼로 정밀 조정</summary>
+              <div className="mt-2 rounded-xl border border-ink-200 dark:border-slate-700 p-3">
+                <DialInput value={+durationMin || 30} onChange={(v) => setDurationMin(String(v))}
+                           min={1} max={300} step={5} unit="분" majorTick={30} highlight />
+              </div>
+            </details>
           </div>
         </div>
 
@@ -914,36 +948,22 @@ function DietTab({ user, version, refresh }) {
         </div>
 
         <div>
-          <div className="label">메뉴</div>
-          {/* 자주 쓰는 메뉴 빠른 채우기 */}
-          <div className="flex gap-1.5 flex-wrap mb-2 text-xs">
-            {[
-              '닭가슴살 샐러드', '오트밀', '계란+토스트', '두부 덮밥',
-              '연어 포케', '단백질 쉐이크', '그릭요거트', '저녁 거름',
-            ].map(opt => (
-              <button key={opt} type="button" onClick={() => setDescription(opt)}
-                      className="px-2.5 py-1 rounded-lg bg-ink-100/60 dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:bg-brand-50 dark:hover:bg-brand-900/30 transition">
-                + {opt}
-              </button>
-            ))}
-          </div>
-          <textarea className="input min-h-[50px] resize-none" maxLength={200}
-                    value={description} onChange={e => setDescription(e.target.value)}
-                    placeholder="자유 입력 가능" />
+          <div className="label">메뉴 — 4단계 클릭으로 선택</div>
+          <DietHierarchyPicker value={description} onChange={setDescription} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="label">단백질 (g, 선택)</div>
-            <input type="number" inputMode="numeric" className="input"
-                   value={proteinG} onChange={e => setProteinG(e.target.value)}
-                   placeholder="예: 25" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-3">
+            <DialInput label="단백질 (g)" unit="g"
+                       value={+proteinG || 0}
+                       onChange={(v) => setProteinG(String(v))}
+                       min={0} max={150} step={1} majorTick={10} highlight />
           </div>
-          <div>
-            <div className="label">추정 칼로리 (선택)</div>
-            <input type="number" inputMode="numeric" className="input"
-                   value={estCalories} onChange={e => setEstCalories(e.target.value)}
-                   placeholder="예: 400" />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-3">
+            <DialInput label="추정 칼로리" unit="kcal"
+                       value={+estCalories || 0}
+                       onChange={(v) => setEstCalories(String(v))}
+                       min={0} max={2000} step={10} majorTick={100} />
           </div>
         </div>
 
