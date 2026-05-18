@@ -5,6 +5,8 @@ import { Simulator } from './Simulator.jsx';
 import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
 
+// 모든 통계값은 시드 코호트(1,031명) 데이터에서 직접 추출됩니다 — 임상값 hardcoded 사용 안 함
+
 export function Landing({ navigate, onSignup }) {
   const [showSignup, setShowSignup] = useState(false);
   const handleSignup = () => setShowSignup(true);

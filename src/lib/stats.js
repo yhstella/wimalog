@@ -498,34 +498,17 @@ export function simulateOutcome({ height, startWeight, gender, ageGroup, medicat
   return { level: 'none', lossPct: null, lossKg: null, successRate: 0, n: 0, fallback: true };
 }
 
-// 약제별 임상 마일스톤 — 시뮬레이션 코호트 데이터가 부족할 때 fallback
-// References: STEP-1 (Wegovy 68wk -14.9%, BMI≥30, 매주 풀 dose),
-// SURMOUNT-1 (Mounjaro -20.9%, Zepbound -20.9%), SCALE (Saxenda -8.0%), SUSTAIN (Ozempic ~-11%)
-// ⚠ 임상값은 "BMI≥30 + 매주 풀 dose + 12개월 지속" 이상적 조건. 한국 실사용은 BMI 25-30, 빈도/용량 다양 → 보정 필수.
-const MED_CLINICAL_LOSS_PCT = {
-  wegovy:   { 12: 5.9, 24: 10.6, 48: 14.9 },
-  mounjaro: { 12: 7.8, 24: 14.7, 48: 20.9 },
-  saxenda:  { 12: 3.8, 24: 6.2,  48: 8.0  },
-  ozempic:  { 12: 4.5, 24: 8.5,  48: 11.0 },
-  zepbound: { 12: 7.5, 24: 14.0, 48: 20.0 },
-};
-
 // 사용 빈도별 효과 factor (매주 풀 dose 기준 1.0)
 // 한국 실사용 패턴 반영 — 격주/간헐 사용도 흔함
-//   - weekly (매주): 1.0 (임상 기준)
-//   - biweekly (격주/2주 1회): ~0.65 (약효 누적 효과 ↓, but 완전 0.5는 아님)
-//   - occasional (가끔/월 1-2회): ~0.35 (효과 약하지만 식욕 억제 일부)
-//   - intro (저용량 유지/시작용량): ~0.60 (증량 안 함)
 export const USAGE_FREQUENCIES = [
-  { id: 'weekly',     label: '매주',         shortLabel: '매주',     factor: 1.00, desc: '주 1회 권장 용법 (임상 기준)' },
+  { id: 'weekly',     label: '매주',         shortLabel: '매주',     factor: 1.00, desc: '주 1회 권장 용법' },
   { id: 'biweekly',   label: '격주 (2주 1회)', shortLabel: '격주',     factor: 0.65, desc: '비용·부작용 때문에 격주로 사용하는 경우' },
   { id: 'occasional', label: '가끔 (월 1-2회)', shortLabel: '가끔',     factor: 0.35, desc: '식욕 조절 목적 간헐적 사용' },
   { id: 'intro',      label: '저용량 유지',     shortLabel: '저용량',   factor: 0.60, desc: '시작 용량 그대로 (증량 안 함)' },
 ];
 const FREQ_BY_ID = Object.fromEntries(USAGE_FREQUENCIES.map(f => [f.id, f]));
 
-// BMI에 따른 응답률 보정 (BMI 낮은 사람은 임상값 정도까지 안 빠짐 — 한국 BMI 25-30 사용자 다수)
-// BMI 30 이상에서 임상값 100%, 25에서 약 70%까지 감소
+// BMI 응답률 보정 (BMI 낮은 사람은 코호트 평균보다 적게 빠짐)
 function bmiResponseFactor(b) {
   if (b == null) return 1.0;
   if (b >= 30) return 1.0;
@@ -536,14 +519,14 @@ function bmiResponseFactor(b) {
 }
 
 // 다기간 시뮬레이션 — 3개월/6개월/1년 한 번에
-// 한국 실사용 컨텍스트 반영: BMI 보정 + 사용 빈도 factor
+// 위마로그 코호트 데이터에서 직접 추출 (임상 fallback 제거)
+// BMI/빈도 보정만 후처리
 export function simulateTimeline({ height, startWeight, medication, weeks = [12, 24, 48], frequency = 'weekly' }) {
   const b = bmi(startWeight, height);
   const tightFilter = {};
   if (medication) tightFilter.medication = medication;
   if (b) tightFilter.bmiRange = [Math.max(15, b - 4), Math.min(50, b + 4)];
 
-  const clinical = MED_CLINICAL_LOSS_PCT[medication] || null;
   const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
   const bmiFactor = bmiResponseFactor(b);
   const adjustFactor = freqFactor * bmiFactor;
@@ -563,41 +546,28 @@ export function simulateTimeline({ height, startWeight, medication, weeks = [12,
       };
     });
   };
+  // 좁은 코호트 우선, 부족하면 약 전체로 fallback (모두 시드에서 추출)
   let series = computeFor(tightFilter);
   if (!series.some(s => s && s.n >= 5)) {
     series = computeFor(medication ? { medication } : {});
   }
-  // 임상 마일스톤 fallback — 시점별 추적 사용자 부족 또는 monotonicity 깨진 경우
-  if (clinical) {
-    let prev = 0;
-    series = weeks.map((w, i) => {
-      const s = series[i];
-      const cohortOk = s && s.n >= 10;
-      const monotonicOk = s && s.lossPct >= prev * 0.95;
-      let baseLossPct;
-      let source;
-      if (cohortOk && monotonicOk) {
-        baseLossPct = s.lossPct;
-        source = 'cohort';
-      } else {
-        baseLossPct = clinical[w] ?? 0;
-        source = 'clinical';
-      }
-      const lossPct = baseLossPct * adjustFactor;
-      prev = lossPct;
-      return {
-        week: w,
-        lossPct,
-        lossKg: startWeight * lossPct / 100,
-        medianPct: null,
-        n: s?.n ?? 0,
-        source,
-      };
-    });
-  }
+
+  // 빈도/BMI 보정 후처리 (각 시점)
+  let prev = 0;
+  series = series.map((s, i) => {
+    if (!s) return { week: weeks[i], lossPct: null, lossKg: null, n: 0, source: 'cohort' };
+    const lossPct = s.lossPct * adjustFactor;
+    // monotonicity 유지 (다음 시점은 이전보다 같거나 크게)
+    const guarded = Math.max(lossPct, prev * 0.98);
+    prev = guarded;
+    return {
+      ...s,
+      lossPct: guarded,
+      lossKg: startWeight * guarded / 100,
+    };
+  });
   return {
     series,
-    hasClinical: !!clinical,
     adjustFactor,
     freqFactor,
     bmiFactor,
@@ -605,37 +575,31 @@ export function simulateTimeline({ height, startWeight, medication, weeks = [12,
   };
 }
 
-// 약제별 임상 부작용 발생률 (study period prevalence, 실제 임상 시험 기준)
-// References: Wegovy STEP-1, Mounjaro SURMOUNT-1, Saxenda SCALE, Ozempic SUSTAIN, Zepbound SURMOUNT-1
-const MED_CLINICAL_SIDE_RATES = {
-  wegovy:   { nausea: 0.44, vomiting: 0.24, diarrhea: 0.30, constipation: 0.24, headache: 0.14, abdomenPain: 0.20 },
-  mounjaro: { nausea: 0.31, vomiting: 0.15, diarrhea: 0.23, constipation: 0.17, headache: 0.10, abdomenPain: 0.12 },
-  saxenda:  { nausea: 0.39, vomiting: 0.16, diarrhea: 0.21, constipation: 0.19, headache: 0.14, abdomenPain: 0.18 },
-  ozempic:  { nausea: 0.38, vomiting: 0.20, diarrhea: 0.27, constipation: 0.22, headache: 0.13, abdomenPain: 0.18 },
-  zepbound: { nausea: 0.30, vomiting: 0.14, diarrhea: 0.22, constipation: 0.16, headache: 0.10, abdomenPain: 0.12 },
-};
-const SIDE_LABELS = {
-  nausea: '오심(메스꺼움)', vomiting: '구토', diarrhea: '설사',
-  constipation: '변비', headache: '두통', abdomenPain: '복통',
-};
-// 약제별 한국 월 평균 비용 (2025-2026, 실제 시장가)
-const MED_MONTHLY_KRW = {
-  wegovy: 1200000, mounjaro: 1700000, saxenda: 350000, ozempic: 1000000, zepbound: 1500000,
-};
-
 // 약제별 빠른 프로필 (비용 + 상위 부작용) — Simulator 결과 카드에서 사용
-// 임상 시험 기준 데이터 사용 — 사용자에게 더 정확하고 다른 의학 정보와 일치
+// 시드 코호트에서 직접 추출 — 우리 사이트 데이터 반영
 export function medQuickProfile(medication) {
   if (!medication) return null;
-  const sideRates = MED_CLINICAL_SIDE_RATES[medication] || {};
-  const sides = Object.entries(sideRates)
-    .filter(([_, rate]) => rate > 0)
-    .sort((a, b) => b[1] - a[1])
+  const filter = { medication };
+  // 부작용: 시드 코호트의 실제 발생률 (sideEffectRates는 코스 중 1회 이상 보고 비율)
+  const allSides = sideEffectRates(filter);
+  const sides = allSides
+    .filter(s => s.rate > 0.05)
+    .sort((a, b) => b.rate - a.rate)
     .slice(0, 3)
-    .map(([id, rate]) => ({ label: SIDE_LABELS[id] || id, rate }));
+    .map(s => ({ label: s.label, rate: s.rate }));
+  // 비용: priceStats에서 1회분 평균 → 주1회 사용으로 환산
+  const price = priceStats(filter);
+  let monthlyAvg = null;
+  if (price.avg != null && price.n >= 5) {
+    const med = MED_BY_ID[medication];
+    // 위고비·마운자로·오젬픽·젭바운드: 주1회 → 월 4회
+    // 삭센다: 매일이지만 dose entry는 7일 묶음 → 1회 entry = 1주치
+    const perMonth = 4;
+    monthlyAvg = Math.round(price.avg * perMonth / 10000) * 10000;
+  }
   return {
     topSideEffects: sides,
-    monthlyAvgKrw: MED_MONTHLY_KRW[medication] || null,
+    monthlyAvgKrw: monthlyAvg,
   };
 }
 

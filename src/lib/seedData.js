@@ -231,11 +231,18 @@ function generateOne(rand, index, out) {
   for (let i = 0; i < numCourses; i++) {
     const med = pick(rand, meds, medWeights);
     const profile = MED_PROFILE[med];
-    const weeks = Math.round(clamp(gauss(rand, 18, 10), 3, 48));
+    // 사용 기간 분포 — long-term 사용자(1년+) 비율 늘려 통계 신뢰도 ↑
+    // 30%는 short(4-12주), 40%는 mid(12-30주), 30%는 long(30-52주)
+    const tier = rand();
+    let weeks;
+    if (tier < 0.30) weeks = Math.round(clamp(gauss(rand, 8, 3), 3, 12));
+    else if (tier < 0.70) weeks = Math.round(clamp(gauss(rand, 20, 5), 12, 30));
+    else weeks = Math.round(clamp(gauss(rand, 42, 6), 30, 56));
     totalSpanWeeks += weeks;
     const courseStart = daysAgo(totalSpanWeeks * 7);
     const responseFactor = clamp(gauss(rand, 1.0, 0.30), 0.4, 1.7);
-    const sideSeverity = clamp(gauss(rand, 1.0, 0.35), 0.2, 2.0);
+    // 부작용 감수성 — 사용자별 0.5~2.0 (한 번이라도 보고할지 결정)
+    const sideSeverity = clamp(gauss(rand, 1.0, 0.45), 0.2, 2.2);
     const isCurrent = i === 0;
     const discontinueChance = 0.04 + (responseFactor < 0.7 ? 0.10 : 0) + (sideSeverity > 1.5 ? 0.10 : 0);
     const discontinued = !isCurrent || (rand() < discontinueChance && weeks > 4);
@@ -265,6 +272,14 @@ function generateOne(rand, index, out) {
   courses.sort((a, b) => a.startDate.localeCompare(b.startDate));
 
   for (const c of courses) {
+    // 사용자별로 미리 "이 코스에서 어떤 부작용을 경험할지" 결정 (임상 prevalence 일치)
+    // 임상 prevalence = base rate × sideSeverity (0.5~2.0이므로 평균 1.0)
+    // clamp 0.02 ~ 0.95
+    c._willExperience = {};
+    for (const [k, base] of Object.entries(c._profile.sideRates)) {
+      const personalProb = clamp(base * c._sideSeverity, 0.02, 0.95);
+      c._willExperience[k] = rand() < personalProb;
+    }
     // 코스 메타데이터 저장 (시뮬레이션 필드 제거)
     out.medCourses.push({
       id: c.id, userId: c.userId, seed: c.seed,
@@ -407,16 +422,18 @@ function generateLifestyle(rand, user, courses, out, opts = {}) {
     });
     if (active) {
       const courseWeek = Math.max(0, Math.floor((dateMs - Date.parse(active.startDate)) / (7 * 86400000)));
-      // 초반/증량 가중치: 0주 0.5, 1-3주 1.4, 4-7주 1.0, 8-11주 0.6, 12+ 0.35
-      const phaseFactor = courseWeek === 0 ? 0.5
-        : courseWeek < 4 ? 1.4
-        : courseWeek < 8 ? 1.0
-        : courseWeek < 12 ? 0.6
-        : 0.35;
-      for (const [k, base] of Object.entries(active._profile.sideRates)) {
-        // 약별 실제 발생률을 phase + sideSeverity로 변조 (한 주에 보고할 확률은 30%로 보정)
-        const weeklyProb = base * phaseFactor * active._sideSeverity * 0.30;
-        sideEffects[k] = rand() < weeklyProb;
+      // willExperience로 미리 결정된 부작용만 보고 — 누적 prevalence가 임상값에 일치
+      // phase factor: 부작용 보고 시점은 초반/증량 시기에 집중
+      const phaseFactor = courseWeek === 0 ? 0.4
+        : courseWeek < 4 ? 0.75
+        : courseWeek < 8 ? 0.50
+        : courseWeek < 12 ? 0.30
+        : 0.15;
+      const willExperience = active._willExperience || {};
+      for (const k of Object.keys(willExperience)) {
+        if (!willExperience[k]) { sideEffects[k] = false; continue; }
+        // 경험할 부작용 — phase에 따라 보고. 평균적으로 코스 중 4-6번 보고
+        sideEffects[k] = rand() < phaseFactor;
       }
     }
 

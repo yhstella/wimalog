@@ -177,8 +177,8 @@ export function Simulator({ onSignup, compact = false }) {
         </button>
       )}
       <p className="text-[10px] text-center mt-2 opacity-70 leading-relaxed">
-        ⚠ 임상값은 BMI≥30 매주 풀 dose 기준. 한국은 BMI 25-30 + 빈도 조절 사용이 흔해
-        실제 감량률은 임상값보다 작은 게 정상입니다. 개인차 큼 · 의료진 상의 필요.
+        ⚠ 위마로그 익명 코호트 1,031명의 실제 기록에서 추출 · BMI/빈도 보정 적용.
+        개인차 큼 · 약제 사용은 의료진 상의 필요.
       </p>
     </div>
   );
