@@ -33,14 +33,17 @@ export function Simulator({ onSignup, compact = false, user = null }) {
 
   return (
     <div className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6 shadow-cardHover">
-      <div className="flex items-center gap-2 mb-1">
+      <div className="flex items-center gap-2 mb-1 flex-wrap">
         <span className="text-xl">🔮</span>
         <div className="font-bold text-lg">내가 쓰면 어떻게 될까?</div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
+          🤖 AI 예측
+        </span>
       </div>
-      <div className="text-xs text-brand-50 mb-4 opacity-90">
+      <div className="text-xs text-brand-50 mb-4 opacity-90 leading-relaxed">
         {compact
-          ? '키·체중·약 한 번에 — 가입 없이 즉시 미리보기'
-          : '키·체중·약을 선택하면 3개월/6개월/1년 평균 감량 + 비용 + 부작용까지 즉시 확인'}
+          ? 'AI가 11,000명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측 — 가입 없이 가능'
+          : 'AI가 11,000명+ 익명 코호트에서 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다'}
       </div>
 
       <div className="space-y-3">
