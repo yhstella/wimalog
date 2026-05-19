@@ -9,6 +9,8 @@ import { useToast } from './Toast.jsx';
 import { DietHierarchyPicker } from './DietHierarchyPicker.jsx';
 import { DialInput } from './DialInput.jsx';
 import { WeightCurveInput } from './WeightCurveInput.jsx';
+import { WeightChartInline } from './WeightChartInline.jsx';
+import { HealthMetricsForm } from './HealthMetricsForm.jsx';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -48,7 +50,7 @@ export function Records({ user, navigate, initialTab = 'weight' }) {
       {tab === 'dose'     && <DoseTab user={user} version={version} refresh={refresh} navigate={navigate} />}
       {tab === 'exercise' && <ExerciseTab user={user} version={version} refresh={refresh} />}
       {tab === 'diet'     && <DietTab user={user} version={version} refresh={refresh} />}
-      {tab === 'health'   && <HealthTab user={user} version={version} refresh={refresh} navigate={navigate} />}
+      {tab === 'health'   && <HealthMetricsForm user={user} version={version} refresh={refresh} />}
     </div>
   );
 }
@@ -99,38 +101,38 @@ function WeightTab({ user, version, refresh, navigate }) {
   return (
     <div className="space-y-4">
       <div className="card space-y-3">
-        {/* 핵심 한 줄: 날짜 + 체중 + 저장 */}
-        <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-          <div>
+        {/* 날짜 + 저장 한 줄 */}
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
             <div className="label">날짜</div>
             <input type="date" className="input" value={date} max={todayISO()}
                    onChange={e => setDate(e.target.value)} />
           </div>
-          <div>
-            <div className="label flex items-center justify-between gap-2">
-              <span>체중 (kg)</span>
-              <button type="button" onClick={() => setShowCurve(true)}
-                      className="text-[10px] text-brand-700 dark:text-brand-400 hover:underline font-medium">
-                ✏️ 그래프로 입력
-              </button>
-            </div>
-            <input type="number" inputMode="decimal" min={30} max={250} step="0.1"
-                   className="input" value={weight}
-                   onChange={e => setWeight(e.target.value)} />
-          </div>
           <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 h-fit">저장</button>
         </div>
 
-        {/* DialInput 모드 — 체중 정밀 조절 */}
-        <details className="text-xs">
-          <summary className="cursor-pointer text-ink-500 dark:text-slate-400 hover:text-brand-700">🎛 다이얼로 정밀 조정</summary>
-          <div className="mt-2 rounded-xl border border-ink-200 dark:border-slate-700 p-3">
-            <DialInput label="체중 정밀 조정" unit="kg"
-                       value={+weight || defaultWeight}
-                       onChange={(v) => setWeight(String(v))}
-                       min={30} max={250} step={0.1} majorTick={1} highlight />
-          </div>
-        </details>
+        {/* 다이얼 메인 — 체중 입력 핵심 UI */}
+        <div className="rounded-xl border-2 border-brand-200 dark:border-brand-800/40 p-3 bg-brand-50/30 dark:bg-brand-900/10">
+          <DialInput label="체중" unit="kg"
+                     value={+weight || defaultWeight}
+                     onChange={(v) => setWeight(String(v))}
+                     min={30} max={250} step={0.1} majorTick={1} highlight />
+        </div>
+
+        {/* inline 그래프 — 항상 표시, 다이얼과 양방향 sync */}
+        <WeightChartInline user={user}
+                           currentWeight={weight}
+                           currentDate={date}
+                           refreshKey={version}
+                           onWeightChange={({ date: d, weight: w }) => {
+                             setDate(d);
+                             setWeight(String(w));
+                           }}
+                           onDoseAdded={({ date: d, dose, medication, direction }) => {
+                             refresh();
+                             const dirLabel = direction > 0 ? '증량' : direction < 0 ? '감량' : '';
+                             toast.success(`${medication} ${dose}${dirLabel ? ` (${dirLabel})` : ''} · ${d} 처방 추가됨`);
+                           }} />
         {lastLog && +weight && +weight !== lastLog.weight && (
           <p className="helptext !mt-1">지난 기록 대비 {(+weight - lastLog.weight) >= 0 ? '+' : ''}{(+weight - lastLog.weight).toFixed(1)} kg</p>
         )}
@@ -754,13 +756,10 @@ function ExerciseTab({ user, version, refresh }) {
                 </button>
               ))}
             </div>
-            <details className="text-xs">
-              <summary className="cursor-pointer text-ink-500 dark:text-slate-400 hover:text-brand-700">🎛 다이얼로 정밀 조정</summary>
-              <div className="mt-2 rounded-xl border border-ink-200 dark:border-slate-700 p-3">
-                <DialInput value={+durationMin || 30} onChange={(v) => setDurationMin(String(v))}
-                           min={1} max={300} step={5} unit="분" majorTick={30} highlight />
-              </div>
-            </details>
+            <div className="mt-2 rounded-xl border border-ink-200 dark:border-slate-700 p-3">
+              <DialInput value={+durationMin || 30} onChange={(v) => setDurationMin(String(v))}
+                         min={1} max={300} step={5} unit="분" majorTick={30} highlight />
+            </div>
           </div>
         </div>
 
