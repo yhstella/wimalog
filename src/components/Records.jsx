@@ -124,9 +124,13 @@ function WeightTab({ user, version, refresh, navigate }) {
                            currentWeight={weight}
                            currentDate={date}
                            refreshKey={version}
-                           onWeightChange={({ date: d, weight: w }) => {
+                           onWeightChange={({ date: d, weight: w, savedCount }) => {
                              setDate(d);
                              setWeight(String(w));
+                             if (savedCount) {
+                               refresh();
+                               toast.success(`${savedCount}개 체중 기록 저장됨 (곡선 입력)`);
+                             }
                            }}
                            onDoseAdded={({ date: d, dose, medication, direction }) => {
                              refresh();
