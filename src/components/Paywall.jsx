@@ -3,6 +3,7 @@ import { Storage, uid } from '../lib/storage.js';
 import { bmi, bmiCategory } from '../lib/stats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { signInWithOAuth } from '../lib/auth.js';
+import { DialInput } from './DialInput.jsx';
 
 /* ============================================================
    Locked Overlay — 잠긴 콘텐츠 위에 가입 CTA를 띄움
@@ -227,6 +228,13 @@ export function QuickSignupModal({ onClose, onComplete }) {
               <input type="number" inputMode="decimal" min={130} max={220} step="0.1"
                      className="input" value={data.height}
                      onChange={e => set('height', e.target.value)} placeholder="예: 162" autoFocus />
+              <details className="mt-1 text-[10px]">
+                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
+                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
+                  <DialInput value={+data.height || 162} onChange={(v) => set('height', String(v))}
+                             min={130} max={220} step={1} majorTick={10} unit="cm" />
+                </div>
+              </details>
             </div>
             <div>
               <div className="label">성별</div>
@@ -272,12 +280,29 @@ export function QuickSignupModal({ onClose, onComplete }) {
                        set('startWeight', e.target.value);
                        if (!data.currentWeight) set('currentWeight', e.target.value);
                      }} />
+              <details className="mt-1 text-[10px]">
+                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
+                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
+                  <DialInput value={+data.startWeight || 70} onChange={(v) => {
+                    set('startWeight', String(v));
+                    if (!data.currentWeight) set('currentWeight', String(v));
+                  }} min={35} max={250} step={1} majorTick={10} unit="kg" />
+                </div>
+              </details>
             </div>
             <div>
               <div className="label">현재 체중 (kg)</div>
               <input type="number" inputMode="decimal" min={35} max={250} step="0.1"
                      className="input" value={data.currentWeight}
                      onChange={e => set('currentWeight', e.target.value)} />
+              <details className="mt-1 text-[10px]">
+                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
+                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
+                  <DialInput value={+data.currentWeight || +data.startWeight || 70}
+                             onChange={(v) => set('currentWeight', String(v))}
+                             min={35} max={250} step={1} majorTick={10} unit="kg" />
+                </div>
+              </details>
             </div>
           </div>
 

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Storage, uid } from '../lib/storage.js';
+import { DialInput } from './DialInput.jsx';
 import { MEDS, MED_BY_ID, DISCONTINUE_REASONS, REGION_SUGGESTIONS } from '../lib/constants.js';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -379,6 +380,14 @@ function NewDoseForm({ course, user, onSaved }) {
           <input type="number" inputMode="numeric" className="input"
                  value={price} onChange={e => setPrice(e.target.value)}
                  placeholder="예: 350000" />
+          <details className="mt-1 text-[10px]">
+            <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 만원 단위 다이얼</summary>
+            <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
+              <DialInput value={Math.round((+price || 0) / 10000)}
+                         onChange={(v) => setPrice(String(v * 10000))}
+                         min={0} max={120} step={1} majorTick={10} unit="만원" />
+            </div>
+          </details>
         </div>
         <div>
           <div className="label">구매 지역</div>

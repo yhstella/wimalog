@@ -3,6 +3,7 @@ import { bmi, bmiCategory, priceStats } from '../../lib/stats.js';
 import { DRUG_CONTENT } from '../../lib/content.js';
 import { fetchPriceStats } from '../../lib/supabaseStats.js';
 import { supabaseConfigured } from '../../lib/supabaseClient.js';
+import { DialInput } from '../DialInput.jsx';
 
 // 계산기: 비용 / BMR / 목표체중 — SEO 랜딩 + 가입 유도
 export function CalculatorPage({ kind, navigate, user }) {
@@ -189,19 +190,22 @@ function BMRCalculator({ user }) {
               ))}
             </div>
           </div>
-          <div>
-            <div className="label">나이</div>
-            <input type="number" className="input" value={age} onChange={e => setAge(+e.target.value)} />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-2">
+            <DialInput label="나이" unit="세"
+                       value={age} onChange={setAge}
+                       min={15} max={90} step={1} majorTick={10} />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="label">키 (cm)</div>
-            <input type="number" className="input" value={height} onChange={e => setHeight(+e.target.value)} />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-2">
+            <DialInput label="키" unit="cm"
+                       value={height} onChange={setHeight}
+                       min={130} max={220} step={1} majorTick={10} />
           </div>
-          <div>
-            <div className="label">체중 (kg)</div>
-            <input type="number" className="input" value={weight} onChange={e => setWeight(+e.target.value)} />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-2">
+            <DialInput label="체중" unit="kg"
+                       value={weight} onChange={setWeight}
+                       min={35} max={250} step={1} majorTick={10} highlight />
           </div>
         </div>
         <div>
@@ -273,13 +277,15 @@ function TargetCalculator({ user }) {
 
       <div className="card space-y-4">
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="label">키 (cm)</div>
-            <input type="number" className="input" value={height} onChange={e => setHeight(+e.target.value)} />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-2">
+            <DialInput label="키" unit="cm"
+                       value={height} onChange={setHeight}
+                       min={130} max={220} step={1} majorTick={10} />
           </div>
-          <div>
-            <div className="label">현재 체중 (kg)</div>
-            <input type="number" className="input" step="0.1" value={current} onChange={e => setCurrent(+e.target.value)} />
+          <div className="rounded-xl border border-ink-200 dark:border-slate-700 p-2">
+            <DialInput label="현재 체중" unit="kg"
+                       value={current} onChange={setCurrent}
+                       min={35} max={250} step={1} majorTick={10} highlight />
           </div>
         </div>
         {myBmi != null && (
