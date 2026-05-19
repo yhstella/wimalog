@@ -14,6 +14,8 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
   const dragRef = useRef({ mode: null, startMs: 0 });
   const [drawingPoints, setDrawingPoints] = useState([]);  // 좌드래그 중 점들
   const [rightDragInfo, setRightDragInfo] = useState(null);  // 우드래그 시각화
+  // 모바일용 모드 토글 — 데스크탑은 좌/우클릭으로 자동 분기되지만 터치는 모드 선택 필요
+  const [touchMode, setTouchMode] = useState('weight');  // 'weight' | 'dose'
 
   const W = 600, H = 220;
   const PAD = { top: 16, right: 12, bottom: 28, left: 32 };
@@ -67,17 +69,21 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     return pt.matrixTransform(ctm.inverse());
   };
 
-  // pointer down — button에 따라 모드 분기
+  // pointer down — 마우스 좌/우 버튼 OR 터치 모드 따라 분기
   const onPointerDown = (e) => {
     const p = getSvgPoint(e);
     if (!p || p.x < PAD.left || p.x > W - PAD.right || p.y < PAD.top || p.y > H - PAD.bottom) return;
-    if (e.button === 2) {
-      // 우클릭 시작 — 방향 추적용
+    const isTouch = e.touches && e.touches.length > 0;
+    // 터치는 touchMode 따름, 마우스는 button 따름
+    const isDoseMode = isTouch ? touchMode === 'dose' : e.button === 2;
+    const isWeightMode = isTouch ? touchMode === 'weight' : (e.button === 0 || e.button === undefined);
+
+    if (isDoseMode) {
       e.preventDefault();
-      dragRef.current = { mode: 'right', startMs: xToDateMs(p.x), startX: p.x, startY: p.y, screenY: e.clientY };
+      const screenY = (e.touches?.[0] || e).clientY;
+      dragRef.current = { mode: 'right', startMs: xToDateMs(p.x), startX: p.x, startY: p.y, screenY };
       setRightDragInfo({ x: p.x, y: p.y, dy: 0 });
-    } else if (e.button === 0 || e.button === undefined) {
-      // 좌클릭 또는 터치 — 선 그리기 시작
+    } else if (isWeightMode) {
       e.preventDefault();
       dragRef.current = { mode: 'left' };
       const date = new Date(xToDateMs(p.x)).toISOString().slice(0, 10);
@@ -217,12 +223,32 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     : null;
 
   return (
-    <div className="rounded-xl border border-ink-200 dark:border-slate-700 bg-ink-100/20 dark:bg-slate-800/20 overflow-hidden">
-      <div className="px-2 py-1 text-[10px] text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between">
-        <span>📈 최근 {weeksBack}주 · <b>좌드래그</b> 선 그리기 · <b>우드래그</b> 처방 추가 (위↑증량/아래↓감량)</span>
-        {activeCourses[0] && (
-          <span className="text-[10px] opacity-70">활성: {MED_BY_ID[activeCourses[0].medication]?.label.replace(/\s*\(.+\)/, '')}</span>
-        )}
+    <div className={`rounded-xl border-2 overflow-hidden transition-colors ${touchMode === 'dose'
+        ? 'border-orange-300 dark:border-orange-800/50 bg-orange-50/30 dark:bg-orange-900/10'
+        : 'border-ink-200 dark:border-slate-700 bg-ink-100/20 dark:bg-slate-800/20'}`}>
+      {/* 모바일용 모드 토글 + 안내 */}
+      <div className="px-2 py-1.5 border-b border-ink-100 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between">
+        <div className="flex gap-1">
+          <button type="button" onClick={() => setTouchMode('weight')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${touchMode === 'weight'
+                    ? 'bg-brand-500 text-white'
+                    : 'bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300'}`}>
+            ⚖️ 체중
+          </button>
+          <button type="button" onClick={() => setTouchMode('dose')}
+                  disabled={!activeCourses.length}
+                  title={!activeCourses.length ? '활성 약 필요' : ''}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${touchMode === 'dose'
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300'}`}>
+            💊 처방
+          </button>
+        </div>
+        <span className="text-[10px] text-ink-500 dark:text-slate-400 flex-1 text-right">
+          {touchMode === 'weight'
+            ? <>드래그 = 선 그리기</>
+            : <>드래그 위↑ <b className="text-emerald-600">증량</b> · 아래↓ <b className="text-rose-600">감량</b></>}
+        </span>
       </div>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
            className="w-full block cursor-crosshair touch-none select-none"
@@ -300,11 +326,17 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
           </g>
         )}
       </svg>
-      <div className="px-2 py-1 text-[10px] text-ink-500 dark:text-slate-500 border-t border-ink-100 dark:border-slate-800 flex gap-3 flex-wrap">
+      <div className="px-2 py-1 border-t border-ink-100 dark:border-slate-800 flex gap-3 flex-wrap text-[10px] text-ink-500 dark:text-slate-500">
         <span><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1"></span>기존 체중</span>
         <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>처방</span>
         <span><span className="inline-block w-2 h-2 rounded-full bg-brand-500 mr-1"></span>입력 중</span>
+        <span className="ml-auto hidden sm:inline opacity-70">데스크탑: 좌클릭/우클릭으로 모드 자동 선택</span>
       </div>
+      {activeCourses[0] && (
+        <div className="px-2 py-1 border-t border-ink-100 dark:border-slate-800 text-[10px] text-ink-500 dark:text-slate-400">
+          활성 약: <b>{MED_BY_ID[activeCourses[0].medication]?.label.replace(/\s*\(.+\)/, '')}</b>
+        </div>
+      )}
     </div>
   );
 }
