@@ -83,10 +83,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold mb-1.5 opacity-90 flex items-center gap-1.5">
-            <span>사용 빈도</span>
-            <span className="text-[10px] font-normal opacity-70">— 한국은 격주·간헐 사용도 흔함</span>
-          </div>
+          <div className="text-xs font-semibold mb-1.5 opacity-90">사용 빈도</div>
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
             {USAGE_FREQUENCIES.map(f => (
               <button key={f.id} type="button" onClick={() => setFrequency(f.id)}

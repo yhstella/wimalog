@@ -195,11 +195,14 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
   };
 
   const addDoseAtDate = (date, direction) => {
-    if (!activeCourses.length) {
+    // useMemo가 stale일 수 있어 fresh fetch — 약 방금 등록한 사용자가 즉시 우클릭하는 케이스 대응
+    const allCourses = Storage.getMedCoursesByUser(user.id);
+    const active = allCourses.filter(c => !c.endDate);
+    const course = active[0] || allCourses[allCourses.length - 1];  // active 없어도 가장 최근 코스 사용
+    if (!course) {
       alert('약을 먼저 등록해야 그래프에서 처방을 추가할 수 있어요. (메뉴 → 약)');
       return;
     }
-    const course = activeCourses[0];
     const med = MED_BY_ID[course.medication];
     if (!med?.doses?.length) return;
     const lastDose = Storage.getDosesByCourse(course.id).slice(-1)[0];
