@@ -18,6 +18,7 @@ import { NotificationBanner } from './NotificationBanner.jsx';
 import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
+import { InitialSetup } from './InitialSetup.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -123,12 +124,19 @@ export function Dashboard({ user, navigate }) {
   const completed = tourTasks.filter(t => t.done).length;
   const showTour = !dismissedTour && completed < tourTasks.length;
 
+  // user prop은 App.jsx에서 캐싱되므로 version dep으로 fresh fetch
+  const liveUser = useMemo(() => Storage.getUser(user.id), [user.id, version]) || user;
   // OAuth 가입자는 profileIncomplete=true (height/startWeight 없음)
-  const needsProfile = user.profileIncomplete || !user.height || !user.startWeight;
+  const needsProfile = liveUser.profileIncomplete || !liveUser.height || !liveUser.startWeight;
+  // 신규 가입자 — 체중 log 0 또는 방문 목적 미입력 → InitialSetup만 표시 (다른 위젯 모두 숨김)
+  const needsInitialSetup = !liveUser.visitPurpose || logs.length === 0;
+  if (needsInitialSetup) {
+    return <InitialSetup user={liveUser} onDone={refresh} />;
+  }
 
   return (
     <div className="space-y-6">
-      <WelcomeTour user={user} navigate={navigate} />
+      <WelcomeTour user={liveUser} navigate={navigate} />
 
       {/* OAuth 가입자 — 프로필 미완성 안내 (키/체중 입력 유도) */}
       {needsProfile && (
@@ -178,7 +186,7 @@ export function Dashboard({ user, navigate }) {
       </div>
 
       {/* 가입 시 선택한 visitPurpose에 따라 첫 경험 분기 — 신규 가입자 핵심 UX */}
-      <PurposeCard user={user} navigate={navigate} />
+      <PurposeCard user={liveUser} navigate={navigate} />
 
       {/* 데이터 0인 신규 가입자 — '지금 시작하면 좋은 것' 3개 액션 */}
       {logs.length === 0 && courses.length === 0 && (
