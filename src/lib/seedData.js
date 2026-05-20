@@ -512,9 +512,9 @@ function generateLifestyle(rand, user, courses, out, opts = {}) {
   }
 }
 
-// localStorage 시드는 quota 한계(5MB) 안전하게 — 300명 사용
-// 실제 통계는 Supabase 3000명+ 코호트에서 가져옴 (supabaseStats.js)
-export function seedIfNeeded(count = 300, seed = 20260518) {
+// localStorage 시드 — 필터 통계가 충분히 나오도록 1500명 (logs ~50K건, ~400KB 안전)
+// 더 큰 통계는 Supabase 8000+ 코호트에서 RPC로 가져옴 (supabaseStats.js)
+export function seedIfNeeded(count = 1500, seed = 20260518) {
   if (Storage.isSeeded()) return;
   // 시드 버전 업그레이드 시 기존 seed 데이터 제거 (중복 방지)
   Storage.setUsers(Storage.getUsers().filter(u => !u.seed));

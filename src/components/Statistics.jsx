@@ -26,6 +26,12 @@ const BMI_RANGES = [
 
 export function Statistics({ user, navigate, onSignup }) {
   const [showSignup, setShowSignup] = useState(false);
+  const [platformScale, setPlatformScale] = useState(null);
+  useEffect(() => {
+    if (supabaseConfigured) {
+      fetchPlatformScale().then(setPlatformScale).catch(() => {});
+    }
+  }, []);
   const myCourse = useMemo(() => user ? primaryCourse(Storage.getMedCoursesByUser(user.id)) : null, [user]);
 
   const [filter, setFilter] = useState(() => user ? {
@@ -312,15 +318,25 @@ export function Statistics({ user, navigate, onSignup }) {
         </FilterRow>
       </div>
 
+      {/* 전체 코호트 규모 — 사용자에게 모집단 크기 명확히 */}
+      {platformScale && (
+        <div className="rounded-xl bg-brand-50 dark:bg-brand-900/15 border border-brand-200 dark:border-brand-800/40 px-4 py-3 text-sm text-ink-700 dark:text-slate-300 flex items-center gap-2 flex-wrap">
+          <span className="text-base">💚</span>
+          <span>
+            위마로그 익명 코호트 <b className="text-brand-700 dark:text-brand-400 tabular-nums">{platformScale.totalPatients.toLocaleString()}명</b>
+            {' · '}체중 기록 <b className="tabular-nums">{platformScale.totalWeightLogs.toLocaleString()}건</b>
+            {' · '}투약 기록 <b className="tabular-nums">{platformScale.totalDoses.toLocaleString()}건</b>
+          </span>
+        </div>
+      )}
+
       {/* 자동 완화 안내 — 사용자 필터로 데이터 부족할 때 */}
       {relaxed.stage !== 'original' && relaxed.originalN < 30 && (
         <div className="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          🔍 본인 조건과 정확히 일치하는 사용자가 적어 ({relaxed.originalN}명),
-          <b> 자동으로 필터 일부를 완화</b>해 {n}명의 통계를 보여드립니다.
+          🔍 정확히 일치하는 사용자 {relaxed.originalN}명 — 필터를 자동으로 완화해 {n}명의 통계를 보여드립니다
           {relaxed.relaxedFields.length > 0 && (
             <span className="block mt-1 text-xs opacity-80">
-              완화된 항목:{' '}
-              {relaxed.relaxedFields.map(f => ({
+              완화: {relaxed.relaxedFields.map(f => ({
                 hasCondition: '동반질환', ageGroup: '나이대', gender: '성별',
                 bmiRange: 'BMI', bmiRangeWidened: 'BMI 범위 확장',
                 medication: '약', all: '모두',

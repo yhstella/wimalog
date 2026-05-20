@@ -65,7 +65,7 @@ export function NotificationBanner({ user }) {
         <button onClick={dismiss} className="btn-secondary !py-2 !px-3 text-xs">나중에</button>
       </div>
       <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2">
-        ⚠ 현재 MVP는 권한만 받음. 백엔드 출시 후 일일 알림 발송 시작.
+        브라우저 알림 권한이 필요합니다. 알림은 본인 기기에서만 동작합니다.
       </p>
     </div>
   );

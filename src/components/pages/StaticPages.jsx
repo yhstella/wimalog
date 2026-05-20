@@ -99,9 +99,9 @@ export function AboutPage() {
       <section className="card">
         <h2 className="section-title">🔒 개인정보</h2>
         <p className="mt-2 text-sm text-ink-700 dark:text-slate-300 leading-relaxed">
-          현재 MVP 단계는 모든 사용자 데이터를 본인 브라우저 localStorage에만 저장합니다.
-          서버로 전송하지 않으며, 익명 통계도 본인 기기 내에서만 계산됩니다.
-          백엔드 추가 시 별도 동의를 받고 익명화 처리를 더 엄격하게 적용할 예정입니다.
+          개인을 식별할 수 있는 정보(닉네임·메모·구매 가격 등)는 본인 브라우저에만 저장됩니다.
+          익명 통계는 익명화·집계 처리 후 안전한 서버에 저장되어 코호트 비교에 활용됩니다.
+          본인 데이터는 언제든 프로필 페이지에서 영구 삭제할 수 있습니다.
         </p>
       </section>
 
@@ -171,8 +171,8 @@ export function PrivacyPage() {
       </Section>
 
       <Section title="3. 저장 위치">
-        <p>현재 MVP 버전은 모든 데이터를 사용자의 브라우저 localStorage에만 저장합니다.
-        서버에 전송되거나 백엔드 데이터베이스에 저장되지 않습니다.</p>
+        <p>개인 식별 정보(닉네임·메모·구매 가격 등)는 본인 브라우저에 저장됩니다.
+        익명 통계 데이터(성별·나이대·약·체중 변화 등)는 익명화·집계 처리 후 안전한 서버(Supabase)에 저장되어 코호트 비교에 사용됩니다.</p>
       </Section>
 
       <Section title="4. 익명화 처리">

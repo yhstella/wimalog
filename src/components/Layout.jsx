@@ -113,7 +113,7 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
             <button onClick={() => navigate('terms')} className="hover:underline">이용약관</button>
           </div>
           <p className="text-[10px] text-ink-300 dark:text-slate-600">
-            © 2026 위마로그 · 모든 데이터는 사용자의 브라우저에 익명으로 저장됩니다 (MVP).
+            © 2026 위마로그 · 개인정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다.
           </p>
         </div>
       </footer>

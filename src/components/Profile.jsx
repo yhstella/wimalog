@@ -176,7 +176,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
       {/* 데이터 관리 */}
       <div className="card space-y-3">
         <h2 className="section-title">데이터 관리</h2>
-        <p className="section-subtitle">현재 MVP는 모든 데이터를 본인 브라우저 localStorage에만 저장합니다.</p>
+        <p className="section-subtitle">개인 정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다.</p>
         <div className="grid grid-cols-2 gap-y-1 gap-x-4 text-sm">
           <ReadRow k="체중·증상 기록" v={`${logs.length}건`} />
           <ReadRow k="약 사용 이력" v={`${courses.length}개`} />

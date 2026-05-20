@@ -59,7 +59,7 @@ export function EmailWaitlist({ title, description, feature = 'updates' }) {
         <button type="submit" className="btn-primary !py-2 !px-4 text-sm">신청</button>
       </form>
       <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2">
-        ⚠ 현재 MVP 단계 — 백엔드 출시 후 실제 알림 발송 예정. 이메일은 본인 브라우저에만 저장됩니다.
+        이메일은 안전하게 보관되며 출시 알림 외 다른 용도로 사용되지 않습니다.
       </p>
     </div>
   );
