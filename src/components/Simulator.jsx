@@ -19,8 +19,9 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   })();
-  const [height, setHeight] = useState(loaded?.height || 162);
-  const [startWeight, setStartWeight] = useState(loaded?.startWeight || 78);
+  // 로그인 사용자라면 본인 정보를 기본값으로 — 입력한 체중이 자동 prefill
+  const [height, setHeight] = useState(user?.height || loaded?.height || 162);
+  const [startWeight, setStartWeight] = useState(user?.startWeight || loaded?.startWeight || 78);
   const [medication, setMedication] = useState(loaded?.medication || 'wegovy');
   const [frequency, setFrequency] = useState(loaded?.frequency || 'weekly');
 

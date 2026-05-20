@@ -138,32 +138,13 @@ export function Dashboard({ user, navigate }) {
     <div className="space-y-6">
       <WelcomeTour user={liveUser} navigate={navigate} />
 
-      {/* OAuth 가입자 — 프로필 미완성 안내 (키/체중 입력 유도) */}
-      {needsProfile && (
-        <div className="card border-2 border-amber-300 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/20 dark:to-slate-900">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">👋</div>
-            <div className="flex-1">
-              <h2 className="font-bold text-ink-900 dark:text-slate-100">프로필을 완성하면 본인 맞춤 데이터가 보입니다</h2>
-              <p className="text-sm text-ink-700 dark:text-slate-300 mt-1 leading-snug">
-                키·시작 체중·성별·나이대만 알려주시면 비슷한 사용자 코호트 비교, BMI 추적, 약 시뮬레이션이 즉시 활성화됩니다.
-                <br />입력은 30초입니다.
-              </p>
-              <button onClick={() => navigate('profile')}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 text-sm font-semibold transition">
-                프로필 완성하기 →
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* 짧은 인사말 — InitialSetup 완료 직후 사용자 맞이 */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-ink-900 dark:text-slate-100">
-            {user.nickname}님, 안녕하세요 👋
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-ink-900 dark:text-slate-100 truncate">
+            {liveUser.nickname}님, 안녕하세요 👋
           </h1>
-          <p className="text-sm text-ink-500 dark:text-slate-400 mt-1">
+          <p className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">
             {activeMeds.length > 0 ? (
               <>현재 약: {activeMeds.map(c => MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '')).join(', ')}</>
             ) : courses.length > 0 ? (
@@ -173,20 +154,28 @@ export function Dashboard({ user, navigate }) {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
-          <button onClick={() => navigate('records')} className="btn-secondary !py-2 !px-3 text-sm">
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => navigate('records')} className="btn-secondary !py-1.5 !px-3 text-xs">
             상세 기록 →
           </button>
-          {activeMeds.length === 0 && courses.length === 0 && (
-            <button onClick={() => navigate('meds')} className="btn-primary !py-2 !px-3 text-sm">
-              약 시작하기
-            </button>
-          )}
         </div>
       </div>
 
-      {/* 가입 시 선택한 visitPurpose에 따라 첫 경험 분기 — 신규 가입자 핵심 UX */}
+      {/* 1순위: visitPurpose 분기 — 입력한 단계에 따라 맞춤 첫 경험 */}
       <PurposeCard user={liveUser} navigate={navigate} />
+
+      {/* 2순위: 키·성별·나이대 안내 (분기 본 후 보강 유도) — 작게 */}
+      {needsProfile && (
+        <div className="rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-xs text-amber-900 dark:text-amber-200">
+            <b>키·성별·나이대</b> 추가 입력 → BMI 자동 계산 + 비슷한 코호트 매칭 정밀도 ↑
+          </div>
+          <button onClick={() => navigate('profile')}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition">
+            30초 추가 →
+          </button>
+        </div>
+      )}
 
       {/* 데이터 0인 신규 가입자 — '지금 시작하면 좋은 것' 3개 액션 */}
       {logs.length === 0 && courses.length === 0 && (
