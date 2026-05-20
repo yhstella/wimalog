@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DRUG_CONTENT } from '../../lib/content.js';
 import { compareMedications, sideEffectRates, priceStats } from '../../lib/stats.js';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats } from '../../lib/supabaseStats.js';
+import { supabaseConfigured } from '../../lib/supabaseClient.js';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { ShareButtons } from '../Share.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
@@ -10,12 +12,9 @@ export function CompareDrugsPage({ navigate, user }) {
   const [showSignup, setShowSignup] = useState(false);
   const refWeight = user?.startWeight ?? 80;
 
-  // 12주 평균 감량률
-  const compare12 = useMemo(() => compareMedications({}, 12), []);
-  const compare24 = useMemo(() => compareMedications({}, 24), []);
-
-  // 약별 부작용 비율
-  const sideByMed = useMemo(() => {
+  // localStorage 기반 (fallback)
+  const localCompare12 = useMemo(() => compareMedications({}, 12), []);
+  const localSideByMed = useMemo(() => {
     const result = {};
     for (const id of Object.keys(DRUG_CONTENT)) {
       const rates = sideEffectRates({ medication: id });
@@ -23,9 +22,7 @@ export function CompareDrugsPage({ navigate, user }) {
     }
     return result;
   }, []);
-
-  // 약별 가격
-  const priceByMed = useMemo(() => {
+  const localPriceByMed = useMemo(() => {
     const result = {};
     for (const id of Object.keys(DRUG_CONTENT)) {
       const p = priceStats({ medication: id });
@@ -33,6 +30,39 @@ export function CompareDrugsPage({ navigate, user }) {
     }
     return result;
   }, []);
+
+  // Supabase 8000+명 풀데이터 — 약별 12주 감량/부작용/가격 동시 fetch
+  const [supaCompare12, setSupaCompare12] = useState(null);
+  const [supaSideByMed, setSupaSideByMed] = useState(null);
+  const [supaPriceByMed, setSupaPriceByMed] = useState(null);
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    const medIds = Object.keys(DRUG_CONTENT);
+    Promise.all(medIds.map(id => Promise.all([
+      fetchAvgLossCurve({ medication: id }, [12]),
+      fetchSideEffectRates(id),
+      fetchPriceStats(id),
+    ]))).then(results => {
+      if (cancelled) return;
+      const cmp = [], sides = {}, prices = {};
+      medIds.forEach((id, i) => {
+        const [curve, side, price] = results[i];
+        const c12 = curve?.[0];
+        cmp.push({ id, label: DRUG_CONTENT[id].label, n: c12?.n || 0, avg: c12?.avg ?? null, median: c12?.median ?? null });
+        sides[id] = Object.fromEntries((side || []).map(r => [r.id, r.rate]));
+        prices[id] = price?.avg ?? null;
+      });
+      if (cmp.some(c => c.n > 0)) setSupaCompare12(cmp);
+      if (medIds.some(id => Object.keys(sides[id] || {}).length)) setSupaSideByMed(sides);
+      if (medIds.some(id => prices[id] != null)) setSupaPriceByMed(prices);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const compare12 = supaCompare12 || localCompare12;
+  const sideByMed = supaSideByMed || localSideByMed;
+  const priceByMed = supaPriceByMed || localPriceByMed;
 
   const drugs = Object.values(DRUG_CONTENT);
 
