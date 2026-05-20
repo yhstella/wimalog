@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { reboundByExercise, avgLossCurve } from '../lib/stats.js';
-import { fetchAvgLossCurve, fetchSideEffectRates } from '../lib/supabaseStats.js';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchReboundByExercise } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { SIDE_EFFECTS } from '../lib/constants.js';
 
@@ -53,13 +53,21 @@ function Stat({ label, value, sub, tone }) {
    AFTER-STOP — 중단 후 회복 데이터
 ============================================================ */
 function AfterStopWidget({ navigate }) {
-  const data = reboundByExercise({}, 24, 90);
-  // 데이터 부족 시 임상연구 기반 추정값 (Wilding et al. 2022 STEP 1 extension)
-  const exVal = data.exerciseGroup?.avg != null && data.exerciseGroup.n >= 3 ? data.exerciseGroup.avg : 20;
-  const noExVal = data.noExerciseGroup?.avg != null && data.noExerciseGroup.n >= 3 ? data.noExerciseGroup.avg : 50;
-  const exN = data.exerciseGroup?.n || null;
-  const noExN = data.noExerciseGroup?.n || null;
-  const isEstimate = (exN || 0) < 3 || (noExN || 0) < 3;
+  const [supa, setSupa] = useState(null);
+  useEffect(() => {
+    fetchReboundByExercise(null, 24, 90).then(r => {
+      if (r && (r.active?.n > 0 || r.inactive?.n > 0)) setSupa(r);
+    }).catch(() => {});
+  }, []);
+  const local = reboundByExercise({}, 24, 90);
+  // 우선순위: Supabase → localStorage → 임상 추정 (Wilding STEP 1 ext)
+  const exDataN = supa?.active?.n ?? local.active?.n ?? 0;
+  const noExDataN = supa?.inactive?.n ?? local.inactive?.n ?? 0;
+  const exVal = (supa?.active?.avgRegainPct ?? local.active?.avgRegainPct ?? 20);
+  const noExVal = (supa?.inactive?.avgRegainPct ?? local.inactive?.avgRegainPct ?? 50);
+  const exN = exDataN || null;
+  const noExN = noExDataN || null;
+  const isEstimate = exDataN < 3 || noExDataN < 3;
   return (
     <WidgetShell title="중단 후 24주 시점 감량분 회복률"
                  footer={isEstimate

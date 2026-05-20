@@ -114,6 +114,56 @@ export async function fetchTopRecentMedications(days = 30) {
 }
 
 // ============================================================
+// 약별 중단 통계 (Statistics)
+// ============================================================
+export async function fetchDiscontinuationStats(medication = null) {
+  const rows = await cachedRpc('discontinuation_stats', { med: medication });
+  if (!rows?.length) return null;
+  const total = rows[0].total_courses;
+  const discontinued = rows[0].discontinued_count;
+  return {
+    n: total,
+    discontinued,
+    rate: rows[0].discontinue_rate != null ? Number(rows[0].discontinue_rate) : 0,
+    reasons: rows.map(r => ({
+      id: r.reason_id,
+      count: r.reason_count,
+      rate: r.reason_pct != null ? Number(r.reason_pct) : 0,
+    })),
+  };
+}
+
+// ============================================================
+// 중단 후 회복 곡선 (PurposeCard stopped + 가이드 widget)
+// ============================================================
+export async function fetchReboundCurve(medication = null, weeks = [4, 8, 12, 24, 36, 48]) {
+  const rows = await cachedRpc('rebound_curve', { med: medication, weeks_arr: weeks });
+  if (!rows) return null;
+  return rows.map(r => ({
+    week: r.week,
+    n: r.n,
+    avgGainPct: r.avg_gain_pct != null ? Number(r.avg_gain_pct) : null,
+    avgRegainRatio: r.avg_regain_ratio != null ? Number(r.avg_regain_ratio) : null,
+  }));
+}
+
+// ============================================================
+// 운동량 기준 회복 그룹 비교 (가이드 after-stop widget)
+// ============================================================
+export async function fetchReboundByExercise(medication = null, targetWeek = 24, thresholdMin = 90) {
+  const rows = await cachedRpc('rebound_by_exercise', {
+    med: medication, target_week: targetWeek, threshold_min: thresholdMin,
+  });
+  if (!rows) return null;
+  const active = rows.find(r => r.group_id === 'active') || null;
+  const inactive = rows.find(r => r.group_id === 'inactive') || null;
+  return {
+    active: active ? { n: active.n, avgRegainPct: Number(active.avg_regain_pct) } : { n: 0, avgRegainPct: null },
+    inactive: inactive ? { n: inactive.n, avgRegainPct: Number(inactive.avg_regain_pct) } : { n: 0, avgRegainPct: null },
+  };
+}
+
+// ============================================================
 // 운동 통계 (CohortLive '주당 평균 운동' 카드)
 // ============================================================
 export async function fetchExerciseStats(days = 30) {

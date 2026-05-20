@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats, fetchPlatformScale } from '../lib/supabaseStats.js';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats, fetchPlatformScale,
+         fetchDiscontinuationStats, fetchReboundCurve } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import {
   avgLossCurve, cohortSize, sideEffectRates, discontinuationStats,
@@ -71,6 +72,8 @@ export function Statistics({ user, navigate, onSignup }) {
   const [supaCurve, setSupaCurve] = useState(null);
   const [supaSides, setSupaSides] = useState(null);
   const [supaPrice, setSupaPrice] = useState(null);
+  const [supaStop, setSupaStop] = useState(null);
+  const [supaRebound, setSupaRebound] = useState(null);
   // cleanFilter 변경 시 Supabase fetch (cleanFilter는 객체라 JSON.stringify로 deps)
   const filterKey = JSON.stringify(cleanFilter);
   useEffect(() => {
@@ -80,11 +83,15 @@ export function Statistics({ user, navigate, onSignup }) {
       fetchAvgLossCurve(cleanFilter, [1, 2, 4, 8, 12, 16, 24, 36, 48]),
       fetchSideEffectRates(cleanFilter.medication),
       fetchPriceStats(cleanFilter.medication),
-    ]).then(([curve, sides, price]) => {
+      fetchDiscontinuationStats(cleanFilter.medication),
+      fetchReboundCurve(cleanFilter.medication, [2, 4, 8, 12, 24, 36, 48]),
+    ]).then(([curve, sides, price, stop, rebound]) => {
       if (cancelled) return;
       if (curve && curve.some(c => c.n > 0)) setSupaCurve(curve);
       if (sides && sides.length) setSupaSides(sides);
       if (price && price.byRegion?.length) setSupaPrice(price);
+      if (stop && stop.n > 0) setSupaStop(stop);
+      if (rebound && rebound.some(r => r.n > 0)) setSupaRebound(rebound);
     }).catch(() => {});
     return () => { cancelled = true; };
   }, [filterKey]);
@@ -100,12 +107,33 @@ export function Statistics({ user, navigate, onSignup }) {
   const sideRates  = supaSides
     ? supaSides.map(s => ({ id: s.id, rate: s.rate, n: s.n }))
     : localSides;
-  const stopStats  = useMemo(() => discontinuationStats(cleanFilter), [cleanFilter]);
+  const localStop = useMemo(() => discontinuationStats(cleanFilter), [cleanFilter]);
+  // Supabase rate/reasons shape으로 변환 + localStop 구조에 맞춤
+  const stopStats = supaStop
+    ? {
+        n: supaStop.n,
+        discontinued: supaStop.discontinued,
+        rate: supaStop.rate,
+        reasons: localStop.reasons.map(r => {
+          const s = supaStop.reasons.find(x => x.id === r.id);
+          return s ? { ...r, count: s.count, rate: s.rate } : r;
+        }),
+      }
+    : localStop;
   const localPrice = useMemo(() => priceStats(cleanFilter), [cleanFilter]);
   const priceData  = supaPrice || localPrice;
   const exData     = useMemo(() => exerciseStats(cleanFilter), [cleanFilter]);
   const exDist     = useMemo(() => exerciseDistribution(cleanFilter), [cleanFilter]);
-  const reboundData = useMemo(() => reboundCurve(cleanFilter), [cleanFilter]);
+  const localRebound = useMemo(() => reboundCurve(cleanFilter), [cleanFilter]);
+  // Supabase rebound는 avgGainPct/avgRegainRatio shape — 기존 localRebound shape에 매핑
+  const reboundData = supaRebound
+    ? supaRebound.map(r => ({
+        week: r.week, n: r.n,
+        avgGainPct: r.avgGainPct,
+        avgRegainRatio: r.avgRegainRatio,
+        medianGainPct: null,
+      }))
+    : localRebound;
   const reboundByEx = useMemo(() => reboundByExercise(cleanFilter, 24), [cleanFilter]);
   const reboundByMed = useMemo(() => {
     const base = { ...cleanFilter };

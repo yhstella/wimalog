@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Storage } from '../lib/storage.js';
 import { Simulator } from './Simulator.jsx';
 import { anonymousNotes, sideEffectRates, reboundCurve, similarFilter, primaryCourse } from '../lib/stats.js';
-import { fetchAvgLossCurve, fetchSideEffectRates } from '../lib/supabaseStats.js';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchReboundCurve } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { SIDE_EFFECTS } from '../lib/constants.js';
 
@@ -106,8 +106,16 @@ function PlanningCard({ user, navigate }) {
 function StoppedCard({ user, navigate }) {
   const myCourse = useMemo(() => primaryCourse(Storage.getMedCoursesByUser(user.id)), [user.id]);
   const filter = useMemo(() => similarFilter(user, myCourse), [user, myCourse]);
-  // 중단 후 회복 곡선 (localStorage 시드 기준)
-  const rebound = useMemo(() => reboundCurve(filter, [4, 8, 12, 24, 48]), [filter]);
+  // 중단 후 회복 곡선 (localStorage fallback)
+  const localRebound = useMemo(() => reboundCurve(filter, [4, 8, 12, 24, 48]), [filter]);
+  // Supabase 8000+명 풀데이터 우선
+  const [supaRebound, setSupaRebound] = useState(null);
+  useEffect(() => {
+    fetchReboundCurve(filter.medication, [4, 8, 12, 24, 48]).then(rows => {
+      if (rows && rows.some(r => r.n > 0)) setSupaRebound(rows);
+    }).catch(() => {});
+  }, [filter.medication]);
+  const rebound = supaRebound ? supaRebound.map(r => ({ week: r.week, n: r.n, avgRegain: r.avgGainPct })) : localRebound;
   // 중단/운동/식단 경험담
   const notes = useMemo(() => anonymousNotes(filter, 6), [filter]);
 
