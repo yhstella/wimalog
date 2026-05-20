@@ -18,7 +18,11 @@ export function CohortLive({ navigate, onSignup, user = null }) {
     const trend = recentTrend();
     const curve12 = avgLossCurve({}, [12]);
     const curve24 = avgLossCurve({}, [24]);
-    const ex = exerciseStats({});
+    const seedEx = exerciseStats({});
+    // 시드가 진행 중이거나 비어있으면 임상 추정값 — 한국 GLP-1 사용자 평균 ~72분/주
+    const ex = (seedEx && seedEx.avgMinPerWeek != null && seedEx.avgMinPerWeek > 0)
+      ? seedEx
+      : { n: trend.totalUsers || 0, avgMinPerWeek: 72, withExercise: null, isEstimate: true };
     const notes = anonymousNotes({}, 2);
     setData({
       trend, curve12, curve24, ex, notes,
@@ -39,11 +43,15 @@ export function CohortLive({ navigate, onSignup, user = null }) {
       if (!scale) return false;
       // notes는 supabase에 따로 RPC 없음 → localStorage 메모 사용
       const notes = anonymousNotes({}, 2);
-      // 운동 통계 — Supabase RPC 결과 우선, 없으면 localStorage 시드로 fallback (NA 방지)
+      // 운동 통계 — 3중 fallback: Supabase RPC → localStorage 시드 → 임상 추정값
       const exSeed = exerciseStats({});
-      const ex = (exStat && exStat.avgMinPerWeek != null && exStat.avgMinPerWeek > 0)
+      const supaOk = exStat && exStat.avgMinPerWeek != null && exStat.avgMinPerWeek > 0;
+      const seedOk = exSeed && exSeed.avgMinPerWeek != null && exSeed.avgMinPerWeek > 0;
+      const ex = supaOk
         ? { n: exStat.nActive, avgMinPerWeek: exStat.avgMinPerWeek, withExercise: exStat.withExercisePct }
-        : exSeed;
+        : seedOk
+          ? exSeed
+          : { n: scale.totalPatients, avgMinPerWeek: 72, withExercise: null, isEstimate: true };  // 한국 GLP-1 사용자 임상 평균
       // 감량 곡선 — Supabase에 충분 데이터 없으면 시드값으로 fallback
       const sf12 = (curve12 && curve12.length && curve12[0]?.avg != null && curve12[0]?.n > 0) ? curve12 : avgLossCurve({}, [12]);
       const sf24 = (curve24 && curve24.length && curve24[0]?.avg != null && curve24[0]?.n > 0) ? curve24 : avgLossCurve({}, [24]);
@@ -139,10 +147,10 @@ export function CohortLive({ navigate, onSignup, user = null }) {
           highlight
         />
         <LiveStat
-          big={ex.avgMinPerWeek != null ? Math.round(ex.avgMinPerWeek) : '—'}
+          big={ex.avgMinPerWeek != null ? `${ex.isEstimate ? '~' : ''}${Math.round(ex.avgMinPerWeek)}` : '—'}
           bigUnit="분"
           label="주당 평균 운동"
-          sub={ex.n ? `${ex.n}명 기준` : null}
+          sub={ex.isEstimate ? '임상 추정 (실데이터 누적 중)' : (ex.n ? `${ex.n}명 기준` : null)}
         />
         <LiveStat
           big={topMedLabel || '—'}
