@@ -126,49 +126,49 @@ export function QuickSignupModal({ onClose, onComplete }) {
 
   const startBmi = bmi(+data.startWeight, +data.height);
 
-  const canFinish = +data.height >= 130 && +data.height <= 220
-    && +data.startWeight >= 35 && +data.startWeight <= 250
-    && +data.currentWeight >= 35 && +data.currentWeight <= 250
+  // 필수: 현재 체중 + 방문 목적 + 동의. 나머지(키·성별·나이대·시작체중)는 선택.
+  // 빠른 가입 후 dashboard needsProfile 카드로 점진적 보강.
+  const canFinish = +data.currentWeight >= 35 && +data.currentWeight <= 250
     && !!data.visitPurpose
     && data.consent;
 
   const complete = () => {
     if (!canFinish) return;
     const userId = uid('u');
+    // 비어있는 필드는 합리적 기본값 — 나중에 dashboard에서 보강 가능
+    const cw = +data.currentWeight;
+    const sw = +data.startWeight || cw;          // 시작 체중 비어있으면 현재 체중
     const user = {
       id: userId,
       seed: false,
       nickname: data.nickname || '나',
-      gender: data.gender,
-      ageGroup: data.ageGroup,
-      height: +data.height,
-      startWeight: +data.startWeight,
-      targetWeight: +(data.targetWeight || (data.startWeight * 0.85).toFixed(1)),
+      gender: data.gender || 'X',
+      ageGroup: data.ageGroup || '30s',
+      height: +data.height || null,              // 없어도 OK
+      startWeight: sw,
+      targetWeight: +(data.targetWeight || (sw * 0.85).toFixed(1)),
       conditions: {},
       purpose: 'weight',
-      visitPurpose: data.visitPurpose,  // 약 사용 단계 — 통계/UX 분기에 활용
+      visitPurpose: data.visitPurpose,
       concerns: [],
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
-      authProvider, // 'google' | 'kakao' | 'naver' | null (이메일)
+      authProvider,
       createdAt: new Date().toISOString(),
     };
     Storage.upsertUser(user);
-    if (+data.currentWeight) {
-      Storage.addLog({
-        id: uid('log'),
-        userId,
-        date: todayISO(),
-        weight: +data.currentWeight,
-        appetiteChange: 3,
-        satiety: 3,
-        sideEffects: {},
-        mealReduction: 3,
-        notes: '',
-        createdAt: new Date().toISOString(),
-      });
-    }
+    Storage.addLog({
+      id: uid('log'),
+      userId,
+      date: todayISO(),
+      weight: cw,
+      appetiteChange: 3,
+      satiety: 3,
+      sideEffects: {},
+      mealReduction: 3,
+      notes: '',
+      createdAt: new Date().toISOString(),
+    });
     Storage.setSession(userId);
-    // prefill 정리 — 가입 완료했으니 sessionStorage 비움
     try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
     onComplete(userId);
   };
@@ -223,101 +223,19 @@ export function QuickSignupModal({ onClose, onComplete }) {
           </div>
           {data._prefilled && (
             <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-3 py-2 text-xs text-brand-800 dark:text-brand-200">
-              ✨ 시뮬레이터에서 입력한 키·체중을 자동으로 채웠어요. 확인만 하고 가입하세요.
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="label">키 (cm)</div>
-              <input type="number" inputMode="decimal" min={130} max={220} step="0.1"
-                     className="input" value={data.height}
-                     onChange={e => set('height', e.target.value)} placeholder="예: 162" autoFocus />
-              <details className="mt-1 text-[10px]">
-                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
-                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
-                  <DialInput value={+data.height || 162} onChange={(v) => set('height', String(v))}
-                             min={130} max={220} step={1} majorTick={10} unit="cm" />
-                </div>
-              </details>
-            </div>
-            <div>
-              <div className="label">성별</div>
-              <div className="flex gap-1">
-                {[
-                  { id: 'F', label: '여' },
-                  { id: 'M', label: '남' },
-                  { id: 'X', label: '비공개' },
-                ].map(o => (
-                  <button key={o.id} type="button" onClick={() => set('gender', o.id)}
-                          className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition
-                                      ${data.gender === o.id
-                                        ? 'bg-brand-500 text-white border-brand-500'
-                                        : 'bg-white text-ink-700 border-ink-300'}`}>{o.label}</button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="label">나이대</div>
-            <div className="grid grid-cols-5 gap-1">
-              {[
-                { id: '20s', label: '20대' }, { id: '30s', label: '30대' },
-                { id: '40s', label: '40대' }, { id: '50s', label: '50대' },
-                { id: '60s+', label: '60+' },
-              ].map(o => (
-                <button key={o.id} type="button" onClick={() => set('ageGroup', o.id)}
-                        className={`py-2 rounded-lg text-xs font-medium border transition
-                                    ${data.ageGroup === o.id
-                                      ? 'bg-brand-500 text-white border-brand-500'
-                                      : 'bg-white text-ink-700 border-ink-300'}`}>{o.label}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="label">시작 체중 (kg)</div>
-              <input type="number" inputMode="decimal" min={35} max={250} step="0.1"
-                     className="input" value={data.startWeight}
-                     onChange={e => {
-                       set('startWeight', e.target.value);
-                       if (!data.currentWeight) set('currentWeight', e.target.value);
-                     }} />
-              <details className="mt-1 text-[10px]">
-                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
-                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
-                  <DialInput value={+data.startWeight || 70} onChange={(v) => {
-                    set('startWeight', String(v));
-                    if (!data.currentWeight) set('currentWeight', String(v));
-                  }} min={35} max={250} step={1} majorTick={10} unit="kg" />
-                </div>
-              </details>
-            </div>
-            <div>
-              <div className="label">현재 체중 (kg)</div>
-              <input type="number" inputMode="decimal" min={35} max={250} step="0.1"
-                     className="input" value={data.currentWeight}
-                     onChange={e => set('currentWeight', e.target.value)} />
-              <details className="mt-1 text-[10px]">
-                <summary className="cursor-pointer text-ink-500 hover:text-brand-700">🎛 다이얼</summary>
-                <div className="mt-1 p-2 rounded-lg border border-ink-200 dark:border-slate-700">
-                  <DialInput value={+data.currentWeight || +data.startWeight || 70}
-                             onChange={(v) => set('currentWeight', String(v))}
-                             min={35} max={250} step={1} majorTick={10} unit="kg" />
-                </div>
-              </details>
-            </div>
-          </div>
-
-          {startBmi != null && +data.height > 0 && +data.startWeight > 0 && (
-            <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm">
-              시작 BMI <b className="text-brand-700 tabular-nums">{startBmi.toFixed(1)}</b>
-              <span className="ml-2 chip-brand">{bmiCategory(startBmi)}</span>
+              ✨ 시뮬레이터에서 입력한 체중을 자동으로 채웠어요.
             </div>
           )}
 
-          {/* 방문 목적 — 가입 후 dashboard가 이 값에 따라 다른 첫 경험 분기 */}
+          {/* 1️⃣ 현재 체중 — 필수, 다이얼로 빠르게 */}
+          <div className="rounded-xl border-2 border-brand-200 dark:border-brand-800/40 p-3 bg-brand-50/30 dark:bg-brand-900/10">
+            <DialInput label="현재 체중" unit="kg"
+                       value={+data.currentWeight || +data.startWeight || 70}
+                       onChange={(v) => set('currentWeight', String(v))}
+                       min={30} max={250} step={0.1} majorTick={1} highlight autoFocus />
+          </div>
+
+          {/* 2️⃣ 방문 목적 — 필수, dashboard 첫 경험 분기에 직결 */}
           <div>
             <div className="label">현재 어느 단계인가요?</div>
             <div className="grid grid-cols-2 gap-1.5">
@@ -338,19 +256,71 @@ export function QuickSignupModal({ onClose, onComplete }) {
             </div>
           </div>
 
+          {/* 3️⃣ 추가 정보 (선택) — 키·성별·나이대·시작체중. 접어둠. */}
+          <details className="rounded-xl border border-dashed border-ink-300 dark:border-slate-700 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-ink-700 dark:text-slate-300">
+              + 키·성별·나이대 추가 입력 <span className="text-[10px] text-ink-500 dark:text-slate-500 font-normal">(선택, BMI 자동 계산)</span>
+            </summary>
+            <div className="space-y-3 mt-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="label">키 (cm)</div>
+                  <input type="number" inputMode="decimal" min={130} max={220} step="0.1"
+                         className="input" value={data.height}
+                         onChange={e => set('height', e.target.value)} placeholder="예: 162" />
+                </div>
+                <div>
+                  <div className="label">성별</div>
+                  <div className="flex gap-1">
+                    {[{ id: 'F', label: '여' }, { id: 'M', label: '남' }, { id: 'X', label: '비공개' }].map(o => (
+                      <button key={o.id} type="button" onClick={() => set('gender', o.id)}
+                              className={`flex-1 py-2.5 rounded-lg text-sm font-medium border transition
+                                          ${data.gender === o.id ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-300'}`}>{o.label}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="label">나이대</div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[{id:'20s',label:'20대'},{id:'30s',label:'30대'},{id:'40s',label:'40대'},{id:'50s',label:'50대'},{id:'60s+',label:'60+'}].map(o => (
+                    <button key={o.id} type="button" onClick={() => set('ageGroup', o.id)}
+                            className={`py-2 rounded-lg text-xs font-medium border transition
+                                        ${data.ageGroup === o.id ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-300'}`}>{o.label}</button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="label">시작 체중 (kg) <span className="text-[10px] text-ink-500 font-normal">— 비워두면 현재 체중으로</span></div>
+                <input type="number" inputMode="decimal" min={35} max={250} step="0.1"
+                       className="input" value={data.startWeight}
+                       onChange={e => set('startWeight', e.target.value)} placeholder="" />
+              </div>
+              {startBmi != null && +data.height > 0 && +data.startWeight > 0 && (
+                <div className="rounded-xl bg-brand-50 px-3 py-2 text-sm">
+                  시작 BMI <b className="text-brand-700 tabular-nums">{startBmi.toFixed(1)}</b>
+                  <span className="ml-2 chip-brand">{bmiCategory(startBmi)}</span>
+                </div>
+              )}
+            </div>
+          </details>
+
           <label className="flex items-start gap-2 p-3 rounded-xl border border-ink-300 cursor-pointer">
             <input type="checkbox" className="mt-0.5 w-5 h-5 accent-brand-500 flex-shrink-0"
                    checked={data.consent}
                    onChange={e => set('consent', e.target.checked)} />
             <div>
               <div className="text-sm font-medium text-ink-900">개인정보·민감정보 수집·이용에 동의합니다</div>
-              <div className="text-xs text-ink-500 mt-0.5">데이터는 익명 처리되어 본인 브라우저에만 저장됩니다</div>
+              <div className="text-xs text-ink-500 mt-0.5">개인정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다</div>
             </div>
           </label>
 
           <button onClick={complete} disabled={!canFinish} className="btn-primary w-full !py-3 text-base">
-            가입하고 전체 데이터 보기 →
+            ✓ 가입 완료
           </button>
+          <p className="text-[10px] text-ink-500 text-center -mt-2">
+            추가 정보는 가입 후 프로필에서 언제든 보강할 수 있어요
+          </p>
 
           <button onClick={onClose} className="w-full text-xs text-ink-500 hover:text-ink-700 transition py-1">
             나중에 할게요
