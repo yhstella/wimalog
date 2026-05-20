@@ -1,5 +1,67 @@
 import React, { useMemo } from 'react';
 import { inputDepth } from '../lib/stats.js';
+import { Storage } from '../lib/storage.js';
+import { MED_BY_ID } from '../lib/constants.js';
+
+// 완료된 각 마일스톤에 본인 데이터 요약 — '입력하면 무엇이 달라졌나' 시각화
+function buildUnlockedSummary(user) {
+  if (!user) return {};
+  const logs = Storage.getLogsByUser(user.id);
+  const courses = Storage.getMedCoursesByUser(user.id);
+  const doses = Storage.getDosesByUser(user.id);
+  const exercises = Storage.getExercisesByUser(user.id);
+  const diets = Storage.getDietsByUser(user.id);
+  const health = Storage.getHealthMetricsByUser(user.id);
+  const inbody = health.filter(h => h.category === 'inbody');
+  const blood = health.filter(h => h.category === 'blood');
+  const bp = health.filter(h => h.category === 'bp');
+  const alcohol = health.filter(h => h.category === 'alcohol');
+  const sleep = health.filter(h => h.category === 'sleep');
+
+  const lastLog = logs[logs.length - 1];
+  const lossKg = lastLog && user.startWeight ? user.startWeight - lastLog.weight : null;
+  const activeMed = courses.find(c => !c.endDate) || courses[0];
+
+  // 최근 8주 운동 시간 평균
+  const cutoffMs = Date.now() - 56 * 86400000;
+  const recentEx = exercises.filter(e => Date.parse(e.date) >= cutoffMs);
+  const weeklyExMin = recentEx.length
+    ? Math.round(recentEx.reduce((s, e) => s + (e.durationMin || 0), 0) / 8)
+    : 0;
+  const exTypes = new Set(exercises.map(e => e.type)).size;
+
+  // 평균 단백질
+  const avgProtein = diets.length
+    ? Math.round(diets.filter(d => d.proteinG).reduce((s, d) => s + d.proteinG, 0) / Math.max(1, diets.filter(d => d.proteinG).length))
+    : 0;
+
+  // 평균 가격
+  const dosesWithPrice = doses.filter(d => d.price);
+  const avgPrice = dosesWithPrice.length
+    ? Math.round(dosesWithPrice.reduce((s, d) => s + d.price, 0) / dosesWithPrice.length / 10000)
+    : 0;
+
+  // 최신 인바디
+  const lastInbody = inbody[inbody.length - 1];
+  const lastBlood = blood[blood.length - 1];
+  const lastBp = bp[bp.length - 1];
+  const lastAlcohol = alcohol[alcohol.length - 1];
+  const lastSleep = sleep[sleep.length - 1];
+
+  return {
+    weight: lossKg != null ? `시작 ${user.startWeight}kg → 현재 ${lastLog.weight}kg (${lossKg >= 0 ? '-' : '+'}${Math.abs(lossKg).toFixed(1)} kg) · 본인 추세선 차트에 표시` : null,
+    course: activeMed ? `${MED_BY_ID[activeMed.medication]?.label.replace(/\s*\(.+\)/, '')} 사용자 코호트와 비교 중` : null,
+    dose: avgPrice ? `평균 ${avgPrice}만원/회 · ${dosesWithPrice.length}건 기준 · 지역별 비교 가능` : (doses.length ? `${doses.length}회 투약 · 가격 입력하면 비용 비교 활성화` : null),
+    exercise: weeklyExMin ? `주당 평균 ${weeklyExMin}분 (${exTypes}종) · 비슷한 운동량 사용자와 감량률 비교` : null,
+    diet: avgProtein ? `평균 단백질 ${avgProtein}g · 투약 직후 vs 평소 식이 비교 활성화` : (diets.length ? `${diets.length}회 식단 · 단백질도 입력하면 분석 활성화` : null),
+    inbody: lastInbody ? `체지방 ${lastInbody.bodyFatPct}% · 근육 ${lastInbody.muscleKg}kg · 마른비만 분석 활성화` : null,
+    blood: lastBlood ? `ALT ${lastBlood.alt || '?'} · HbA1c ${lastBlood.hba1c || '?'}% · 지방간 코호트 비교 중` : null,
+    bp: lastBp ? `${lastBp.sbp}/${lastBp.dbp} mmHg · 대사증후군 동반자 코호트 비교 중` : null,
+    alcohol: lastAlcohol ? `주 ${lastAlcohol.drinksPerWeek || 0}잔 · 갈망 변화 추적 중` : null,
+    sleep: lastSleep ? `평균 ${lastSleep.sleepHours}시간 · 스트레스 vs 정체기 상관 분석` : null,
+    history: logs.length >= 12 ? `12주차 본인 추이 차트에 표시 (총 ${logs.length}회 기록)` : null,
+  };
+}
 
 // visitPurpose별 안내 문구
 const PURPOSE_HINT = {
@@ -13,6 +75,7 @@ const PURPOSE_HINT = {
 // visitPurpose별 우선순위로 다음 액션 노출 → 사용자가 가장 유용한 데이터부터 채우게 유도
 export function InputProgressCard({ user, navigate }) {
   const data = useMemo(() => inputDepth(user), [user]);
+  const unlocked = useMemo(() => buildUnlockedSummary(user), [user]);
   if (!user) return null;
 
   const completed = data.milestones.filter(m => m.done >= m.need);
@@ -98,16 +161,31 @@ export function InputProgressCard({ user, navigate }) {
         </div>
       )}
 
-      {/* 잠금 해제 완료 인사이트 — 접힌 형태로 압축 */}
+      {/* 잠금 해제된 인사이트 — 본인 데이터로 무엇이 보이는지 카드로 표시 */}
       {completed.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {completed.map(m => (
-            <span key={m.key} title={m.unlocks}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-brand-100 dark:bg-brand-900/30 text-brand-700 dark:text-brand-300">
-              <span>✓</span>
-              <span>{m.label}</span>
-            </span>
-          ))}
+        <div className="mt-4">
+          <div className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider mb-2">
+            ✓ 잠금 해제됨 — 본인 데이터로 보이는 것
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {completed.map(m => {
+              const summary = unlocked[m.key];
+              return (
+                <div key={m.key}
+                     className="rounded-lg bg-emerald-50/70 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800/40 px-3 py-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-200">
+                    <span>{m.icon}</span>
+                    <span>{m.label}</span>
+                  </div>
+                  {summary && (
+                    <div className="text-[11px] text-ink-700 dark:text-slate-300 mt-1 leading-relaxed">
+                      {summary}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
