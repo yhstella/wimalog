@@ -17,6 +17,7 @@ import { InputProgressCard } from './InputProgressCard.jsx';
 import { NotificationBanner } from './NotificationBanner.jsx';
 import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
+import { EmptyDashboard } from './EmptyDashboard.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -178,6 +179,11 @@ export function Dashboard({ user, navigate }) {
 
       {/* 가입 시 선택한 visitPurpose에 따라 첫 경험 분기 — 신규 가입자 핵심 UX */}
       <PurposeCard user={user} navigate={navigate} />
+
+      {/* 데이터 0인 신규 가입자 — '지금 시작하면 좋은 것' 3개 액션 */}
+      {logs.length === 0 && courses.length === 0 && (
+        <EmptyDashboard user={user} navigate={navigate} />
+      )}
 
       {/* Next-Action 가이드 (신규 가입자) */}
       {showTour && (
