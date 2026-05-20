@@ -19,8 +19,9 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
   // 모바일용 모드 토글 — 데스크탑은 좌/우클릭으로 자동 분기되지만 터치는 모드 선택 필요
   const [touchMode, setTouchMode] = useState('weight');  // 'weight' | 'dose'
 
-  const W = 600, H = 220;
-  const PAD = { top: 16, right: 12, bottom: 28, left: 32 };
+  // 그래프 크기 — 모바일 가독성 위해 키움 (220 → 320)
+  const W = 600, H = 320;
+  const PAD = { top: 20, right: 14, bottom: 32, left: 38 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
 
@@ -46,26 +47,28 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     return Storage.getMedCoursesByUser(user.id).filter(c => !c.endDate);
   }, [user, refreshKey]);
 
+  // Y축 scale — currentWeight를 deps에서 제거해서 입력해도 흔들리지 않음.
+  // 최소 ±6kg 보장 → 빈/작은 데이터에서도 충분한 입력 공간 확보, 첫 입력과 후속 입력 동일 scale.
   const { yMin, yMax, yStep } = useMemo(() => {
     const ys = existingLogs.map(l => l.weight);
-    if (currentWeight) ys.push(+currentWeight);
-    // 보이는 범위에 log가 하나도 없으면 fallback으로 startWeight
-    if (!ys.length && user?.startWeight) ys.push(user.startWeight);
-    if (!ys.length) return { yMin: 60, yMax: 80, yStep: 2 };
+    // startWeight를 anchor로 항상 포함 — 첫 mount 시 currentWeight 없어도 안정 scale
+    const anchor = user?.startWeight ?? (currentWeight ? +currentWeight : 70);
+    if (anchor) ys.push(anchor);
+    if (!ys.length) return { yMin: anchor - 6, yMax: anchor + 6, yStep: 2 };
     const min = Math.min(...ys), max = Math.max(...ys);
-    const dataRange = Math.max(max - min, 1.5);
-    const pad = Math.max(0.8, dataRange * 0.18);
-    const lo = Math.max(30, min - pad);
-    const hi = Math.min(250, max + pad);
+    const center = (min + max) / 2;
+    // 데이터 range가 12kg 이상이면 그것 사용, 아니면 최소 12kg 보장
+    const halfRange = Math.max(6, (max - min) / 2 + 1.5);
+    const lo = Math.max(30, center - halfRange);
+    const hi = Math.min(250, center + halfRange);
     const span = hi - lo;
-    // tick 간격을 자동 결정 → 약 4~6개 tick
-    const step = span < 2.5 ? 0.5 : span < 6 ? 1 : span < 14 ? 2 : span < 35 ? 5 : 10;
+    const step = span < 8 ? 1 : span < 18 ? 2 : span < 45 ? 5 : 10;
     return {
       yMin: Math.floor(lo / step) * step,
       yMax: Math.ceil(hi / step) * step,
       yStep: step,
     };
-  }, [existingLogs, currentWeight, user]);
+  }, [existingLogs, user]);
 
   const dateMsToX = (ms) => PAD.left + ((ms - startDate.getTime()) / 86400000) * dayWidth;
   const weightToY = (w) => PAD.top + (yMax - w) / (yMax - yMin) * innerH;
@@ -289,14 +292,14 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
           <g key={'y'+i}>
             <line x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
                   stroke="#CBD5E1" strokeDasharray="2 3" strokeOpacity="0.4" />
-            <text x={PAD.left - 4} y={t.y + 3} fontSize="9" textAnchor="end" fill="#64748B">{t.label}</text>
+            <text x={PAD.left - 5} y={t.y + 4} fontSize="11" textAnchor="end" fill="#64748B">{t.label}</text>
           </g>
         ))}
         {xTicks.map((t, i) => (
           <g key={'x'+i}>
             <line x1={t.x} y1={PAD.top} x2={t.x} y2={H - PAD.bottom}
                   stroke="#CBD5E1" strokeDasharray="2 3" strokeOpacity="0.3" />
-            <text x={t.x} y={H - PAD.bottom + 12} fontSize="9" textAnchor="middle" fill="#64748B">{t.label}</text>
+            <text x={t.x} y={H - PAD.bottom + 14} fontSize="11" textAnchor="middle" fill="#64748B">{t.label}</text>
           </g>
         ))}
 

@@ -12,6 +12,8 @@ export function ToastProvider({ children }) {
   }, []);
 
   const show = useCallback((msg, type = 'success', duration = 1600) => {
+    // 사용자 요청: success/info 팝업 모두 차단. error만 (저장 실패 같은 critical만) 표시.
+    if (type !== 'error') return null;
     const id = ++nextId;
     setToasts(t => [...t, { id, msg, type }]);
     if (duration > 0) {
