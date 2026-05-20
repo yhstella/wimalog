@@ -1,6 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT } from '../../lib/content.js';
 import { avgLossCurve, cohortSize, sideEffectRates, anonymousNotes, priceStats, userDemographics } from '../../lib/stats.js';
+import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats } from '../../lib/supabaseStats.js';
+import { supabaseConfigured } from '../../lib/supabaseClient.js';
 import { Storage } from '../../lib/storage.js';
 import { LineChart, HBarChart } from '../Chart.jsx';
 import { QuickSignupModal } from '../Paywall.jsx';
@@ -17,14 +19,42 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
 
   if (!drug) return <div className="card text-center py-10">약 정보를 찾을 수 없습니다</div>;
 
-  // 실시간 통계 (이 약에 한정)
+  // 실시간 통계 (이 약에 한정) — localStorage fallback
   const filter = { medication: medId };
-  const cohortN = useMemo(() => cohortSize(filter), [medId]);
-  const curve = useMemo(() => avgLossCurve(filter, [4, 8, 12, 16, 24, 36, 48]), [medId]);
-  const sideRates = useMemo(() => sideEffectRates(filter), [medId]);
+  const localCohortN = useMemo(() => cohortSize(filter), [medId]);
+  const localCurve = useMemo(() => avgLossCurve(filter, [4, 8, 12, 16, 24, 36, 48]), [medId]);
+  const localSideRates = useMemo(() => sideEffectRates(filter), [medId]);
   const notes = useMemo(() => anonymousNotes(filter, 3), [medId]);
-  const prices = useMemo(() => priceStats(filter), [medId]);
+  const localPrices = useMemo(() => priceStats(filter), [medId]);
   const demographics = useMemo(() => userDemographics(filter), [medId]);
+
+  // Supabase 풀데이터 — 약별 12-48주 감량, 부작용, 가격
+  const [supaCurve, setSupaCurve] = useState(null);
+  const [supaSideRates, setSupaSideRates] = useState(null);
+  const [supaPrices, setSupaPrices] = useState(null);
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    Promise.all([
+      fetchAvgLossCurve(filter, [4, 8, 12, 16, 24, 36, 48]),
+      fetchSideEffectRates(medId),
+      fetchPriceStats(medId),
+    ]).then(([c, s, p]) => {
+      if (cancelled) return;
+      if (c && c.some(x => x.n > 0)) setSupaCurve(c);
+      if (s && s.length) setSupaSideRates(s);
+      if (p && p.byRegion?.length) setSupaPrices(p);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [medId]);
+
+  const curve = supaCurve || localCurve;
+  const sideRates = supaSideRates || localSideRates;
+  const prices = supaPrices || localPrices;
+  // cohort N — Supabase의 12주 n 우선, 없으면 localStorage
+  const cohortN = supaCurve?.find(c => c.week === 12)?.n
+    || supaCurve?.reduce((m, c) => Math.max(m, c.n || 0), 0)
+    || localCohortN;
 
   // 참고 체중 (사용자 기준)
   const refWeight = user?.startWeight ?? 80;
