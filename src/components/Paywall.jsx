@@ -100,6 +100,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
     startWeight: prefill?.startWeight ? String(prefill.startWeight) : '',
     currentWeight: prefill?.startWeight ? String(prefill.startWeight) : '',
     targetWeight: '',
+    visitPurpose: '',  // 'using' | 'planning' | 'curious' | 'stopped'
     consent: false,
     _prefilled: !!prefill,
   });
@@ -128,6 +129,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
   const canFinish = +data.height >= 130 && +data.height <= 220
     && +data.startWeight >= 35 && +data.startWeight <= 250
     && +data.currentWeight >= 35 && +data.currentWeight <= 250
+    && !!data.visitPurpose
     && data.consent;
 
   const complete = () => {
@@ -144,6 +146,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
       targetWeight: +(data.targetWeight || (data.startWeight * 0.85).toFixed(1)),
       conditions: {},
       purpose: 'weight',
+      visitPurpose: data.visitPurpose,  // 약 사용 단계 — 통계/UX 분기에 활용
       concerns: [],
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
       authProvider, // 'google' | 'kakao' | 'naver' | null (이메일)
@@ -313,6 +316,27 @@ export function QuickSignupModal({ onClose, onComplete }) {
               <span className="ml-2 chip-brand">{bmiCategory(startBmi)}</span>
             </div>
           )}
+
+          {/* 방문 목적 — 사용자 단계별 맞춤 UX/통계 분기 */}
+          <div>
+            <div className="label">현재 어느 단계인가요?</div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {[
+                { id: 'using',    icon: '💉', label: '약 사용 중' },
+                { id: 'planning', icon: '🤔', label: '곧 시작하려고' },
+                { id: 'curious',  icon: '🔎', label: '정보만 보러' },
+                { id: 'stopped',  icon: '⏸️', label: '약 중단함' },
+              ].map(o => (
+                <button key={o.id} type="button" onClick={() => set('visitPurpose', o.id)}
+                        className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition text-left
+                                    ${data.visitPurpose === o.id
+                                      ? 'bg-brand-500 text-white border-brand-500'
+                                      : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>
+                  <span className="mr-1.5">{o.icon}</span>{o.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <label className="flex items-start gap-2 p-3 rounded-xl border border-ink-300 cursor-pointer">
             <input type="checkbox" className="mt-0.5 w-5 h-5 accent-brand-500 flex-shrink-0"

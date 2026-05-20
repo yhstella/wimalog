@@ -3,6 +3,7 @@ import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { getTheme, setTheme as setStoredTheme } from '../lib/theme.js';
 import { SearchTrigger } from './SearchModal.jsx';
 import { QuickSignupModal } from './Paywall.jsx';
+import { Storage } from '../lib/storage.js';
 
 const NAV_AUTHED = [
   { id: 'dashboard',  label: '홈',     icon: '🏠' },
@@ -88,6 +89,16 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                   </span>
                 </button>
                 <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
+                {/* TODO(임시): 가입 테스트용 탈퇴 — 사용자가 본인 구글 계정 반복 가입 테스트 위해. 출시 전 제거 */}
+                <button onClick={() => {
+                          if (!confirm('정말 탈퇴하시겠습니까? 본인 데이터가 영구 삭제됩니다.')) return;
+                          Storage.deleteUser(user.id);
+                          onLogout();
+                        }}
+                        title="테스트용 탈퇴 (출시 전 제거 예정)"
+                        className="text-[11px] font-semibold px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white transition">
+                  ✕ 탈퇴
+                </button>
               </div>
             ) : (
               <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">

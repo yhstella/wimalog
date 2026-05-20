@@ -92,18 +92,19 @@ export function Landing({ navigate, onSignup, user }) {
             5개 약 한눈 비교 →
           </button>
         </div>
-        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+        {/* 사용량 비율 반영: 위고비·마운자로 4 (큼), 삭센다 2 (중간), 오젬픽·젭바운드 각 1 (작음) */}
+        <div className="grid grid-cols-12 gap-2">
           {[
-            ['wegovy', '위고비'],
-            ['mounjaro', '마운자로'],
-            ['saxenda', '삭센다'],
-            ['ozempic', '오젬픽'],
-            ['zepbound', '젭바운드'],
-          ].map(([id, label]) => (
+            ['wegovy',   '위고비',   'col-span-4', 'text-3xl', 'text-base'],
+            ['mounjaro', '마운자로', 'col-span-4', 'text-3xl', 'text-base'],
+            ['saxenda',  '삭센다',   'col-span-2', 'text-xl',  'text-sm'],
+            ['ozempic',  '오젬픽',   'col-span-1', 'text-sm',  'text-[10px]'],
+            ['zepbound', '젭바운드', 'col-span-1', 'text-sm',  'text-[10px]'],
+          ].map(([id, label, colCls, iconCls, textCls]) => (
             <button key={id} onClick={() => navigate(`drug/${id}`)}
-                    className="card !p-3 text-center hover:shadow-cardHover hover:border-brand-300 transition group">
-              <div className="text-xl mb-1">💉</div>
-              <div className="font-semibold text-sm text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                    className={`${colCls} card !p-2 sm:!p-3 text-center hover:shadow-cardHover hover:border-brand-300 transition group flex flex-col items-center justify-center min-w-0`}>
+              <div className={`${iconCls} mb-0.5`}>💉</div>
+              <div className={`${textCls} font-semibold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate w-full`}>
                 {label}
               </div>
             </button>
