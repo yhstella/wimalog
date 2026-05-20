@@ -14,8 +14,12 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    nickname: user.nickname,
-    targetWeight: user.targetWeight,
+    nickname: user.nickname || '',
+    height: user.height || '',
+    gender: user.gender || 'X',
+    ageGroup: user.ageGroup || '30s',
+    startWeight: user.startWeight || '',
+    targetWeight: user.targetWeight || '',
     conditions: { ...(user.conditions || {}) },
   });
 
@@ -23,6 +27,10 @@ export function Profile({ user, navigate, onLogout, refresh }) {
     Storage.upsertUser({
       ...user,
       nickname: form.nickname || '나',
+      height: +form.height || user.height || null,
+      gender: form.gender || user.gender,
+      ageGroup: form.ageGroup || user.ageGroup,
+      startWeight: +form.startWeight || user.startWeight,
       targetWeight: +form.targetWeight || user.targetWeight,
       conditions: form.conditions,
     });
@@ -106,9 +114,9 @@ export function Profile({ user, navigate, onLogout, refresh }) {
           <dl className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
             <ReadRow k="닉네임" v={user.nickname} />
             <ReadRow k="성별/나이" v={`${user.gender === 'F' ? '여' : user.gender === 'M' ? '남' : '비공개'} · ${user.ageGroup}`} />
-            <ReadRow k="키" v={`${user.height} cm`} />
-            <ReadRow k="시작 체중" v={`${user.startWeight} kg`} />
-            <ReadRow k="목표 체중" v={`${user.targetWeight} kg`} />
+            <ReadRow k="키" v={user.height ? `${user.height} cm` : '미입력'} />
+            <ReadRow k="시작 체중" v={user.startWeight ? `${user.startWeight} kg` : '미입력'} />
+            <ReadRow k="목표 체중" v={user.targetWeight ? `${user.targetWeight} kg` : '미입력'} />
             <ReadRow k="동반 질환"
                      v={Object.entries(user.conditions || {}).filter(([, v]) => v).map(([k]) => CONDITIONS.find(c => c.id === k)?.label).filter(Boolean).join(', ') || '없음'} />
           </dl>
@@ -118,11 +126,50 @@ export function Profile({ user, navigate, onLogout, refresh }) {
               <input className="input" value={form.nickname}
                      onChange={e => setForm(f => ({ ...f, nickname: e.target.value }))} />
             </Row>
-            <Row label="목표 체중 (kg)">
-              <input type="number" inputMode="decimal" step="0.1" className="input"
-                     value={form.targetWeight}
-                     onChange={e => setForm(f => ({ ...f, targetWeight: e.target.value }))} />
+            <Row label="키 (cm)">
+              <input type="number" inputMode="decimal" step="0.1" min={130} max={220} className="input"
+                     value={form.height}
+                     onChange={e => setForm(f => ({ ...f, height: e.target.value }))}
+                     placeholder="예: 165" />
             </Row>
+            <Row label="성별">
+              <div className="flex gap-1">
+                {[{ id: 'F', label: '여' }, { id: 'M', label: '남' }, { id: 'X', label: '비공개' }].map(o => (
+                  <button key={o.id} type="button"
+                          onClick={() => setForm(f => ({ ...f, gender: o.id }))}
+                          className={`flex-1 py-2 rounded-lg text-sm font-medium border transition
+                                      ${form.gender === o.id ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-300'}`}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <Row label="나이대">
+              <div className="grid grid-cols-5 gap-1">
+                {[{id:'20s',label:'20대'},{id:'30s',label:'30대'},{id:'40s',label:'40대'},{id:'50s',label:'50대'},{id:'60s+',label:'60+'}].map(o => (
+                  <button key={o.id} type="button"
+                          onClick={() => setForm(f => ({ ...f, ageGroup: o.id }))}
+                          className={`py-2 rounded-lg text-xs font-medium border transition
+                                      ${form.ageGroup === o.id ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-ink-700 border-ink-300'}`}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </Row>
+            <div className="grid grid-cols-2 gap-3">
+              <Row label="시작 체중 (kg)">
+                <input type="number" inputMode="decimal" step="0.1" min={30} max={250} className="input"
+                       value={form.startWeight}
+                       onChange={e => setForm(f => ({ ...f, startWeight: e.target.value }))}
+                       placeholder="예: 75" />
+              </Row>
+              <Row label="목표 체중 (kg)">
+                <input type="number" inputMode="decimal" step="0.1" min={30} max={250} className="input"
+                       value={form.targetWeight}
+                       onChange={e => setForm(f => ({ ...f, targetWeight: e.target.value }))}
+                       placeholder="예: 65" />
+              </Row>
+            </div>
             <Row label="동반 질환">
               <div className="grid grid-cols-2 gap-2">
                 {CONDITIONS.map(c => (

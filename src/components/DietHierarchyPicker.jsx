@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DIET_HIERARCHY } from '../lib/dietHierarchy.js';
 
 // 식단 4단계 계층 선택기 — 카테고리 → 종류 → 메뉴
@@ -9,6 +9,18 @@ export function DietHierarchyPicker({ value = '', onChange }) {
   const [subId, setSubId] = useState(null);
   const [freeInput, setFreeInput] = useState(value);
   const [showFree, setShowFree] = useState(false);
+
+  // 부모가 value를 ''로 reset하면 picker도 카테고리부터 다시 시작 (예: 식단 저장 후)
+  // 이게 없으면 step='done' stale 상태로 UI가 사라짐 — '하나 입력하면 그 다음 입력 불가' 버그
+  useEffect(() => {
+    if (!value) {
+      setStep('category');
+      setCategoryId(null);
+      setSubId(null);
+      setShowFree(false);
+      setFreeInput('');
+    }
+  }, [value]);
 
   const category = categoryId ? DIET_HIERARCHY[categoryId] : null;
   const sub = category && subId ? category.subcategories[subId] : null;
