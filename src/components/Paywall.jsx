@@ -77,20 +77,31 @@ export function PremiumBadge({ size = 'sm' }) {
 ============================================================ */
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
+const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
+const readPrefill = () => {
+  try {
+    const raw = sessionStorage.getItem(SIM_PREFILL_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
 export function QuickSignupModal({ onClose, onComplete }) {
   const [step, setStep] = useState(0);
   const [authProvider, setAuthProvider] = useState(null); // 'google' | 'kakao' | 'naver' | 'anonymous' | null
   const [oauthError, setOauthError] = useState(null);
   const [oauthLoading, setOauthLoading] = useState(null); // provider id 또는 null
+  // Simulator에서 입력한 값 자동 prefill — lazy user 마찰 제거
+  const prefill = readPrefill();
   const [data, setData] = useState({
     nickname: '',
     gender: 'F',
     ageGroup: '40s',
-    height: '',
-    startWeight: '',
-    currentWeight: '',
+    height: prefill?.height ? String(prefill.height) : '',
+    startWeight: prefill?.startWeight ? String(prefill.startWeight) : '',
+    currentWeight: prefill?.startWeight ? String(prefill.startWeight) : '',
     targetWeight: '',
     consent: false,
+    _prefilled: !!prefill,
   });
 
   // 실제 OAuth 시작 — Supabase가 redirect 처리, 콜백 후 App.jsx가 syncOAuthUser 호출
@@ -154,6 +165,8 @@ export function QuickSignupModal({ onClose, onComplete }) {
       });
     }
     Storage.setSession(userId);
+    // prefill 정리 — 가입 완료했으니 sessionStorage 비움
+    try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
     onComplete(userId);
   };
 
@@ -222,6 +235,11 @@ export function QuickSignupModal({ onClose, onComplete }) {
               변경
             </button>
           </div>
+          {data._prefilled && (
+            <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-3 py-2 text-xs text-brand-800 dark:text-brand-200">
+              ✨ 시뮬레이터에서 입력한 키·체중을 자동으로 채웠어요. 확인만 하고 가입하세요.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="label">키 (cm)</div>

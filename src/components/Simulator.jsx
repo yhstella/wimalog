@@ -6,11 +6,28 @@ import { MEDS, MED_BY_ID } from '../lib/constants.js';
 // 슬라이더 + 즉시 예측 결과 위젯
 // P1(처음 접속), P4(주변 못 물어보는 사람)을 위한 핵심 위젯
 // 3시점(3개월/6개월/1년) + 약별 비용/부작용 + 사용 빈도(매주/격주/가끔) 한국 실사용 반영
+// 입력값은 sessionStorage에 저장 — 가입 모달에서 prefill되어 두 번 입력 마찰 제거
+const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
+
 export function Simulator({ onSignup, compact = false, user = null }) {
-  const [height, setHeight] = useState(162);
-  const [startWeight, setStartWeight] = useState(78);
-  const [medication, setMedication] = useState('wegovy');
-  const [frequency, setFrequency] = useState('weekly');
+  // sessionStorage에서 이전 값 복원
+  const loaded = (() => {
+    try {
+      const raw = sessionStorage.getItem(SIM_PREFILL_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch { return null; }
+  })();
+  const [height, setHeight] = useState(loaded?.height || 162);
+  const [startWeight, setStartWeight] = useState(loaded?.startWeight || 78);
+  const [medication, setMedication] = useState(loaded?.medication || 'wegovy');
+  const [frequency, setFrequency] = useState(loaded?.frequency || 'weekly');
+
+  // 입력값 바뀔 때마다 sessionStorage에 저장 (디바운스 없이도 작아서 부담 없음)
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SIM_PREFILL_KEY, JSON.stringify({ height, startWeight, medication, frequency }));
+    } catch {}
+  }, [height, startWeight, medication, frequency]);
   // 시드가 비동기로 끝나면 재계산
   const [seedTick, setSeedTick] = useState(0);
   useEffect(() => {

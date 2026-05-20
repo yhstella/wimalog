@@ -83,20 +83,33 @@ export const RED_FLAG_SYMPTOMS = [
   '심한 알레르기 반응 (두드러기, 호흡곤란)',
 ];
 
-// 운동 종류
+// 운동 종류 — met = Metabolic Equivalent of Task (활동대사량). ACSM/Compendium 참고치.
+// 강도 1~5 보정은 estimateCalories()에서 따로 적용.
 export const EXERCISE_TYPES = [
-  { id: 'walking',  label: '걷기' },
-  { id: 'jogging',  label: '러닝/조깅' },
-  { id: 'cycling',  label: '자전거' },
-  { id: 'swimming', label: '수영' },
-  { id: 'hiking',   label: '등산' },
-  { id: 'strength', label: '근력 운동' },
-  { id: 'yoga',     label: '요가/필라테스' },
-  { id: 'sports',   label: '구기/라켓' },
-  { id: 'home',     label: '홈트' },
-  { id: 'other',    label: '기타' },
+  { id: 'walking',  label: '걷기',         met: 3.5 },
+  { id: 'jogging',  label: '러닝/조깅',    met: 8.0 },
+  { id: 'cycling',  label: '자전거',       met: 6.0 },
+  { id: 'swimming', label: '수영',         met: 7.0 },
+  { id: 'hiking',   label: '등산',         met: 7.0 },
+  { id: 'strength', label: '근력 운동',    met: 5.0 },
+  { id: 'yoga',     label: '요가/필라테스', met: 3.0 },
+  { id: 'sports',   label: '구기/라켓',    met: 6.5 },
+  { id: 'home',     label: '홈트',         met: 5.0 },
+  { id: 'other',    label: '기타',         met: 4.0 },
 ];
 export const EXERCISE_BY_ID = Object.fromEntries(EXERCISE_TYPES.map(e => [e.id, e]));
+
+// kcal 추정 — Compendium 공식: kcal = MET × 체중(kg) × 시간(h).
+// 강도 1~5 보정: 1=0.7, 2=0.85, 3=1.0, 4=1.2, 5=1.4 (저~고강도 효율 차이 반영)
+const INTENSITY_FACTOR = { 1: 0.7, 2: 0.85, 3: 1.0, 4: 1.2, 5: 1.4 };
+export function estimateExerciseCalories({ type, durationMin, intensity = 3, weightKg }) {
+  if (!type || !durationMin || !weightKg) return null;
+  const ex = EXERCISE_BY_ID[type];
+  if (!ex) return null;
+  const factor = INTENSITY_FACTOR[intensity] ?? 1.0;
+  const kcal = ex.met * weightKg * (durationMin / 60) * factor;
+  return Math.round(kcal);
+}
 
 // 식사 종류
 export const MEAL_TYPES = [

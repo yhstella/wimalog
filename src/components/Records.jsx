@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Storage, uid } from '../lib/storage.js';
 import {
   SIDE_EFFECTS, EXERCISE_TYPES, EXERCISE_BY_ID, MEAL_TYPES, MEAL_BY_ID,
-  DIET_PATTERNS, MED_BY_ID, REGION_SUGGESTIONS,
+  DIET_PATTERNS, MED_BY_ID, REGION_SUGGESTIONS, estimateExerciseCalories,
 } from '../lib/constants.js';
 import { RedFlagBanner } from './SafetyBanner.jsx';
 import { useToast } from './Toast.jsx';
@@ -607,6 +607,15 @@ function ExerciseTab({ user, version, refresh }) {
   const [intensity, setIntensity] = useState(3);
   const [notes, setNotes] = useState('');
 
+  // 사용자 체중 — 최신 log 우선, 없으면 startWeight
+  const allLogs = useMemo(() => Storage.getLogsByUser(user.id), [user.id, version]);
+  const currentWeightKg = allLogs[allLogs.length - 1]?.weight || user.startWeight || 70;
+
+  // 실시간 칼로리 추정
+  const estKcal = useMemo(() => estimateExerciseCalories({
+    type, durationMin: +durationMin, intensity, weightKg: currentWeightKg,
+  }), [type, durationMin, intensity, currentWeightKg]);
+
   const submit = () => {
     if (!durationMin || durationMin < 1) return;
     Storage.addExercise({
@@ -617,15 +626,19 @@ function ExerciseTab({ user, version, refresh }) {
       type,
       durationMin: +durationMin,
       intensity,
+      estKcal: estKcal || null,
       notes: notes.trim(),
       createdAt: new Date().toISOString(),
     });
     setNotes('');
     refresh();
-    toast.success(`${EXERCISE_BY_ID[type]?.label} ${durationMin}분 기록됨`);
+    toast.success(`${EXERCISE_BY_ID[type]?.label} ${durationMin}분 · ${estKcal || '?'} kcal 기록됨`);
   };
 
   const quickRepeat = (ex) => {
+    const kcal = estimateExerciseCalories({
+      type: ex.type, durationMin: ex.durationMin, intensity: ex.intensity, weightKg: currentWeightKg,
+    });
     Storage.addExercise({
       id: uid('ex'),
       userId: user.id,
@@ -634,24 +647,32 @@ function ExerciseTab({ user, version, refresh }) {
       type: ex.type,
       durationMin: ex.durationMin,
       intensity: ex.intensity,
+      estKcal: kcal || null,
       notes: '',
       createdAt: new Date().toISOString(),
     });
     refresh();
-    toast.success(`${EXERCISE_BY_ID[ex.type]?.label} ${ex.durationMin}분 추가됨`);
+    toast.success(`${EXERCISE_BY_ID[ex.type]?.label} ${ex.durationMin}분 · ${kcal || '?'} kcal 추가됨`);
   };
 
-  // 이번 주 합계
+  // 이번 주 합계 — 세션·분·칼로리 (기록에 estKcal 없으면 즉석 계산)
   const thisWeekTotal = useMemo(() => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const start = oneWeekAgo.toISOString().slice(0, 10);
     const week = allEx.filter(e => e.date >= start);
+    const kcal = week.reduce((s, e) => {
+      const k = e.estKcal ?? estimateExerciseCalories({
+        type: e.type, durationMin: e.durationMin, intensity: e.intensity, weightKg: currentWeightKg,
+      }) ?? 0;
+      return s + k;
+    }, 0);
     return {
       sessions: week.length,
       minutes: week.reduce((s, e) => s + (e.durationMin || 0), 0),
+      kcal: Math.round(kcal),
     };
-  }, [allEx]);
+  }, [allEx, currentWeightKg]);
 
   // 자주 한 운동 Top 3 (최근 30일)
   const favorites = useMemo(() => {
@@ -670,9 +691,10 @@ function ExerciseTab({ user, version, refresh }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <SummaryTile label="이번 주 세션" value={`${thisWeekTotal.sessions}회`} />
-        <SummaryTile label="이번 주 운동 시간" value={`${thisWeekTotal.minutes}분`} />
+        <SummaryTile label="시간" value={`${thisWeekTotal.minutes}분`} />
+        <SummaryTile label="소모 kcal" value={`${thisWeekTotal.kcal.toLocaleString()}`} />
       </div>
 
       {favorites.length > 0 && (
@@ -748,8 +770,17 @@ function ExerciseTab({ user, version, refresh }) {
                  placeholder="예: 한강 산책, 5km, 무릎 통증 없음" />
         </div>
 
-        <div className="flex justify-end">
-          <button onClick={submit} disabled={!durationMin} className="btn-primary">운동 기록 저장</button>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {estKcal != null && (
+            <div className="text-sm">
+              <span className="text-ink-500 dark:text-slate-400">예상 소모:</span>
+              <span className="ml-1.5 font-bold text-brand-700 dark:text-brand-400 tabular-nums">~{estKcal} kcal</span>
+              <span className="text-[10px] text-ink-500 dark:text-slate-500 ml-1.5">
+                (체중 {currentWeightKg}kg 기준)
+              </span>
+            </div>
+          )}
+          <button onClick={submit} disabled={!durationMin} className="btn-primary ml-auto">운동 기록 저장</button>
         </div>
       </div>
 

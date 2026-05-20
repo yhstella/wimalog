@@ -12,8 +12,10 @@ import { MED_BY_ID } from '../lib/constants.js';
 export function WeightChartInline({ user, currentWeight, currentDate, onWeightChange, onDoseAdded, refreshKey, weeksBack = 8 }) {
   const svgRef = useRef(null);
   const dragRef = useRef({ mode: null, startMs: 0 });
-  const [drawingPoints, setDrawingPoints] = useState([]);  // 좌드래그 중 점들
-  const [rightDragInfo, setRightDragInfo] = useState(null);  // 우드래그 시각화
+  const drawingPointsRef = useRef([]);   // ref로 mirror — setState updater에서 side effect 없이 onUp에서 안전 사용
+  const lastMoveRef = useRef(0);          // mousemove throttle
+  const [drawingPoints, setDrawingPoints] = useState([]);
+  const [rightDragInfo, setRightDragInfo] = useState(null);
   // 모바일용 모드 토글 — 데스크탑은 좌/우클릭으로 자동 분기되지만 터치는 모드 선택 필요
   const [touchMode, setTouchMode] = useState('weight');  // 'weight' | 'dose'
 
@@ -98,27 +100,35 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     } else if (isWeightMode) {
       e.preventDefault();
       dragRef.current = { mode: 'left' };
+      lastMoveRef.current = 0;
       const date = new Date(xToDateMs(p.x)).toISOString().slice(0, 10);
       const weight = yToWeight(p.y);
+      drawingPointsRef.current = [{ date, weight }];
       setDrawingPoints([{ date, weight }]);
       onWeightChange?.({ date, weight });
     }
   };
 
-  // pointer move — 모드별 처리
+  // pointer move/up — 모드별 처리
+  // throttle 32ms (~30fps) + ref 기반 누적으로 setState updater 안 side effect 제거 (ErrorBoundary 회피)
   useEffect(() => {
+    const THROTTLE_MS = 32;
     const onMove = (e) => {
       if (!dragRef.current.mode) return;
+      const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+      if (now - lastMoveRef.current < THROTTLE_MS) return;
+      lastMoveRef.current = now;
       const p = getSvgPoint(e);
       if (!p) return;
       if (dragRef.current.mode === 'left') {
+        // SVG 영역 밖으로 나가면 누적 중지 (drag 끊김 방지용 — clamp)
+        if (p.x < PAD.left - 5 || p.x > W - PAD.right + 5) return;
         const date = new Date(xToDateMs(p.x)).toISOString().slice(0, 10);
         const weight = yToWeight(p.y);
-        setDrawingPoints(prev => {
-          // 같은 날짜 중복 제거 + 정렬
-          const filtered = prev.filter(x => x.date !== date);
-          return [...filtered, { date, weight }].sort((a, b) => a.date.localeCompare(b.date));
-        });
+        const filtered = drawingPointsRef.current.filter(x => x.date !== date);
+        const next = [...filtered, { date, weight }].sort((a, b) => a.date.localeCompare(b.date));
+        drawingPointsRef.current = next;
+        setDrawingPoints(next);
         onWeightChange?.({ date, weight });
       } else if (dragRef.current.mode === 'right') {
         const screenY = (e.touches?.[0] || e).clientY;
@@ -127,14 +137,17 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
       }
     };
     const onUp = (e) => {
-      const mode = dragRef.current.mode;
+      const drag = dragRef.current;
+      const mode = drag.mode;
       if (!mode) return;
+      dragRef.current = { mode: null };
       if (mode === 'left') {
-        // 그린 점들 일괄 저장
-        setDrawingPoints(prev => {
-          if (prev.length >= 2) {
-            // 여러 점이면 모두 저장
-            for (const pt of prev) {
+        const points = drawingPointsRef.current;
+        drawingPointsRef.current = [];
+        setDrawingPoints([]);
+        if (points.length >= 2) {
+          try {
+            for (const pt of points) {
               Storage.addLog({
                 id: uid('log'),
                 userId: user.id,
@@ -146,20 +159,23 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
                 createdAt: new Date().toISOString(),
               });
             }
-            // refresh를 위해 onDoseAdded 같은 hook 호출 — 부모가 refresh 트리거
-            onWeightChange?.({ date: prev[prev.length - 1].date, weight: prev[prev.length - 1].weight, savedCount: prev.length });
+            const last = points[points.length - 1];
+            onWeightChange?.({ date: last.date, weight: last.weight, savedCount: points.length });
+          } catch (err) {
+            console.error('[WeightChartInline] save failed', err);
           }
-          return [];  // 점 그리기 초기화
-        });
+        }
       } else if (mode === 'right') {
-        // 우클릭 방향 판정 → dose 추가
-        const screenY = (e.touches?.[0] || e).clientY;
-        const dy = dragRef.current.screenY - screenY;
+        const screenY = (e.changedTouches?.[0] || e.touches?.[0] || e).clientY;
+        const dy = drag.screenY != null ? drag.screenY - screenY : 0;
         const direction = dy > 25 ? 1 : dy < -25 ? -1 : 0;
-        addDoseAtDate(new Date(dragRef.current.startMs).toISOString().slice(0, 10), direction);
         setRightDragInfo(null);
+        try {
+          addDoseAtDate(new Date(drag.startMs).toISOString().slice(0, 10), direction);
+        } catch (err) {
+          console.error('[WeightChartInline] dose save failed', err);
+        }
       }
-      dragRef.current = { mode: null };
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -171,7 +187,7 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
       window.removeEventListener('touchmove', onMove);
       window.removeEventListener('touchend', onUp);
     };
-  }, [yMin, yMax, user, activeCourses]);
+  }, [yMin, yMax, user, activeCourses, PAD.left, PAD.right, W, dayWidth, startDate, innerH, PAD.top, onWeightChange, onDoseAdded]);
 
   // 우클릭 컨텍스트메뉴 막기
   const onContextMenu = (e) => {

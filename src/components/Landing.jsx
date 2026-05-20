@@ -1,12 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { QuickSignupModal } from './Paywall.jsx';
 import { Simulator } from './Simulator.jsx';
 import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
 
+const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
+
 export function Landing({ navigate, onSignup, user }) {
   const [showSignup, setShowSignup] = useState(false);
+  const [showFull, setShowFull] = useState(false);   // 신규 사용자에게는 가이드/계산기 숨김
+  // Simulator 입력 echo — sessionStorage 폴링으로 가벼운 sync
+  const [prefill, setPrefill] = useState(null);
+  useEffect(() => {
+    if (user) return;
+    const read = () => {
+      try {
+        const raw = sessionStorage.getItem(SIM_PREFILL_KEY);
+        setPrefill(raw ? JSON.parse(raw) : null);
+      } catch {}
+    };
+    read();
+    const id = setInterval(read, 1500);
+    return () => clearInterval(id);
+  }, [user]);
+
   // 로그인 사용자가 클릭하면 가입 모달 대신 dashboard로 이동
   const handleSignup = () => {
     if (user) navigate('dashboard');
@@ -39,6 +57,30 @@ export function Landing({ navigate, onSignup, user }) {
         <Simulator onSignup={handleSignup} user={user} />
       </section>
 
+      {/* 신규 사용자용 강한 후속 CTA — 입력값 echo + 가입 유도 */}
+      {!user && prefill && (
+        <section className="max-w-2xl mx-auto -mt-4">
+          <div className="rounded-2xl bg-amber-50 dark:bg-amber-900/20 border-2 border-dashed border-amber-300 dark:border-amber-700/60 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="text-2xl flex-shrink-0">✨</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-amber-900 dark:text-amber-100 leading-snug">
+                  방금 입력한 <span className="tabular-nums">{prefill.height}cm · {prefill.startWeight}kg</span> 결과를 저장할까요?
+                </div>
+                <div className="text-xs text-amber-800 dark:text-amber-200/80 mt-1 leading-relaxed">
+                  1분 가입하면 매주 진척도 그래프 · 비슷한 사용자 비교 · AI 예측이 시작돼요.
+                  방금 입력값이 자동으로 채워집니다.
+                </div>
+                <button onClick={handleSignup}
+                        className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 text-sm font-bold transition shadow-sm">
+                  ✨ 1분 가입하고 내 데이터 시작 →
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 위마로그 코호트 LIVE — 우리 데이터 강조 (가짜 사이트 느낌 방지) */}
       <CohortLive navigate={navigate} onSignup={handleSignup} user={user} />
 
@@ -69,7 +111,19 @@ export function Landing({ navigate, onSignup, user }) {
         </div>
       </section>
 
+      {/* 가이드·부작용·계산기 — 신규 사용자에겐 접어두고 가입에 집중 */}
+      {!user && !showFull && (
+        <section className="text-center">
+          <button onClick={() => setShowFull(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-ink-100 dark:bg-slate-800 hover:bg-ink-300/40 dark:hover:bg-slate-700 px-4 py-2 text-sm font-medium text-ink-700 dark:text-slate-300 transition">
+            가이드·부작용·계산기 더 보기
+            <span className="text-brand-500">↓</span>
+          </button>
+        </section>
+      )}
+
       {/* 상황별 가이드 — 핵심 6개만 */}
+      {(user || showFull) && (
       <section>
         <h2 className="text-xl sm:text-2xl font-bold text-ink-900 dark:text-slate-100 mb-3">상황별 가이드</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -93,8 +147,10 @@ export function Landing({ navigate, onSignup, user }) {
                             onClick={() => navigate('guide/first-month')} />
         </div>
       </section>
+      )}
 
       {/* 부작용 + 계산기 — 한 줄 통합 */}
+      {(user || showFull) && (
       <section>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
@@ -134,6 +190,7 @@ export function Landing({ navigate, onSignup, user }) {
           </div>
         </div>
       </section>
+      )}
 
       {/* 하단 CTA — 로그인 상태 따라 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 text-center">
