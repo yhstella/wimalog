@@ -16,6 +16,7 @@ import { GoalWidget } from './GoalWidget.jsx';
 import { InputProgressCard } from './InputProgressCard.jsx';
 import { NotificationBanner } from './NotificationBanner.jsx';
 import { PurposeCard } from './PurposeCard.jsx';
+import { UnlockedInsights } from './UnlockedInsights.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -229,6 +230,9 @@ export function Dashboard({ user, navigate }) {
 
       {/* 입력 보상 — 자세히 입력할수록 더 많은 데이터 잠금 해제 */}
       <InputProgressCard user={user} navigate={navigate} />
+
+      {/* 건강지표 입력 시 자동 unlock되는 본인 vs 표준 비교 카드 */}
+      <UnlockedInsights user={user} />
 
       {/* Notification banner (한 번만) */}
       <NotificationBanner user={user} />
