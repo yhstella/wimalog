@@ -301,6 +301,7 @@ function generateOne(rand, index, out) {
     generateDoses(rand, user, c, out);
   }
   generateLifestyle(rand, user, courses, out, { exReduce: 1, dietReduce: 1 });
+  generateHealthMetrics(rand, user, courses, out);
 }
 
 // 약 처방 기록 — 1 dose entry = 1박스(4주치) 처방. 한국 실제 처방 단위와 일치.
@@ -512,6 +513,126 @@ function generateLifestyle(rand, user, courses, out, opts = {}) {
   }
 }
 
+// GLP-1 임상시험 baseline + follow-up 데이터 생성 (혈액·인바디·혈압)
+// 참고: STEP 1 (Wilding 2021), SURMOUNT-1 (Jastreboff 2022), SCALE (Pi-Sunyer 2015),
+//       STEP 2 T2DM (Davies 2021), STEP 5 long-term (Garvey 2022)
+// 환자별 baseline (시작 시점) + 12주 + 24주 + 48주 시점의 측정값 자동 생성
+// 임상 평균 + responseFactor + variance 적용
+function generateHealthMetrics(rand, user, courses, out) {
+  if (!user.startWeight) return;
+  const firstCourse = courses?.[0];
+  const startMs = firstCourse ? Date.parse(firstCourse.startDate) : Date.parse(daysAgo(8 * 7));
+  const responseF = firstCourse?._responseFactor ?? 1.0;
+  const sex = user.gender;
+
+  // 시점별 측정 — 모든 환자가 baseline + 12주, 일부만 24/48주
+  const TIMEPOINTS = [
+    { weekOffset: 0,  prob: 0.85 },    // baseline
+    { weekOffset: 12, prob: 0.55 },    // 3개월
+    { weekOffset: 24, prob: 0.35 },    // 6개월
+    { weekOffset: 48, prob: 0.18 },    // 1년
+  ];
+
+  for (const tp of TIMEPOINTS) {
+    if (rand() > tp.prob) continue;
+    const dateMs = startMs + tp.weekOffset * 7 * 86400000;
+    if (dateMs > Date.now()) continue;
+    const date = new Date(dateMs).toISOString().slice(0, 10);
+    // 감량 진행도 (0=baseline, 1=최대 감량)
+    const progress = 1 - Math.exp(-tp.weekOffset / 24);
+    const lossPct = 0.13 * responseF * progress;  // 평균 13% × response × time
+
+    // 인바디 — 매번 측정 안 함 (50%)
+    if (rand() < 0.5) {
+      const baseFat = sex === 'M' ? 28 : 36;
+      const baseMuscle = sex === 'M' ? 52 : 36;
+      const baseWaist = sex === 'M' ? 98 : 92;
+      const bodyFatPct = clamp(baseFat - 8 * lossPct + gauss(rand, 0, 2.5), 12, 50);
+      const muscleKg = clamp(baseMuscle - 1.5 * lossPct + gauss(rand, 0, 1.0), 25, 75);
+      const waistCm = clamp(baseWaist - 12 * lossPct + gauss(rand, 0, 3.5), 65, 130);
+      out.healthMetrics.push({
+        id: uid('hm'), userId: user.id, seed: true, date,
+        category: 'inbody',
+        bodyFatPct: +bodyFatPct.toFixed(1),
+        muscleKg: +muscleKg.toFixed(1),
+        waistCm: +waistCm.toFixed(0),
+        createdAt: new Date(dateMs).toISOString(),
+      });
+    }
+
+    // 혈액검사 — baseline + 24/48주 위주 (40%)
+    if (rand() < 0.4) {
+      const isDiabetic = user.conditions?.diabetes;
+      const isPrediabetic = user.conditions?.prediabetes;
+      const hasFatty = user.conditions?.fattyLiver;
+      // HbA1c — 당뇨 6.5+, 전당뇨 5.7-6.4, 정상 5.0-5.6, GLP-1 효과 -0.3 to -1.5
+      const baseHba1c = isDiabetic ? 7.4 : isPrediabetic ? 6.1 : 5.4;
+      const hba1c = clamp(baseHba1c - 1.2 * lossPct * responseF + gauss(rand, 0, 0.4), 4.5, 11);
+      // ALT — 지방간 35-65, 정상 15-35. GLP-1 간내 지방 감소 효과 -30% in fatty
+      const baseAlt = hasFatty ? 48 : 24;
+      const alt = clamp(baseAlt * (1 - 0.30 * lossPct) + gauss(rand, 0, 6), 8, 120);
+      // AST — ALT보다 약간 낮음
+      const ast = clamp(alt * 0.75 + gauss(rand, 0, 4), 8, 100);
+      // 총콜레스테롤 — 평균 200, GLP-1 -5 to -15
+      const totalChol = clamp(195 + gauss(rand, 0, 25) - 12 * lossPct, 130, 320);
+      out.healthMetrics.push({
+        id: uid('hm'), userId: user.id, seed: true, date,
+        category: 'blood',
+        hba1c: +hba1c.toFixed(1),
+        alt: Math.round(alt),
+        ast: Math.round(ast),
+        totalChol: Math.round(totalChol),
+        createdAt: new Date(dateMs).toISOString(),
+      });
+    }
+
+    // 혈압 — 30%
+    if (rand() < 0.3) {
+      const hasHtn = user.conditions?.hypertension;
+      const baseSbp = hasHtn ? 142 : 122;
+      const baseDbp = hasHtn ? 90 : 78;
+      // GLP-1 평균 -5/-2 mmHg
+      const sbp = clamp(baseSbp - 6 * lossPct + gauss(rand, 0, 6), 90, 180);
+      const dbp = clamp(baseDbp - 3 * lossPct + gauss(rand, 0, 4), 55, 110);
+      out.healthMetrics.push({
+        id: uid('hm'), userId: user.id, seed: true, date,
+        category: 'bp',
+        sbp: Math.round(sbp), dbp: Math.round(dbp),
+        createdAt: new Date(dateMs).toISOString(),
+      });
+    }
+
+    // 수면·스트레스 — 25%
+    if (rand() < 0.25) {
+      const sleepHours = clamp(gauss(rand, 6.8, 1.1), 4, 11);
+      const stressLevel = clamp(Math.round(gauss(rand, 3, 1)), 1, 5);
+      out.healthMetrics.push({
+        id: uid('hm'), userId: user.id, seed: true, date,
+        category: 'sleep',
+        sleepHours: +sleepHours.toFixed(1),
+        stressLevel,
+        createdAt: new Date(dateMs).toISOString(),
+      });
+    }
+
+    // 음주 — 15% (drinker가 아니면 0잔)
+    if (rand() < 0.15) {
+      const isDrinker = user._drinker !== 'none' || rand() < 0.4;
+      if (isDrinker) {
+        const drinksPerWeek = clamp(Math.round(gauss(rand, sex === 'M' ? 6 : 3, 4)), 0, 30);
+        // GLP-1 → 갈망 감소 (Klausen 2022 메타) — 50%가 cravingChange ≤ 2
+        const cravingChange = lossPct > 0.05 ? clamp(Math.round(gauss(rand, 2.5, 1)), 1, 5) : 3;
+        out.healthMetrics.push({
+          id: uid('hm'), userId: user.id, seed: true, date,
+          category: 'alcohol',
+          drinksPerWeek, cravingChange,
+          createdAt: new Date(dateMs).toISOString(),
+        });
+      }
+    }
+  }
+}
+
 // localStorage 시드 — 필터 통계가 충분히 나오도록 1500명 (logs ~50K건, ~400KB 안전)
 // 더 큰 통계는 Supabase 8000+ 코호트에서 RPC로 가져옴 (supabaseStats.js)
 export function seedIfNeeded(count = 1500, seed = 20260518) {
@@ -523,6 +644,7 @@ export function seedIfNeeded(count = 1500, seed = 20260518) {
   localStorage.setItem('gl_doses',     JSON.stringify(Storage.getDoses().filter(d => !d.seed)));
   localStorage.setItem('gl_exercises', JSON.stringify(Storage.getExercises().filter(e => !e.seed)));
   localStorage.setItem('gl_diets',     JSON.stringify(Storage.getDiets().filter(d => !d.seed)));
+  localStorage.setItem('gl_health',    JSON.stringify((Storage.getHealthMetrics?.() || []).filter(h => !h.seed)));
 
   const rand = mulberry32(seed);
   const out = {
@@ -532,6 +654,7 @@ export function seedIfNeeded(count = 1500, seed = 20260518) {
     doses: Storage.getDoses(),
     exercises: Storage.getExercises(),
     diets: Storage.getDiets(),
+    healthMetrics: Storage.getHealthMetrics ? Storage.getHealthMetrics() : [],
   };
   for (let i = 0; i < count; i++) generateOne(rand, i, out);
 
@@ -542,6 +665,7 @@ export function seedIfNeeded(count = 1500, seed = 20260518) {
     localStorage.setItem('gl_doses',     JSON.stringify(out.doses));
     localStorage.setItem('gl_exercises', JSON.stringify(out.exercises));
     localStorage.setItem('gl_diets',     JSON.stringify(out.diets));
+    localStorage.setItem('gl_health',    JSON.stringify(out.healthMetrics));
     Storage.markSeeded();
   } catch (e) {
     // QuotaExceededError — exercises/diets를 더 줄여서 재시도
