@@ -336,6 +336,8 @@ export function priceStats(filter) {
 }
 
 // 코호트 운동 시간 분포 (히스토그램)
+// 최근 8주(56일) 기간 기준 — 안정적 평균
+const RECENT_WINDOW_DAYS = 56;
 export function exerciseDistribution(filter) {
   const { users, courses, exercises } = loadAll();
   const userById = new Map(users.map(u => [u.id, u]));
@@ -345,14 +347,14 @@ export function exerciseDistribution(filter) {
       return u && matchesCourseFilter(c, u, filter);
     }).map(c => c.userId)
   );
-  // 사용자별 주당 평균 운동 분
+  const cutoffMs = Date.now() - RECENT_WINDOW_DAYS * 86400000;
+  const weeks = RECENT_WINDOW_DAYS / 7;  // 8
+  // 사용자별 주당 평균 운동 분 — 최근 8주 총 운동분 / 8
   const perUserMin = [];
   for (const uid of cohortUsers) {
-    const ex = exercises.filter(e => e.userId === uid);
+    const ex = exercises.filter(e => e.userId === uid && Date.parse(e.date) >= cutoffMs);
     if (!ex.length) { perUserMin.push(0); continue; }
-    const dateSet = new Set(ex.map(e => e.date));
     const totalMin = ex.reduce((s, e) => s + (e.durationMin || 0), 0);
-    const weeks = Math.max(1, dateSet.size / 7);
     perUserMin.push(totalMin / weeks);
   }
   // 버킷: 0, 1-30, 31-60, 61-120, 121-180, 181+
@@ -383,19 +385,15 @@ export function exerciseStats(filter) {
     }).map(c => c.userId)
   );
   if (!cohortUsers.size) return { n: 0, avgMinPerWeek: null };
-  // 사용자별 주당 평균 분
+  // 사용자별 주당 평균 분 — 최근 8주(56일) 기준 (운동 안 한 주 포함해서 정직한 평균)
+  const cutoffMs = Date.now() - RECENT_WINDOW_DAYS * 86400000;
+  const weeks = RECENT_WINDOW_DAYS / 7;
   const perUser = [];
   for (const uid of cohortUsers) {
-    const ex = exercises.filter(e => e.userId === uid);
+    const ex = exercises.filter(e => e.userId === uid && Date.parse(e.date) >= cutoffMs);
     if (!ex.length) { perUser.push(0); continue; }
-    const minByWeek = {};
-    for (const e of ex) {
-      const wk = Math.floor(new Date(e.date).getTime() / (7 * 24 * 60 * 60 * 1000));
-      minByWeek[wk] = (minByWeek[wk] || 0) + (e.durationMin || 0);
-    }
-    const totalWeeks = Object.keys(minByWeek).length || 1;
-    const avg = Object.values(minByWeek).reduce((s, v) => s + v, 0) / totalWeeks;
-    perUser.push(avg);
+    const totalMin = ex.reduce((s, e) => s + (e.durationMin || 0), 0);
+    perUser.push(totalMin / weeks);
   }
   return {
     n: cohortUsers.size,

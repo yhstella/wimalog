@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Storage, uid } from '../lib/storage.js';
 import { SIDE_EFFECTS, MED_BY_ID } from '../lib/constants.js';
+import { DialInput } from './DialInput.jsx';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -24,8 +25,6 @@ export function QuickWeightCard({ user, onSaved }) {
   const today = todayISO();
   const todayLog = logs.find(l => l.date === today);
   const lastSidesCount = lastLog ? Object.values(lastLog.sideEffects || {}).filter(Boolean).length : 0;
-
-  const adjust = (delta) => setWeight(w => +(Math.max(30, Math.min(250, +w + delta))).toFixed(1));
 
   const copyLastSides = () => {
     if (lastLog?.sideEffects) {
@@ -75,21 +74,11 @@ export function QuickWeightCard({ user, onSaved }) {
         </div>
       </div>
 
-      {/* 체중 +/- 위젯 */}
-      <div className="flex items-center justify-center gap-2 my-3">
-        <button onClick={() => adjust(-0.5)} className="w-10 h-10 rounded-full bg-white border border-ink-300 text-ink-700 font-bold text-lg hover:border-brand-400 active:scale-95 transition">−</button>
-        <button onClick={() => adjust(-0.1)} className="w-8 h-8 rounded-full bg-white border border-ink-200 text-ink-500 text-sm hover:border-brand-400 active:scale-95 transition">·</button>
-        <div className="mx-3 text-center min-w-[110px]">
-          <input
-            type="number" inputMode="decimal" min={30} max={250} step="0.1"
-            value={weight}
-            onChange={e => setWeight(e.target.value)}
-            className="w-full text-3xl font-extrabold text-center tabular-nums text-ink-900 bg-transparent border-none focus:outline-none focus:ring-0"
-          />
-          <div className="text-xs text-ink-500 -mt-1">kg</div>
-        </div>
-        <button onClick={() => adjust(0.1)} className="w-8 h-8 rounded-full bg-white border border-ink-200 text-ink-500 text-sm hover:border-brand-400 active:scale-95 transition">·</button>
-        <button onClick={() => adjust(0.5)} className="w-10 h-10 rounded-full bg-white border border-ink-300 text-ink-700 font-bold text-lg hover:border-brand-400 active:scale-95 transition">+</button>
+      {/* 체중 다이얼 — 최근 몸무게가 시작점 */}
+      <div className="my-3">
+        <DialInput value={+weight || baseWeight}
+                   onChange={(v) => setWeight(v)}
+                   min={30} max={250} step={0.1} majorTick={1} unit="kg" highlight />
       </div>
 
       <div className="text-center text-xs text-ink-500 mb-3">

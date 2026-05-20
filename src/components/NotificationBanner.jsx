@@ -1,12 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast.jsx';
 
 const KEY = 'gl_notify';
+
+// 모바일 환경 감지 — touch + 좁은 viewport 둘 다 충족 시 모바일로 판정
+// 데스크탑 브라우저는 매일 알림 의미가 약함 (탭 안 열려있으면 안 옴)
+function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  const isNarrow = window.matchMedia('(max-width: 768px)').matches;
+  // UA fallback (iPadOS는 macOS UA를 쓸 수 있어 보조)
+  const uaMobile = /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(navigator.userAgent || '');
+  return (hasTouch && isNarrow) || uaMobile;
+}
 
 export function NotificationBanner({ user }) {
   const toast = useToast();
   const [dismissed, setDismissed] = useState(() => !!localStorage.getItem(KEY + '_dismissed'));
   const [enabled, setEnabled] = useState(() => !!localStorage.getItem(KEY + '_enabled'));
+  const [mobile, setMobile] = useState(() => isMobileDevice());
+  useEffect(() => {
+    const handler = () => setMobile(isMobileDevice());
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  // 데스크탑에서는 노출 안 함 — 매일 알림은 모바일 환경에서만 효과적
+  if (!mobile) return null;
   if (dismissed || enabled) return null;
 
   const enable = async () => {

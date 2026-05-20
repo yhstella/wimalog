@@ -140,7 +140,8 @@ const REGION_PROFILE = [
   { region: '인천',        weight: 0.05, mult: 1.00 },
   { region: '대전',        weight: 0.03, mult: 0.95 },
   { region: '광주',        weight: 0.02, mult: 0.95 },
-  { region: '온라인',      weight: 0.01, mult: 0.85 },
+  { region: '울산',        weight: 0.02, mult: 0.95 },
+  { region: '해외 직구',   weight: 0.01, mult: 0.85 },
 ];
 
 const EXERCISE_PATTERN = [
