@@ -705,7 +705,7 @@ export function platformScale() {
 }
 
 // 사용자 입력 깊이 점수 (0-100) + 잠금 해제 단계
-// 입력 종류가 다양할수록 AI 예측 정확도 ↑
+// visitPurpose에 따라 우선순위 마일스톤 다름 — 분기별 가장 유용한 데이터 먼저 유도
 export function inputDepth(user) {
   if (!user) return { score: 0, level: 0, milestones: [] };
   const logs = Storage.getLogsByUser(user.id);
@@ -719,56 +719,63 @@ export function inputDepth(user) {
   const bp = health.filter(h => h.category === 'bp').length;
   const alcohol = health.filter(h => h.category === 'alcohol').length;
   const sleep = health.filter(h => h.category === 'sleep').length;
-  // 마일스톤: 각각의 기록 카운트와 잠금 해제 인사이트
+  // boost: 마일스톤 완료 시 AI 예측 정밀도 가산점 (%) — 사용자 동기부여용 정량화
+  // 가중치 합계는 약 100 (전체 마일스톤 완료 시 정밀도 100%)
   const milestones = [
-    {
-      key: 'weight',  icon: '⚖️', label: '체중 기록',
-      done: logs.length, need: 5, unlocks: '본인 추세선이 차트에 표시',
-    },
-    {
-      key: 'course',  icon: '💊', label: '약 등록',
-      done: courses.length, need: 1, unlocks: '같은 약 사용자와 비교',
-    },
-    {
-      key: 'dose',    icon: '💉', label: '투약 기록',
-      done: doses.length, need: 3, unlocks: '지역별 가격 비교 + 누적 비용',
-    },
-    {
-      key: 'exercise',icon: '🏃', label: '운동 기록',
-      done: exercises.length, need: 5, unlocks: '같은 운동량 코호트와 감량률 비교',
-    },
-    {
-      key: 'diet',    icon: '🍽️', label: '식단 기록',
-      done: diets.length, need: 5, unlocks: '투약 직후 vs 평소 식이 비교 활성화',
-    },
-    {
-      key: 'inbody',  icon: '💪', label: '인바디 기록',
-      done: inbody, need: 1, unlocks: '근손실/마른비만 분석 활성화',
-    },
-    {
-      key: 'blood',   icon: '🩸', label: '혈액검사 기록',
-      done: blood, need: 1, unlocks: 'ALT/AST/HbA1c 추이 → 지방간 코호트와 비교',
-    },
-    {
-      key: 'bp',      icon: '❤️', label: '혈압 기록',
-      done: bp, need: 1, unlocks: '대사증후군 동반자 코호트 비교',
-    },
-    {
-      key: 'alcohol', icon: '🍺', label: '음주 기록',
-      done: alcohol, need: 1, unlocks: '알코올 갈망 변화 → GLP-1 효과 분석',
-    },
-    {
-      key: 'sleep',   icon: '😴', label: '수면·스트레스 기록',
-      done: sleep, need: 1, unlocks: '스트레스 vs 정체기 상관관계 분석',
-    },
-    {
-      key: 'history', icon: '📈', label: '체중 12주 기록',
-      done: logs.length, need: 12, unlocks: '12주차 본인 백분위 표시 (상위 N%)',
-    },
+    { key: 'weight',  icon: '⚖️', label: '체중 기록',
+      done: logs.length, need: 5, boost: 15,
+      unlocks: '본인 추세선이 차트에 표시' },
+    { key: 'course',  icon: '💊', label: '약 등록',
+      done: courses.length, need: 1, boost: 10,
+      unlocks: '같은 약 사용자와 비교' },
+    { key: 'dose',    icon: '💉', label: '투약 기록',
+      done: doses.length, need: 3, boost: 10,
+      unlocks: '지역별 가격 비교 + 누적 비용' },
+    { key: 'exercise',icon: '🏃', label: '운동 기록',
+      done: exercises.length, need: 5, boost: 12,
+      unlocks: '같은 운동량 코호트와 감량률 비교' },
+    { key: 'diet',    icon: '🍽️', label: '식단 기록',
+      done: diets.length, need: 5, boost: 10,
+      unlocks: '투약 직후 vs 평소 식이 비교 활성화' },
+    { key: 'inbody',  icon: '💪', label: '인바디 기록',
+      done: inbody, need: 1, boost: 10,
+      unlocks: '근손실/마른비만 분석 활성화' },
+    { key: 'blood',   icon: '🩸', label: '혈액검사 기록',
+      done: blood, need: 1, boost: 8,
+      unlocks: 'ALT/AST/HbA1c 추이 → 지방간 코호트와 비교' },
+    { key: 'bp',      icon: '❤️', label: '혈압 기록',
+      done: bp, need: 1, boost: 5,
+      unlocks: '대사증후군 동반자 코호트 비교' },
+    { key: 'alcohol', icon: '🍺', label: '음주 기록',
+      done: alcohol, need: 1, boost: 5,
+      unlocks: '알코올 갈망 변화 → GLP-1 효과 분석' },
+    { key: 'sleep',   icon: '😴', label: '수면·스트레스 기록',
+      done: sleep, need: 1, boost: 5,
+      unlocks: '스트레스 vs 정체기 상관관계 분석' },
+    { key: 'history', icon: '📈', label: '체중 12주 기록',
+      done: logs.length, need: 12, boost: 10,
+      unlocks: '12주차 본인 백분위 표시 (상위 N%)' },
   ];
-  const score = milestones.reduce((s, m) => s + Math.min(1, m.done / m.need) * (100 / milestones.length), 0);
+  // visitPurpose에 따라 우선순위 (앞에 올수록 먼저 노출됨)
+  const PRIORITY = {
+    using:      ['dose', 'weight', 'history', 'exercise', 'diet', 'inbody', 'blood'],
+    planning:   ['weight', 'inbody', 'exercise', 'diet', 'blood', 'bp', 'course'],
+    stopped:    ['weight', 'exercise', 'diet', 'inbody', 'history', 'sleep'],
+    sideeffect: ['weight', 'dose', 'sleep', 'bp', 'blood', 'alcohol', 'exercise'],
+  };
+  const purpose = user.visitPurpose || 'using';
+  const priorityKeys = PRIORITY[purpose] || PRIORITY.using;
+  // 우선순위 적용 — priorityKeys 순서대로 sort, 나머지는 뒤에
+  const indexOf = (k) => {
+    const i = priorityKeys.indexOf(k);
+    return i === -1 ? 999 : i;
+  };
+  milestones.sort((a, b) => indexOf(a.key) - indexOf(b.key));
+  // 점수 = 완료 비율 가중 평균 (boost 가중치)
+  const totalBoost = milestones.reduce((s, m) => s + m.boost, 0);
+  const score = milestones.reduce((s, m) => s + Math.min(1, m.done / m.need) * m.boost, 0) / totalBoost * 100;
   const completed = milestones.filter(m => m.done >= m.need).length;
-  return { score: Math.round(score), level: completed, milestones };
+  return { score: Math.round(score), level: completed, milestones, totalBoost };
 }
 
 // ============================================================
