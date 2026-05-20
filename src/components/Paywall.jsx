@@ -317,15 +317,15 @@ export function QuickSignupModal({ onClose, onComplete }) {
             </div>
           )}
 
-          {/* 방문 목적 — 사용자 단계별 맞춤 UX/통계 분기 */}
+          {/* 방문 목적 — 가입 후 dashboard가 이 값에 따라 다른 첫 경험 분기 */}
           <div>
             <div className="label">현재 어느 단계인가요?</div>
             <div className="grid grid-cols-2 gap-1.5">
               {[
-                { id: 'using',    icon: '💉', label: '약 사용 중' },
-                { id: 'planning', icon: '🤔', label: '곧 시작하려고' },
-                { id: 'curious',  icon: '🔎', label: '정보만 보러' },
-                { id: 'stopped',  icon: '⏸️', label: '약 중단함' },
+                { id: 'using',      icon: '💉', label: '약 사용 중' },
+                { id: 'planning',   icon: '🤔', label: '곧 시작 예정' },
+                { id: 'stopped',    icon: '⏸️', label: '중단 고려 중' },
+                { id: 'sideeffect', icon: '⚠️', label: '부작용 경험' },
               ].map(o => (
                 <button key={o.id} type="button" onClick={() => set('visitPurpose', o.id)}
                         className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition text-left

@@ -15,6 +15,7 @@ import { WelcomeTour } from './WelcomeTour.jsx';
 import { GoalWidget } from './GoalWidget.jsx';
 import { InputProgressCard } from './InputProgressCard.jsx';
 import { NotificationBanner } from './NotificationBanner.jsx';
+import { PurposeCard } from './PurposeCard.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -173,6 +174,9 @@ export function Dashboard({ user, navigate }) {
           )}
         </div>
       </div>
+
+      {/* 가입 시 선택한 visitPurpose에 따라 첫 경험 분기 — 신규 가입자 핵심 UX */}
+      <PurposeCard user={user} navigate={navigate} />
 
       {/* Next-Action 가이드 (신규 가입자) */}
       {showTour && (

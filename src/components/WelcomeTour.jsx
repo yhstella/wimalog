@@ -7,6 +7,8 @@ export function WelcomeTour({ user, navigate }) {
   const [dismissed, setDismissed] = useState(() => !!localStorage.getItem(DISMISSED_KEY));
 
   if (dismissed) return null;
+  // 가입 모달에서 이미 visitPurpose 선택했으면 WelcomeTour 안 띄움 (Dashboard PurposeCard로 대체)
+  if (user?.visitPurpose) return null;
 
   const close = () => {
     localStorage.setItem(DISMISSED_KEY, '1');
