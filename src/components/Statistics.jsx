@@ -28,9 +28,20 @@ export function Statistics({ user, navigate, onSignup }) {
   const [showSignup, setShowSignup] = useState(false);
   const [platformScale, setPlatformScale] = useState(null);
   useEffect(() => {
-    if (supabaseConfigured) {
-      fetchPlatformScale().then(setPlatformScale).catch(() => {});
-    }
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    let tries = 0;
+    const tryFetch = async () => {
+      try {
+        const r = await fetchPlatformScale();
+        if (!cancelled && r) setPlatformScale(r);
+        else if (!cancelled && ++tries < 3) setTimeout(tryFetch, 1500);
+      } catch {
+        if (!cancelled && ++tries < 3) setTimeout(tryFetch, 1500);
+      }
+    };
+    tryFetch();
+    return () => { cancelled = true; };
   }, []);
   const myCourse = useMemo(() => user ? primaryCourse(Storage.getMedCoursesByUser(user.id)) : null, [user]);
 
@@ -52,14 +63,46 @@ export function Statistics({ user, navigate, onSignup }) {
   }, [filter]);
 
   // 필터 자동 완화 — 데이터 부족 시 한 단계씩 (BMI 확장 → 동반질환 제거 → 나이대/성별 제거)
+  // localStorage 기반 — Supabase 결과가 충분하면 아래서 덮어씀
   const relaxed = useMemo(() => relaxFilter(rawFilter, 30), [rawFilter]);
   const cleanFilter = relaxed.filter;
 
-  const n          = relaxed.n;
-  const curve      = useMemo(() => avgLossCurve(cleanFilter), [cleanFilter]);
-  const sideRates  = useMemo(() => sideEffectRates(cleanFilter), [cleanFilter]);
+  // Supabase 풀 데이터 (8000+명) — RPC 호출, 결과 있으면 localStorage보다 우선
+  const [supaCurve, setSupaCurve] = useState(null);
+  const [supaSides, setSupaSides] = useState(null);
+  const [supaPrice, setSupaPrice] = useState(null);
+  // cleanFilter 변경 시 Supabase fetch (cleanFilter는 객체라 JSON.stringify로 deps)
+  const filterKey = JSON.stringify(cleanFilter);
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    let cancelled = false;
+    Promise.all([
+      fetchAvgLossCurve(cleanFilter, [1, 2, 4, 8, 12, 16, 24, 36, 48]),
+      fetchSideEffectRates(cleanFilter.medication),
+      fetchPriceStats(cleanFilter.medication),
+    ]).then(([curve, sides, price]) => {
+      if (cancelled) return;
+      if (curve && curve.some(c => c.n > 0)) setSupaCurve(curve);
+      if (sides && sides.length) setSupaSides(sides);
+      if (price && price.byRegion?.length) setSupaPrice(price);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [filterKey]);
+
+  const localCurve = useMemo(() => avgLossCurve(cleanFilter), [cleanFilter]);
+  const curve = supaCurve || localCurve;
+  // n: Supabase의 1주차 n (대표 cohort size), 없으면 relaxed.n
+  const supaCohortN = supaCurve?.find(c => c.week === 1)?.n
+    || supaCurve?.reduce((m, c) => Math.max(m, c.n || 0), 0);
+  const n = supaCohortN || relaxed.n;
+
+  const localSides = useMemo(() => sideEffectRates(cleanFilter), [cleanFilter]);
+  const sideRates  = supaSides
+    ? supaSides.map(s => ({ id: s.id, rate: s.rate, n: s.n }))
+    : localSides;
   const stopStats  = useMemo(() => discontinuationStats(cleanFilter), [cleanFilter]);
-  const priceData  = useMemo(() => priceStats(cleanFilter), [cleanFilter]);
+  const localPrice = useMemo(() => priceStats(cleanFilter), [cleanFilter]);
+  const priceData  = supaPrice || localPrice;
   const exData     = useMemo(() => exerciseStats(cleanFilter), [cleanFilter]);
   const exDist     = useMemo(() => exerciseDistribution(cleanFilter), [cleanFilter]);
   const reboundData = useMemo(() => reboundCurve(cleanFilter), [cleanFilter]);
@@ -330,8 +373,8 @@ export function Statistics({ user, navigate, onSignup }) {
         </div>
       )}
 
-      {/* 자동 완화 안내 — 사용자 필터로 데이터 부족할 때 */}
-      {relaxed.stage !== 'original' && relaxed.originalN < 30 && (
+      {/* 자동 완화 안내 — Supabase 풀데이터에 충분히 있으면(>=30명) 안 뜸 */}
+      {!supaCurve && relaxed.stage !== 'original' && relaxed.originalN < 30 && (
         <div className="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
           🔍 정확히 일치하는 사용자 {relaxed.originalN}명 — 필터를 자동으로 완화해 {n}명의 통계를 보여드립니다
           {relaxed.relaxedFields.length > 0 && (

@@ -16,7 +16,11 @@ async function cachedRpc(name, params = {}) {
       console.warn(`[supabase rpc] ${name}`, error);
       return null;
     }
-    CACHE.set(key, { data, ts: Date.now() });
+    // 빈 결과는 cache 안 함 — 일시적 실패 시 다음 호출에서 재시도 가능
+    const isEmpty = data == null || (Array.isArray(data) && data.length === 0);
+    if (!isEmpty) {
+      CACHE.set(key, { data, ts: Date.now() });
+    }
     return data;
   } catch (e) {
     console.warn(`[supabase rpc] ${name} threw`, e);
