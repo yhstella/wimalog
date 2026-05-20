@@ -19,6 +19,7 @@ import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
 import { InitialSetup } from './InitialSetup.jsx';
+import { MotivationBanner } from './MotivationBanner.jsx';
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -160,6 +161,11 @@ export function Dashboard({ user, navigate }) {
           </button>
         </div>
       </div>
+
+      {/* 부드러운 격려 메시지 — 사용자 컨텍스트에 따라 분기 */}
+      <MotivationBanner user={liveUser}
+                        weeks={summary?.weeks}
+                        hasStall={!!stallAlert} />
 
       {/* 1순위: visitPurpose 분기 — 입력한 단계에 따라 맞춤 첫 경험 */}
       <PurposeCard user={liveUser} navigate={navigate} />

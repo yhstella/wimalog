@@ -404,7 +404,7 @@ export function Statistics({ user, navigate, onSignup }) {
       {/* 자동 완화 안내 — Supabase 풀데이터에 충분히 있으면(>=30명) 안 뜸 */}
       {!supaCurve && relaxed.stage !== 'original' && relaxed.originalN < 30 && (
         <div className="rounded-xl bg-amber-50 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          🔍 정확히 일치하는 사용자 {relaxed.originalN}명 — 필터를 자동으로 완화해 {n}명의 통계를 보여드립니다
+          🔍 정확히 일치하는 사용자가 적어, 필터를 자동으로 완화하여 통계를 보여드립니다.
           {relaxed.relaxedFields.length > 0 && (
             <span className="block mt-1 text-xs opacity-80">
               완화: {relaxed.relaxedFields.map(f => ({

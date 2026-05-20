@@ -8,7 +8,7 @@ const KEYS = {
   diets: 'gl_diets',           // 식단 기록
   health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
   session: 'gl_session',
-  seeded: 'gl_seeded_v10',  // v10: 시드 카운트 1500명 (300→1500, 필터 통계 충분), 운동 분포 버그 fix 반영
+  seeded: 'gl_seeded_v11',  // v11: variance 증가 (responseFactor σ 0.30→0.50, sideSeverity σ 0.45→0.65, exDedication σ 0.25→0.35) → 25-75% percentile 의미있게 표시
   migrated: 'gl_migrated_v2',
 };
 

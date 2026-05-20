@@ -196,7 +196,7 @@ function generateOne(rand, index, out) {
   const isUser = rand() < 0.80;
   const numCourses = isUser ? (rand() < 0.18 ? 2 : 1) : 0;
 
-  const exerciseDedication = clamp(gauss(rand, 0.45, 0.25), 0.05, 0.95);
+  const exerciseDedication = clamp(gauss(rand, 0.45, 0.35), 0.02, 0.98);
   const dietDedication     = clamp(gauss(rand, 0.40, 0.25), 0.05, 0.95);
 
   const userId = uid('seed');
@@ -247,9 +247,9 @@ function generateOne(rand, index, out) {
     else weeks = Math.round(clamp(gauss(rand, 46, 5), 30, 56));
     totalSpanWeeks += weeks;
     const courseStart = daysAgo(totalSpanWeeks * 7);
-    const responseFactor = clamp(gauss(rand, 1.0, 0.30), 0.4, 1.7);
+    const responseFactor = clamp(gauss(rand, 1.0, 0.50), 0.25, 2.2);
     // 부작용 감수성 — 사용자별 0.5~2.0 (한 번이라도 보고할지 결정)
-    const sideSeverity = clamp(gauss(rand, 1.0, 0.45), 0.2, 2.2);
+    const sideSeverity = clamp(gauss(rand, 1.0, 0.65), 0.1, 2.8);
     const isCurrent = i === 0;
     const discontinueChance = 0.04 + (responseFactor < 0.7 ? 0.10 : 0) + (sideSeverity > 1.5 ? 0.10 : 0);
     const discontinued = !isCurrent || (rand() < discontinueChance && weeks > 4);
