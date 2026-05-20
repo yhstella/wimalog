@@ -9,18 +9,17 @@ import { MED_BY_ID } from '../lib/constants.js';
 // - 우클릭 + 드래그: 약 처방 추가 (mousedown에서 시작, mouseup에서 방향 판정)
 //   위로 = 용량 증량, 아래로 = 감량, 정지 = 같은 용량
 // - 활성 약 코스 있어야 우클릭 dose 가능.
-export function WeightChartInline({ user, currentWeight, currentDate, onWeightChange, onDoseAdded, refreshKey, weeksBack = 8 }) {
+// currentDateMs: 부모가 클릭한 raw ms를 그대로 받음 (round 안 함) — marker 위치 정확 동기화
+// currentDate (string): 저장용 round된 ISO 날짜. currentDateMs 없을 때 fallback.
+export function WeightChartInline({ user, currentWeight, currentDate, currentDateMs, onWeightChange, onDoseAdded, refreshKey, weeksBack = 8 }) {
   const svgRef = useRef(null);
   const dragRef = useRef({ mode: null, startMs: 0 });
-  const drawingPointsRef = useRef([]);   // ref로 mirror — setState updater에서 side effect 없이 onUp에서 안전 사용
-  const lastMoveRef = useRef(0);          // mousemove throttle
+  const drawingPointsRef = useRef([]);
+  const lastMoveRef = useRef(0);
   const [drawingPoints, setDrawingPoints] = useState([]);
   const [rightDragInfo, setRightDragInfo] = useState(null);
-  // 클릭한 raw 위치 — date round 때문에 marker가 어긋나 보이는 것 방지
-  // 사용자가 누른 정확한 픽셀에 marker 표시. 저장은 round된 date 사용.
-  const [clickMarker, setClickMarker] = useState(null);  // { x, y } SVG 좌표
-  // 모바일용 모드 토글 — 데스크탑은 좌/우클릭으로 자동 분기되지만 터치는 모드 선택 필요
-  const [touchMode, setTouchMode] = useState('weight');  // 'weight' | 'dose'
+  // 모바일용 모드 토글
+  const [touchMode, setTouchMode] = useState('weight');
 
   // 그래프 크기 — 모바일 가독성 위해 키움 (220 → 320)
   const W = 600, H = 320;
@@ -107,13 +106,13 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
       e.preventDefault();
       dragRef.current = { mode: 'left' };
       lastMoveRef.current = 0;
-      const date = new Date(xToDateMs(p.x)).toISOString().slice(0, 10);
+      // raw fractional ms — marker 위치 동기화용. round된 date는 저장용.
+      const exactMs = startDate.getTime() + ((p.x - PAD.left) / dayWidth) * 86400000;
+      const date = new Date(exactMs).toISOString().slice(0, 10);
       const weight = yToWeight(p.y);
-      // 클릭한 정확한 픽셀에 marker — date round 때문에 어긋나 보이는 것 방지
-      setClickMarker({ x: p.x, y: p.y });
       drawingPointsRef.current = [{ date, weight }];
       setDrawingPoints([{ date, weight }]);
-      onWeightChange?.({ date, weight });
+      onWeightChange?.({ date, weight, exactMs });
     }
   };
 
@@ -129,17 +128,15 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
       const p = getSvgPoint(e);
       if (!p) return;
       if (dragRef.current.mode === 'left') {
-        // SVG 영역 밖으로 나가면 누적 중지 (drag 끊김 방지용 — clamp)
         if (p.x < PAD.left - 5 || p.x > W - PAD.right + 5) return;
-        const date = new Date(xToDateMs(p.x)).toISOString().slice(0, 10);
+        const exactMs = startDate.getTime() + ((p.x - PAD.left) / dayWidth) * 86400000;
+        const date = new Date(exactMs).toISOString().slice(0, 10);
         const weight = yToWeight(p.y);
-        // marker는 raw pixel 위치
-        setClickMarker({ x: p.x, y: p.y });
         const filtered = drawingPointsRef.current.filter(x => x.date !== date);
         const next = [...filtered, { date, weight }].sort((a, b) => a.date.localeCompare(b.date));
         drawingPointsRef.current = next;
         setDrawingPoints(next);
-        onWeightChange?.({ date, weight });
+        onWeightChange?.({ date, weight, exactMs });
       } else if (dragRef.current.mode === 'right') {
         const screenY = (e.touches?.[0] || e).clientY;
         const dy = dragRef.current.screenY - screenY;
@@ -155,8 +152,6 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
         const points = drawingPointsRef.current;
         drawingPointsRef.current = [];
         setDrawingPoints([]);
-        // clickMarker는 잠시 유지 → 부모 currentWeight prop 업데이트 후 currentY로 자연스럽게 전환
-        setTimeout(() => setClickMarker(null), 150);
         if (points.length >= 2) {
           try {
             for (const pt of points) {
@@ -250,10 +245,13 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     yTicks.push({ y: weightToY(w), label: yStep < 1 ? w.toFixed(1) : Math.round(w) });
   }
 
-  // marker 위치 — clickMarker(raw pixel) 우선, 없으면 currentDate/Weight 기반 계산
-  // round된 date 위치로 markeer가 점프하지 않고 사용자가 누른 곳에 정확히 표시
-  const currentX = clickMarker ? clickMarker.x : (currentDate ? dateMsToX(Date.parse(currentDate)) : null);
-  const currentY = clickMarker ? clickMarker.y : (currentWeight ? weightToY(+currentWeight) : null);
+  // marker 위치 — raw ms 우선(round 안 함), 없으면 round된 date string fallback
+  // 다이얼 변경 시 X 유지(같은 ms), 그래프 클릭 시 클릭한 정확한 X로 즉시 동기화
+  const markerMs = currentDateMs != null ? currentDateMs : (currentDate ? Date.parse(currentDate) : null);
+  const currentX = markerMs != null
+    ? PAD.left + (markerMs - startDate.getTime()) / 86400000 * dayWidth
+    : null;
+  const currentY = currentWeight ? weightToY(+currentWeight) : null;
 
   // 그리고 있는 path
   const drawingPath = drawingPoints.length >= 2

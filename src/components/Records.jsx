@@ -65,6 +65,8 @@ function WeightTab({ user, version, refresh, navigate }) {
   const defaultWeight = lastLog?.weight ?? user.startWeight;
 
   const [date, setDate] = useState(todayISO());
+  // exactMs: 그래프 클릭한 raw fractional ms — marker 위치 정확 동기화용. round 안 됨.
+  const [exactMs, setExactMs] = useState(null);
   const [weight, setWeight] = useState(String(defaultWeight));
   const [appetiteChange, setAppetiteChange] = useState(3);
   const [satiety, setSatiety] = useState(3);
@@ -106,7 +108,7 @@ function WeightTab({ user, version, refresh, navigate }) {
           <div className="flex-1">
             <div className="label">날짜</div>
             <input type="date" className="input" value={date} max={todayISO()}
-                   onChange={e => setDate(e.target.value)} />
+                   onChange={e => { setDate(e.target.value); setExactMs(null); }} />
           </div>
           <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 h-fit">저장</button>
         </div>
@@ -123,10 +125,12 @@ function WeightTab({ user, version, refresh, navigate }) {
         <WeightChartInline user={user}
                            currentWeight={weight}
                            currentDate={date}
+                           currentDateMs={exactMs}
                            refreshKey={version}
-                           onWeightChange={({ date: d, weight: w, savedCount }) => {
+                           onWeightChange={({ date: d, weight: w, exactMs: ms, savedCount }) => {
                              setDate(d);
                              setWeight(String(w));
+                             if (ms != null) setExactMs(ms);
                              if (savedCount) {
                                refresh();
                                toast.success(`${savedCount}개 체중 기록 저장됨 (곡선 입력)`);
