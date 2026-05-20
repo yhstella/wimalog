@@ -170,7 +170,7 @@ function buildJsonLd(route) {
 }
 
 const SITE = '위마로그';
-const SUB = '한국 GLP-1 리얼데이터 비교 플랫폼';
+const SUB = '위고비·마운자로 한국 사용자 리얼데이터 비교 플랫폼';
 const FALLBACK_DESC = '위고비·마운자로 한국 사용자 익명 코호트 비교 플랫폼. 단순 기록 앱이 아닌 "나와 비슷한 사용자" 리얼월드 데이터 + 마른 비만·지방간·격주 사용 등 한국 실사용 맥락 + AI 예측 시뮬레이터.';
 
 function ensureMeta(name, content, attr = 'name') {

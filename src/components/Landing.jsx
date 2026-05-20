@@ -37,7 +37,7 @@ export function Landing({ navigate, onSignup, user }) {
       <section className="text-center pt-4 sm:pt-8">
         <div className="inline-flex items-center gap-2 chip-brand mb-3">
           <span>🇰🇷</span>
-          <span>한국 GLP-1 리얼데이터 플랫폼 · 베타</span>
+          <span>위고비·마운자로 한국 사용자 리얼데이터 · 베타</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-ink-900 dark:text-slate-100 leading-tight">
           위고비·마운자로,<br />

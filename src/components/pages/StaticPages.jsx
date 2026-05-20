@@ -9,7 +9,7 @@ export function AboutPage() {
         <h1 className="text-3xl font-extrabold text-ink-900 dark:text-slate-100">위마로그 소개</h1>
         <p className="text-base text-ink-700 dark:text-slate-300 mt-3 leading-relaxed">
           위마로그는 위고비·마운자로 사용자를 위한 단순 기록 앱이 아니라,
-          <b className="text-brand-700 dark:text-brand-400"> 한국 GLP-1 사용자들의 실제 체중 변화와 부작용을 익명으로 비교하는 리얼데이터 플랫폼</b>입니다.
+          <b className="text-brand-700 dark:text-brand-400"> 위고비·마운자로 한국 사용자들의 실제 체중 변화와 부작용을 익명으로 비교하는 리얼데이터 플랫폼</b>입니다.
         </p>
       </header>
 
@@ -126,7 +126,7 @@ export function AboutPage() {
         </p>
       </section>
 
-      <ShareButtons title="위마로그 — 한국 GLP-1 리얼데이터 플랫폼" text="위고비·마운자로 사용자 익명 비교 데이터" />
+      <ShareButtons title="위마로그 — 위고비·마운자로 한국 사용자 리얼데이터" text="위고비·마운자로 사용자 익명 비교 데이터" />
       <MedicalDisclaimer />
     </div>
   );
