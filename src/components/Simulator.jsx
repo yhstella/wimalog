@@ -1,7 +1,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES } from '../lib/stats.js';
+import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES, FREQ_BY_ID, bmiResponseFactor } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
 import { MEDS, MED_BY_ID } from '../lib/constants.js';
+import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
+import { supabaseConfigured } from '../lib/supabaseClient.js';
 
 // 슬라이더 + 즉시 예측 결과 위젯
 // P1(처음 접속), P4(주변 못 물어보는 사람)을 위한 핵심 위젯
@@ -39,10 +41,52 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   }, []);
 
   const myBmi = useMemo(() => bmi(startWeight, height), [startWeight, height]);
-  const timeline = useMemo(
+  // localStorage 시드 기반 (fallback)
+  const localTimeline = useMemo(
     () => simulateTimeline({ height, startWeight, medication, frequency }),
     [height, startWeight, medication, frequency, seedTick]
   );
+  // Supabase 8000+명 풀데이터 기반 — 우선 사용. 결과 도착 시 localTimeline 덮어씀.
+  const [supaTimeline, setSupaTimeline] = useState(null);
+  useEffect(() => {
+    if (!supabaseConfigured || !myBmi) return;
+    let cancelled = false;
+    const filter = { medication, bmiRange: [Math.max(15, myBmi - 4), Math.min(50, myBmi + 4)] };
+    fetchAvgLossCurve(filter, [12, 24, 48]).then(rows => {
+      if (cancelled || !rows) return;
+      // BMI/빈도 보정 후처리 (localStorage simulateTimeline 로직과 동일)
+      const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
+      const bmiFactor = bmiResponseFactor(myBmi);
+      const adjust = freqFactor * bmiFactor;
+      let prev = 0;
+      const series = [12, 24, 48].map((w, i) => {
+        const r = rows.find(x => x.week === w);
+        if (!r || r.avg == null) return { week: w, lossPct: null, lossKg: null, n: 0 };
+        const lossPct = Math.max(r.avg * adjust, prev * 0.98);
+        prev = lossPct;
+        return { week: w, lossPct, lossKg: startWeight * lossPct / 100, n: r.n };
+      });
+      // 코호트 부족(모두 n<5)이면 fallback — wider bmi range
+      if (!series.some(s => s.n >= 5)) {
+        fetchAvgLossCurve({ medication }, [12, 24, 48]).then(rows2 => {
+          if (cancelled || !rows2) return;
+          let p2 = 0;
+          const series2 = [12, 24, 48].map((w, i) => {
+            const r = rows2.find(x => x.week === w);
+            if (!r || r.avg == null) return { week: w, lossPct: null, lossKg: null, n: 0 };
+            const lossPct = Math.max(r.avg * adjust, p2 * 0.98);
+            p2 = lossPct;
+            return { week: w, lossPct, lossKg: startWeight * lossPct / 100, n: r.n };
+          });
+          if (series2.some(s => s.n >= 5)) setSupaTimeline({ series: series2 });
+        });
+      } else {
+        setSupaTimeline({ series });
+      }
+    });
+    return () => { cancelled = true; };
+  }, [medication, frequency, myBmi, startWeight]);
+  const timeline = supaTimeline || localTimeline;
   const profile = useMemo(() => medQuickProfile(medication, frequency), [medication, frequency, seedTick]);
 
   const medLabel = MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '') || '';

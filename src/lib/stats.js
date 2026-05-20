@@ -570,10 +570,10 @@ export const USAGE_FREQUENCIES = [
   { id: 'occasional', label: '가끔 (월 1-2회)', shortLabel: '가끔',     factor: 0.35, desc: '식욕 조절 목적 간헐적 사용' },
   { id: 'intro',      label: '저용량 유지',     shortLabel: '저용량',   factor: 0.60, desc: '시작 용량 그대로 (증량 안 함)' },
 ];
-const FREQ_BY_ID = Object.fromEntries(USAGE_FREQUENCIES.map(f => [f.id, f]));
+export const FREQ_BY_ID = Object.fromEntries(USAGE_FREQUENCIES.map(f => [f.id, f]));
 
 // BMI 응답률 보정 (BMI 낮은 사람은 코호트 평균보다 적게 빠짐)
-function bmiResponseFactor(b) {
+export function bmiResponseFactor(b) {
   if (b == null) return 1.0;
   if (b >= 30) return 1.0;
   if (b >= 27.5) return 0.90;
