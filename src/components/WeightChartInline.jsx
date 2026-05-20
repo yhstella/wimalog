@@ -40,8 +40,15 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
 
   const existingDoses = useMemo(() => {
     if (!user) return [];
+    const courses = Storage.getMedCoursesByUser(user.id);
+    const courseById = new Map(courses.map(c => [c.id, c]));
     return Storage.getDosesByUser(user.id)
-      .filter(d => Date.parse(d.date) >= startDate.getTime() && Date.parse(d.date) <= today.getTime() + 86400000);
+      .filter(d => Date.parse(d.date) >= startDate.getTime() && Date.parse(d.date) <= today.getTime() + 86400000)
+      .map(d => {
+        const course = courseById.get(d.courseId);
+        const medLabel = course ? (MED_BY_ID[course.medication]?.label.replace(/\s*\(.+\)/, '') || '') : '';
+        return { ...d, medLabel };
+      });
   }, [user, refreshKey, weeksBack]);
 
   const activeCourses = useMemo(() => {
@@ -320,15 +327,31 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
                   r="3" fill="#94A3B8" />
         ))}
 
-        {/* 기존 doses */}
-        {existingDoses.map((d, i) => (
-          <g key={'d'+i}>
-            <line x1={dateMsToX(Date.parse(d.date))} y1={PAD.top}
-                  x2={dateMsToX(Date.parse(d.date))} y2={H - PAD.bottom}
-                  stroke="#F97316" strokeWidth="1" strokeDasharray="1 2" strokeOpacity="0.5" />
-            <circle cx={dateMsToX(Date.parse(d.date))} cy={PAD.top + 4} r="3" fill="#F97316" />
-          </g>
-        ))}
+        {/* 기존 doses — 점선 + 마커 + 약이름·용량 라벨 */}
+        {existingDoses.map((d, i) => {
+          const x = dateMsToX(Date.parse(d.date));
+          // 같은 X 좌표에 dose 여러 개면 Y offset (라벨 겹침 방지)
+          const stackIdx = existingDoses.slice(0, i).filter(o => Math.abs(dateMsToX(Date.parse(o.date)) - x) < 2).length;
+          const labelY = PAD.top + 4 + stackIdx * 10;
+          // 약이름 + 용량 짧게: "위고비 2.4mg"
+          const label = d.medLabel && d.dose ? `${d.medLabel} ${d.dose}` : (d.dose || '');
+          // 그래프 우측 끝 가까우면 좌측으로 라벨, 아니면 우측
+          const rightSide = x < W - 90;
+          return (
+            <g key={'d'+i}>
+              <line x1={x} y1={PAD.top} x2={x} y2={H - PAD.bottom}
+                    stroke="#F97316" strokeWidth="1" strokeDasharray="1 2" strokeOpacity="0.5" />
+              <circle cx={x} cy={labelY} r="3.5" fill="#F97316" />
+              {label && (
+                <text x={x + (rightSide ? 6 : -6)} y={labelY + 3.5}
+                      textAnchor={rightSide ? 'start' : 'end'}
+                      fontSize="10" fontWeight="600" fill="#C2410C">
+                  {label}
+                </text>
+              )}
+            </g>
+          );
+        })}
 
         {/* 좌드래그 그리고 있는 선 */}
         {drawingPath && (
