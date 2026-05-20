@@ -14,12 +14,16 @@
   <url><loc>https://wimalog.kr/drug/zepbound</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 
   <!-- 부작용별 -->
-  <url><loc>https://wimalog.kr/effect/nausea</loc><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/effect/nausea</loc><priority>0.85</priority></url>
   <url><loc>https://wimalog.kr/effect/vomiting</loc><priority>0.7</priority></url>
-  <url><loc>https://wimalog.kr/effect/constipation</loc><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/effect/constipation</loc><priority>0.75</priority></url>
   <url><loc>https://wimalog.kr/effect/diarrhea</loc><priority>0.7</priority></url>
   <url><loc>https://wimalog.kr/effect/fatigue</loc><priority>0.6</priority></url>
-  <url><loc>https://wimalog.kr/effect/headache</loc><priority>0.6</priority></url>
+  <url><loc>https://wimalog.kr/effect/headache</loc><priority>0.65</priority></url>
+  <url><loc>https://wimalog.kr/effect/dizziness</loc><priority>0.7</priority></url>
+  <url><loc>https://wimalog.kr/effect/abdomenPain</loc><priority>0.75</priority></url>
+  <url><loc>https://wimalog.kr/effect/hairLoss</loc><priority>0.8</priority></url>
+  <url><loc>https://wimalog.kr/effect/reflux</loc><priority>0.7</priority></url>
 
   <!-- 한국 실사용 핵심 가이드 -->
   <url><loc>https://wimalog.kr/guide/usage-patterns</loc><priority>0.95</priority></url>
