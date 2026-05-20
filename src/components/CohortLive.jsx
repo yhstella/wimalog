@@ -4,7 +4,7 @@ import { Storage } from '../lib/storage.js';
 import { seedIfNeeded } from '../lib/seedData.js';
 import { MED_BY_ID } from '../lib/constants.js';
 import {
-  fetchPlatformScale, fetchAvgLossCurve, fetchTopRecentMedications,
+  fetchPlatformScale, fetchAvgLossCurve, fetchTopRecentMedications, fetchExerciseStats,
 } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 
@@ -29,28 +29,36 @@ export function CohortLive({ navigate, onSignup, user = null }) {
 
   const refreshFromSupabase = async () => {
     try {
-      const [scale, curve12, curve24, topMeds] = await Promise.all([
+      const [scale, curve12, curve24, topMeds, exStat] = await Promise.all([
         fetchPlatformScale(),
         fetchAvgLossCurve({}, [12]),
         fetchAvgLossCurve({}, [24]),
         fetchTopRecentMedications(30),
+        fetchExerciseStats(30),   // 새 RPC — 없을 수도 있어 fallback 처리
       ]);
       if (!scale) return false;
       // notes는 supabase에 따로 RPC 없음 → localStorage 메모 사용
       const notes = anonymousNotes({}, 2);
+      // 운동 통계 — Supabase RPC 결과 우선, 없으면 localStorage 시드로 fallback (NA 방지)
+      const exSeed = exerciseStats({});
+      const ex = (exStat && exStat.avgMinPerWeek != null && exStat.avgMinPerWeek > 0)
+        ? { n: exStat.nActive, avgMinPerWeek: exStat.avgMinPerWeek, withExercise: exStat.withExercisePct }
+        : exSeed;
+      // 감량 곡선 — Supabase에 충분 데이터 없으면 시드값으로 fallback
+      const sf12 = (curve12 && curve12.length && curve12[0]?.avg != null && curve12[0]?.n > 0) ? curve12 : avgLossCurve({}, [12]);
+      const sf24 = (curve24 && curve24.length && curve24[0]?.avg != null && curve24[0]?.n > 0) ? curve24 : avgLossCurve({}, [24]);
       setData({
-        // shape adapted to original Supabase data
         trend: {
           totalUsers: scale.totalPatients,
           activeUsers7d: scale.activeUsers7d,
           newUsers7d: scale.newPatients7d,
-          logs7d: scale.totalWeightLogs,  // 7일 한정 데이터 별도 RPC 필요 시 추가
+          logs7d: scale.totalWeightLogs,
           doses7d: scale.totalDoses,
           topMedsNow: topMeds || [],
         },
-        curve12: curve12 || [],
-        curve24: curve24 || [],
-        ex: { n: scale.totalPatients, avgMinPerWeek: null, withExercise: null },
+        curve12: sf12,
+        curve24: sf24,
+        ex,
         notes,
         isSupabase: true,
         scale,
@@ -84,9 +92,20 @@ export function CohortLive({ navigate, onSignup, user = null }) {
 
   if (!data) return null;
   const { trend, curve12, curve24, ex, notes } = data;
-  const avg12kg = curve12[0]?.avg != null && curve12[0]?.n >= 5 ? curve12[0].avg : null;
-  const avg24kg = curve24[0]?.avg != null && curve24[0]?.n >= 5 ? curve24[0].avg : null;
-  const topMed = trend?.topMedsNow?.[0];
+  // n>=1만 있어도 표시 (NA 최소화). 데이터 정말 없을 때만 '—'
+  const avg12kg = curve12[0]?.avg != null && curve12[0]?.n >= 1 ? curve12[0].avg : null;
+  const avg24kg = curve24[0]?.avg != null && curve24[0]?.n >= 1 ? curve24[0].avg : null;
+  // topMed Supabase 없으면 localStorage 시드에서 가장 많은 약 추출
+  let topMed = trend?.topMedsNow?.[0];
+  if (!topMed) {
+    const seedCourses = Storage.getMedCourses ? Storage.getMedCourses() : null;
+    if (seedCourses && seedCourses.length) {
+      const cnt = {};
+      for (const c of seedCourses) cnt[c.medication] = (cnt[c.medication] || 0) + 1;
+      const sorted = Object.entries(cnt).sort((a, b) => b[1] - a[1]);
+      if (sorted.length) topMed = { id: sorted[0][0], count: sorted[0][1] };
+    }
+  }
   const topMedLabel = topMed ? (MED_BY_ID[topMed.id]?.label?.replace(/\s*\(.+\)/, '') || topMed.id) : null;
 
   return (

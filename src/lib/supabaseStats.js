@@ -110,6 +110,22 @@ export async function fetchTopRecentMedications(days = 30) {
 }
 
 // ============================================================
+// 운동 통계 (CohortLive '주당 평균 운동' 카드)
+// ============================================================
+export async function fetchExerciseStats(days = 30) {
+  const rows = await cachedRpc('exercise_stats', { days });
+  if (!rows?.length) return null;
+  const r = rows[0];
+  return {
+    nTotal: r.n_total_patients,
+    nActive: r.n_active_patients,
+    avgMinPerWeek: r.avg_min_per_week != null ? Number(r.avg_min_per_week) : null,
+    medianMinPerWeek: r.median_min_per_week != null ? Number(r.median_min_per_week) : null,
+    withExercisePct: r.with_exercise_pct != null ? Number(r.with_exercise_pct) : null,
+  };
+}
+
+// ============================================================
 // 임계 이상 감량한 비율 (성공률)
 // ============================================================
 export async function fetchSuccessRate(medication = null, week = 12, thresholdPct = 5) {
