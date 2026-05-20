@@ -123,31 +123,10 @@ export function HealthMetricsForm({ user, version, refresh }) {
         </div>
       </div>
 
-      {/* 최근 기록 */}
       {allMetrics.length > 0 && (
-        <div className="card">
-          <h3 className="font-semibold text-ink-900 dark:text-slate-100 mb-2">최근 기록</h3>
-          <div className="space-y-2 text-sm">
-            {allMetrics.slice().reverse().slice(0, 5).map(m => (
-              <div key={m.id} className="flex justify-between items-start gap-3 pb-2 border-b border-ink-100 dark:border-slate-800 last:border-0">
-                <div className="min-w-0 flex-1">
-                  <div className="text-xs text-ink-500 dark:text-slate-400">{m.date}</div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mt-0.5">
-                    {m.bodyFatPct != null && <span>체지방 <b className="tabular-nums">{m.bodyFatPct}%</b></span>}
-                    {m.muscleKg != null && <span>근육 <b className="tabular-nums">{m.muscleKg}kg</b></span>}
-                    {m.waistCm != null && <span>허리 <b className="tabular-nums">{m.waistCm}cm</b></span>}
-                    {m.systolicBp != null && <span>혈압 <b className="tabular-nums">{m.systolicBp}/{m.diastolicBp || '?'}</b></span>}
-                    {m.sleepHours != null && <span>수면 <b className="tabular-nums">{m.sleepHours}h</b></span>}
-                    {m.alt != null && <span>ALT <b className="tabular-nums">{m.alt}</b></span>}
-                    {m.hba1c != null && <span>HbA1c <b className="tabular-nums">{m.hba1c}%</b></span>}
-                  </div>
-                  {m.notes && <div className="text-xs text-ink-500 dark:text-slate-500 mt-0.5 truncate">{m.notes}</div>}
-                </div>
-                <button onClick={() => { Storage.deleteHealthMetric(m.id); refresh(); }}
-                        className="text-xs text-rose-600 hover:underline flex-shrink-0">삭제</button>
-              </div>
-            ))}
-          </div>
+        <div className="rounded-xl bg-ink-100/50 dark:bg-slate-800/40 px-3 py-2 text-xs text-ink-500 dark:text-slate-400 flex items-center justify-between">
+          <span>총 <b className="text-ink-700 dark:text-slate-200 tabular-nums">{allMetrics.length}</b>개 건강 지표</span>
+          {allMetrics[allMetrics.length - 1]?.date && <span>마지막: {allMetrics[allMetrics.length - 1].date}</span>}
         </div>
       )}
     </div>

@@ -44,13 +44,25 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     return Storage.getMedCoursesByUser(user.id).filter(c => !c.endDate);
   }, [user, refreshKey]);
 
-  const { yMin, yMax } = useMemo(() => {
+  const { yMin, yMax, yStep } = useMemo(() => {
     const ys = existingLogs.map(l => l.weight);
     if (currentWeight) ys.push(+currentWeight);
-    if (user?.startWeight) ys.push(user.startWeight);
-    if (!ys.length) return { yMin: 50, yMax: 100 };
+    // 보이는 범위에 log가 하나도 없으면 fallback으로 startWeight
+    if (!ys.length && user?.startWeight) ys.push(user.startWeight);
+    if (!ys.length) return { yMin: 60, yMax: 80, yStep: 2 };
     const min = Math.min(...ys), max = Math.max(...ys);
-    return { yMin: Math.max(35, Math.floor(min - 3)), yMax: Math.min(250, Math.ceil(max + 3)) };
+    const dataRange = Math.max(max - min, 1.5);
+    const pad = Math.max(0.8, dataRange * 0.18);
+    const lo = Math.max(30, min - pad);
+    const hi = Math.min(250, max + pad);
+    const span = hi - lo;
+    // tick 간격을 자동 결정 → 약 4~6개 tick
+    const step = span < 2.5 ? 0.5 : span < 6 ? 1 : span < 14 ? 2 : span < 35 ? 5 : 10;
+    return {
+      yMin: Math.floor(lo / step) * step,
+      yMax: Math.ceil(hi / step) * step,
+      yStep: step,
+    };
   }, [existingLogs, currentWeight, user]);
 
   const dateMsToX = (ms) => PAD.left + ((ms - startDate.getTime()) / 86400000) * dayWidth;
@@ -203,8 +215,8 @@ export function WeightChartInline({ user, currentWeight, currentDate, onWeightCh
     xTicks.push({ x: dateMsToX(d.getTime()), label: i === weeksBack ? '오늘' : `${weeksBack - i}주전` });
   }
   const yTicks = [];
-  for (let w = Math.ceil(yMin / 5) * 5; w <= yMax; w += 5) {
-    yTicks.push({ y: weightToY(w), label: w });
+  for (let w = yMin; w <= yMax + 0.001; w += yStep) {
+    yTicks.push({ y: weightToY(w), label: yStep < 1 ? w.toFixed(1) : Math.round(w) });
   }
 
   const currentX = currentDate ? dateMsToX(Date.parse(currentDate)) : null;

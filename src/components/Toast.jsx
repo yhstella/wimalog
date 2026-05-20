@@ -11,7 +11,7 @@ export function ToastProvider({ children }) {
     setToasts(t => t.filter(x => x.id !== id));
   }, []);
 
-  const show = useCallback((msg, type = 'success', duration = 3000) => {
+  const show = useCallback((msg, type = 'success', duration = 1600) => {
     const id = ++nextId;
     setToasts(t => [...t, { id, msg, type }]);
     if (duration > 0) {
@@ -21,9 +21,9 @@ export function ToastProvider({ children }) {
   }, [dismiss]);
 
   const api = useMemo(() => ({
-    success: (m, d) => show(m, 'success', d),
-    info:    (m, d) => show(m, 'info', d),
-    error:   (m, d) => show(m, 'error', d ?? 5000),
+    success: (m, d) => show(m, 'success', d ?? 1600),
+    info:    (m, d) => show(m, 'info', d ?? 1800),
+    error:   (m, d) => show(m, 'error', d ?? 3500),
     dismiss,
   }), [show, dismiss]);
 
@@ -40,20 +40,19 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
-      <div className="fixed z-50 bottom-4 inset-x-4 sm:inset-x-auto sm:right-4 sm:max-w-sm flex flex-col gap-2 pointer-events-none">
+      {/* 상단 작은 알림 — 시야 방해 최소화 */}
+      <div className="fixed z-50 top-2 inset-x-0 flex flex-col items-center gap-1.5 pointer-events-none px-3">
         {toasts.map(t => (
           <div key={t.id}
                onClick={() => dismiss(t.id)}
-               className={`pointer-events-auto rounded-2xl shadow-cardHover px-4 py-3 text-sm font-medium animate-slideUp cursor-pointer
-                           ${t.type === 'success' ? 'bg-brand-600 text-white' :
-                             t.type === 'error'   ? 'bg-rose-500 text-white' :
-                                                    'bg-ink-900 text-white'}`}>
-            <div className="flex items-center gap-2">
-              <span className="text-base">
-                {t.type === 'success' ? '✓' : t.type === 'error' ? '⚠' : '💡'}
-              </span>
-              <span className="flex-1">{t.msg}</span>
-            </div>
+               className={`pointer-events-auto rounded-full shadow-md px-3.5 py-1.5 text-[12px] font-medium animate-slideDown cursor-pointer backdrop-blur-sm max-w-[90vw] truncate
+                           ${t.type === 'success' ? 'bg-brand-600/95 text-white' :
+                             t.type === 'error'   ? 'bg-rose-500/95 text-white' :
+                                                    'bg-ink-900/95 text-white'}`}>
+            <span className="mr-1.5">
+              {t.type === 'success' ? '✓' : t.type === 'error' ? '⚠' : '💡'}
+            </span>
+            {t.msg}
           </div>
         ))}
       </div>

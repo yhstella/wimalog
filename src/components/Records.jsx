@@ -214,28 +214,7 @@ function WeightTab({ user, version, refresh, navigate }) {
         />
       )}
 
-      <RecentList
-        items={allLogs.slice().reverse().slice(0, 10)}
-        empty="아직 체중 기록이 없습니다."
-        render={(l) => (
-          <div className="flex justify-between items-center gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-ink-900 tabular-nums">{l.weight} kg</span>
-                <span className="text-xs text-ink-500">{l.date}</span>
-              </div>
-              {Object.values(l.sideEffects || {}).filter(Boolean).length > 0 && (
-                <div className="text-xs text-rose-600 mt-0.5">
-                  부작용 {Object.values(l.sideEffects).filter(Boolean).length}개
-                </div>
-              )}
-              {l.notes && <div className="text-xs text-ink-500 mt-0.5 truncate">{l.notes}</div>}
-            </div>
-            <button onClick={() => { Storage.deleteLog(l.id); refresh(); }}
-                    className="text-xs text-rose-600 hover:underline">삭제</button>
-          </div>
-        )}
-      />
+      <RecentStat count={allLogs.length} label="체중 기록" lastDate={lastLog?.date} />
     </div>
   );
 }
@@ -471,30 +450,7 @@ function DoseTab({ user, version, refresh, navigate }) {
         </div>
       </div>
 
-      <RecentList
-        items={allDoses.slice().reverse().slice(0, 10)}
-        empty="아직 투약 기록이 없습니다."
-        render={(d) => {
-          const c = courses.find(c => c.id === d.courseId);
-          return (
-            <div className="flex justify-between items-center gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-semibold text-ink-900 dark:text-slate-100">{d.dose}</span>
-                  {c && <span className="text-xs text-ink-500 dark:text-slate-400">· {MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '')}</span>}
-                  <span className="text-xs text-ink-500 dark:text-slate-400">· {d.date}</span>
-                </div>
-                <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">
-                  {d.region && <>{d.region} · </>}
-                  {d.price ? `${d.price.toLocaleString()}원` : '가격 미기록'}
-                </div>
-              </div>
-              <button onClick={() => { Storage.deleteDose(d.id); refresh(); }}
-                      className="text-xs text-rose-600 hover:underline">삭제</button>
-            </div>
-          );
-        }}
-      />
+      <RecentStat count={allDoses.length} label="투약 기록" lastDate={lastDose?.date} />
     </div>
   );
 }
@@ -797,25 +753,7 @@ function ExerciseTab({ user, version, refresh }) {
         </div>
       </div>
 
-      <RecentList
-        items={allEx.slice().reverse().slice(0, 10)}
-        empty="아직 운동 기록이 없습니다."
-        render={(e) => (
-          <div className="flex justify-between items-center gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-ink-900">{EXERCISE_BY_ID[e.type]?.label || e.type}</span>
-                <span className="text-xs text-ink-500">{e.durationMin}분 · 강도 {e.intensity}/5</span>
-              </div>
-              <div className="text-xs text-ink-500 mt-0.5">
-                {e.date}{e.notes && ` · ${e.notes}`}
-              </div>
-            </div>
-            <button onClick={() => { Storage.deleteExercise(e.id); refresh(); }}
-                    className="text-xs text-rose-600 hover:underline">삭제</button>
-          </div>
-        )}
-      />
+      <RecentStat count={allEx.length} label="운동 세션" lastDate={allEx[allEx.length - 1]?.date} />
     </div>
   );
 }
@@ -991,27 +929,7 @@ function DietTab({ user, version, refresh }) {
         </div>
       </div>
 
-      <RecentList
-        items={allDiets.slice().reverse().slice(0, 10)}
-        empty="아직 식단 기록이 없습니다."
-        render={(d) => (
-          <div className="flex justify-between items-center gap-3">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="chip">{MEAL_BY_ID[d.mealType]?.label || d.mealType}</span>
-                <span className="text-xs text-ink-500">{d.date}</span>
-              </div>
-              <div className="font-medium text-sm text-ink-900 mt-0.5 truncate">{d.description}</div>
-              <div className="text-xs text-ink-500 mt-0.5">
-                {d.proteinG ? `단백질 ${d.proteinG}g` : ''}
-                {d.estCalories ? ` · ${d.estCalories}kcal` : ''}
-              </div>
-            </div>
-            <button onClick={() => { Storage.deleteDiet(d.id); refresh(); }}
-                    className="text-xs text-rose-600 hover:underline">삭제</button>
-          </div>
-        )}
-      />
+      <RecentStat count={allDiets.length} label="식단 기록" lastDate={allDiets[allDiets.length - 1]?.date} />
     </div>
   );
 }
@@ -1255,18 +1173,13 @@ function Scale({ label, value, onChange, minLabel, maxLabel }) {
   );
 }
 
-function RecentList({ items, empty, render }) {
-  if (!items.length) {
-    return <div className="card text-center py-6 text-sm text-ink-500">{empty}</div>;
-  }
+// 컴팩트 통계 — 저장된 기록 수만 한 줄로 표시 (전체 목록은 통계/대시보드에서 확인)
+function RecentStat({ count, label, lastDate }) {
+  if (!count) return null;
   return (
-    <div className="card !p-0">
-      <div className="text-xs font-semibold text-ink-500 px-4 py-2 border-b border-ink-100">최근 기록</div>
-      <ul className="divide-y divide-ink-100">
-        {items.map(item => (
-          <li key={item.id} className="px-4 py-3">{render(item)}</li>
-        ))}
-      </ul>
+    <div className="rounded-xl bg-ink-100/50 dark:bg-slate-800/40 px-3 py-2 text-xs text-ink-500 dark:text-slate-400 flex items-center justify-between">
+      <span>총 <b className="text-ink-700 dark:text-slate-200 tabular-nums">{count}</b>개 {label}</span>
+      {lastDate && <span>마지막: {lastDate}</span>}
     </div>
   );
 }
