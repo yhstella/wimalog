@@ -21,12 +21,21 @@ export function snapshotPlatformScale() {
 }
 
 // fetchAvgLossCurve shape — week 배열 filter
+// 우선순위: 약별 curve → 전체 globalCurve (약별 데이터 비면 fallback).
+// Vercel CI 에서 가끔 perMed RPC 만 실패하고 globalCurve 는 성공할 수 있어 cold-cache 보호용.
 export function snapshotAvgLossCurve(medication = null, weeks = [12, 24]) {
-  const source = medication
-    ? SNAPSHOT?.byMed?.[medication]?.curve
-    : SNAPSHOT?.globalCurve;
+  let source = null;
+  if (medication) {
+    const c = SNAPSHOT?.byMed?.[medication]?.curve;
+    if (Array.isArray(c) && c.length > 0) source = c;
+  }
+  if (!source) {
+    const gc = SNAPSHOT?.globalCurve;
+    if (Array.isArray(gc) && gc.length > 0) source = gc;
+  }
   if (!source) return null;
   const rows = source.filter(r => weeks.includes(r.week));
+  if (rows.length === 0) return null;
   return rows.map(r => ({
     week: r.week,
     n: r.n,
