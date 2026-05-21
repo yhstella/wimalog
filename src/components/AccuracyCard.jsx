@@ -112,11 +112,11 @@ export function AccuracyCard({ user, navigate }) {
           ))}
         </div>
 
-        {/* 가입자 — 성별·나이대 빠른 입력 */}
-        {user && (!filled.gender || !filled.ageGroup) && (
+        {/* 가입자 — 성별·나이대·동반질환 점검 빠른 입력 */}
+        {user && (!filled.gender || !filled.ageGroup || !filled.conditionsChecked) && (
           <div className="mt-3 space-y-2">
             {!filled.gender && (
-              <QuickInputRow label="성별" gain={5}>
+              <QuickInputRow label="성별" gain={3}>
                 {[{id:'F',label:'여성'},{id:'M',label:'남성'}].map(o => (
                   <button key={o.id} onClick={() => updateUser({ gender: o.id })}
                           className="px-3 py-1.5 rounded-lg text-xs font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition">
@@ -126,7 +126,7 @@ export function AccuracyCard({ user, navigate }) {
               </QuickInputRow>
             )}
             {!filled.ageGroup && (
-              <QuickInputRow label="나이대" gain={5}>
+              <QuickInputRow label="나이대" gain={3}>
                 <div className="grid grid-cols-5 gap-1">
                   {[{id:'20s',label:'20대'},{id:'30s',label:'30대'},{id:'40s',label:'40대'},{id:'50s',label:'50대'},{id:'60s+',label:'60+'}].map(o => (
                     <button key={o.id} onClick={() => updateUser({ ageGroup: o.id })}
@@ -136,6 +136,10 @@ export function AccuracyCard({ user, navigate }) {
                   ))}
                 </div>
               </QuickInputRow>
+            )}
+            {/* 동반질환 점검 — 있음/없음 모두 명시 시그널 (사용자 지적 반영) */}
+            {!filled.conditionsChecked && (
+              <ConditionsChecklist user={user} onComplete={(cond) => updateUser({ conditions: cond, conditionsChecked: true })} />
             )}
           </div>
         )}
@@ -244,6 +248,51 @@ function DynamicRow({ item, navigate }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+// 동반질환 점검 — 있음/없음 모두 명시 시그널
+function ConditionsChecklist({ user, onComplete }) {
+  const [cond, setCond] = useState({
+    fattyLiver: !!user.conditions?.fattyLiver,
+    diabetes: !!user.conditions?.diabetes || !!user.conditions?.prediabetes,
+    thyroid: !!user.conditions?.thyroid,
+    hypertension: !!user.conditions?.hypertension,
+    dyslipidemia: !!user.conditions?.dyslipidemia,
+  });
+  const items = [
+    { id: 'fattyLiver',   label: '지방간' },
+    { id: 'diabetes',     label: '당뇨/전당뇨' },
+    { id: 'hypertension', label: '고혈압' },
+    { id: 'dyslipidemia', label: '이상지질혈증' },
+    { id: 'thyroid',      label: '갑상선 질환' },
+  ];
+  return (
+    <div className="rounded-lg bg-white/80 dark:bg-slate-800/70 border border-ink-200 dark:border-slate-700 p-3">
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-ink-700 dark:text-slate-300">동반질환 점검</span>
+          <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">+3%</span>
+        </div>
+        <span className="text-[10px] text-ink-500 dark:text-slate-500">해당사항 클릭, 없으면 그대로 완료</span>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mb-2">
+        {items.map(it => (
+          <button key={it.id} type="button"
+                  onClick={() => setCond(c => ({ ...c, [it.id]: !c[it.id] }))}
+                  className={`px-2 py-1.5 rounded-lg text-[11px] font-medium border transition text-left
+                              ${cond[it.id]
+                                ? 'bg-brand-500 text-white border-brand-500'
+                                : 'bg-white dark:bg-slate-900 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>
+            {cond[it.id] ? '✓ ' : ''}{it.label}
+          </button>
+        ))}
+      </div>
+      <button onClick={() => onComplete(cond)}
+              className="w-full text-xs font-bold py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white transition">
+        확인 완료
+      </button>
     </div>
   );
 }

@@ -1,101 +1,103 @@
-// AI 예측 정확도 — 정밀 세분화
-// 총 100% = Static(기본 정보 47) + Dynamic(누적 데이터 53)
+// AI 예측 정확도 — Dynamic 비중 강화 + 동반질환 "없음" 명시 메커니즘
+// 사용자 지적: "지방간이 없으면 그냥 없는건데 별도 기록 방법 없으면 가중치 못 받음"
+// 해결: user.conditionsChecked = true 플래그 — 점검 완료 시 명시적 "없음"도 가중치 받음
 import { Storage } from './storage.js';
 
-// === Static — 일회성 입력. 가입 시 / 프로필에서 채움 ===
+// === Static — 일회성 입력 (총 30%) ===
+// 사용자 의견 반영: 대부분 측면이 dynamic이 맞음. Static은 30%로 축소.
 const STATIC = {
-  height:        5,   // 키 (시뮬레이터 슬라이더 / 가입 모달)
-  startWeight:   5,   // 시작 체중
-  medication:    7,   // 사용 약
-  frequency:     5,   // 사용 빈도 (매주/격주/가끔/저용량)
-  signedIn:      5,   // 가입 자체 — 본인 추이 가능해짐
-  gender:        5,   // 성별
-  ageGroup:      5,   // 나이대
-  fattyLiver:    4,   // 지방간 동반
-  diabetes:      4,   // 당뇨/전당뇨
-  thyroid:       2,   // 갑상선 (드물지만 GLP-1 신중 사용)
-};   // 47
+  height:        3,
+  startWeight:   3,
+  medication:    5,
+  frequency:     3,
+  signedIn:      4,
+  visitPurpose:  3,   // 약 사용 중/시작 예정/중단 고려 등 — 매칭 코호트 결정
+  gender:        3,
+  ageGroup:      3,
+  // 동반질환은 "확인 완료" 플래그 기반 — 있음/없음 둘 다 시그널
+  conditionsChecked: 3,
+};   // 30
 
-// === Dynamic — 누적 데이터. 입력할수록 단계별 가산 ===
-// 각 항목: [{count: N, addPct: P}, ...] — 누적 카운트가 N 이상일 때 P% 추가
+// === Dynamic — 누적 데이터 단계별 (총 70%) ===
 const DYNAMIC = {
   weightLogs: {
     label: '체중 기록 (누적)',
-    max: 18,
+    max: 22,
     tiers: [
       { count: 4,  addPct: 8,  hint: '4주 연속' },
-      { count: 8,  addPct: 4,  hint: '8주 누적' },
-      { count: 16, addPct: 3,  hint: '4개월 누적' },
-      { count: 24, addPct: 3,  hint: '6개월 누적' },
+      { count: 8,  addPct: 5,  hint: '8주 누적' },
+      { count: 16, addPct: 5,  hint: '4개월 누적' },
+      { count: 24, addPct: 4,  hint: '6개월 누적' },
     ],
   },
   exercises30d: {
     label: '운동 (최근 1개월)',
-    max: 13,
+    max: 15,
     tiers: [
-      { count: 5,  addPct: 8,  hint: '월 5회+' },
-      { count: 10, addPct: 5,  hint: '월 10회+ (꾸준)' },
+      { count: 5,  addPct: 7,  hint: '월 5회+' },
+      { count: 10, addPct: 5,  hint: '월 10회+' },
+      { count: 20, addPct: 3,  hint: '월 20회+ (생활화)' },
     ],
   },
   diets30d: {
     label: '식단 (최근 1개월)',
-    max: 8,
+    max: 10,
     tiers: [
       { count: 5,  addPct: 5,  hint: '월 5회+' },
       { count: 10, addPct: 3,  hint: '월 10회+' },
+      { count: 20, addPct: 2,  hint: '월 20회+' },
     ],
   },
   sideEffects30d: {
     label: '부작용 기록 (최근 1개월)',
-    max: 4,
+    max: 7,
     tiers: [
       { count: 3, addPct: 4, hint: '월 3건+' },
+      { count: 6, addPct: 3, hint: '월 6건+' },
     ],
   },
   healthMetrics: {
     label: '혈액검사·인바디 (누적)',
-    max: 8,
+    max: 9,
     tiers: [
-      { count: 1, addPct: 5, hint: '1건' },
-      { count: 3, addPct: 3, hint: '3건+ (시점 비교 가능)' },
+      { count: 1, addPct: 4, hint: '1건' },
+      { count: 3, addPct: 3, hint: '3건+ (시점 비교)' },
+      { count: 5, addPct: 2, hint: '5건+ (장기 추세)' },
     ],
   },
   doses: {
     label: '투약 기록 (누적)',
-    max: 8,
+    max: 7,
     tiers: [
-      { count: 4, addPct: 5, hint: '4회+' },
+      { count: 4, addPct: 4, hint: '4회+' },
       { count: 8, addPct: 3, hint: '8회+ (증량·유지 패턴)' },
     ],
   },
-};  // 53
+};  // 70
 
-const SIDE_EFFECTS_30D_MS = 30 * 86400000;
+const DAYS_30_MS = 30 * 86400000;
 
-// === 본체 ===
+// 본체
 export function calculateAccuracy({ user, simulator = {} }) {
   let score = 0;
   const filled = {};
 
-  // STATIC — 시뮬레이터/user/추가 입력 기반
+  // STATIC
   if (simulator.height || user?.height) { score += STATIC.height; filled.height = true; }
   if (simulator.startWeight || user?.startWeight) { score += STATIC.startWeight; filled.startWeight = true; }
   if (simulator.medication) { score += STATIC.medication; filled.medication = true; }
   if (simulator.frequency) { score += STATIC.frequency; filled.frequency = true; }
   if (user) { score += STATIC.signedIn; filled.signedIn = true; }
+  if (user?.visitPurpose) { score += STATIC.visitPurpose; filled.visitPurpose = true; }
   if (user?.gender && user.gender !== 'X') { score += STATIC.gender; filled.gender = true; }
   if (user?.ageGroup) { score += STATIC.ageGroup; filled.ageGroup = true; }
-  const cond = user?.conditions || {};
-  if (cond.fattyLiver) { score += STATIC.fattyLiver; filled.fattyLiver = true; }
-  if (cond.diabetes || cond.prediabetes) { score += STATIC.diabetes; filled.diabetes = true; }
-  if (cond.thyroid) { score += STATIC.thyroid; filled.thyroid = true; }
+  // ⭐ 동반질환 "확인 완료" 플래그 — 있음/없음 둘 다 시그널로 인정
+  if (user?.conditionsChecked) { score += STATIC.conditionsChecked; filled.conditionsChecked = true; }
 
-  // DYNAMIC — 가입자만 누적 가능
+  // DYNAMIC
   const dynamicProgress = {};
   if (user) {
-    const now = Date.now();
-    const cutoff30 = now - SIDE_EFFECTS_30D_MS;
-
+    const cutoff30 = Date.now() - DAYS_30_MS;
     const logs = safeGet(() => Storage.getLogsByUser(user.id), []);
     const ex = safeGet(() => Storage.getExercisesByUser(user.id), []);
     const diets = safeGet(() => Storage.getDietsByUser(user.id), []);
@@ -139,20 +141,19 @@ function safeGet(fn, fallback) {
   try { const v = fn(); return v || fallback; } catch { return fallback; }
 }
 
-// UI 표시용 항목별 breakdown
+// UI 표시용
 export function accuracyBreakdown({ user, simulator = {} }) {
   const { filled, dynamicProgress } = calculateAccuracy({ user, simulator });
   const staticItems = [
-    { key: 'height',       label: '키',                weight: STATIC.height,       filled: filled.height,       category: 'static' },
-    { key: 'startWeight',  label: '시작 체중',         weight: STATIC.startWeight,  filled: filled.startWeight,  category: 'static' },
-    { key: 'medication',   label: '사용 약',           weight: STATIC.medication,   filled: filled.medication,   category: 'static' },
-    { key: 'frequency',    label: '사용 빈도',         weight: STATIC.frequency,    filled: filled.frequency,    category: 'static' },
-    { key: 'signedIn',     label: '가입',              weight: STATIC.signedIn,     filled: filled.signedIn,     category: 'static' },
-    { key: 'gender',       label: '성별',              weight: STATIC.gender,       filled: filled.gender,       category: 'static' },
-    { key: 'ageGroup',     label: '나이대',            weight: STATIC.ageGroup,     filled: filled.ageGroup,     category: 'static' },
-    { key: 'fattyLiver',   label: '지방간',            weight: STATIC.fattyLiver,   filled: filled.fattyLiver,   category: 'static' },
-    { key: 'diabetes',     label: '당뇨/전당뇨',       weight: STATIC.diabetes,     filled: filled.diabetes,     category: 'static' },
-    { key: 'thyroid',      label: '갑상선 질환',       weight: STATIC.thyroid,      filled: filled.thyroid,      category: 'static' },
+    { key: 'height',           label: '키',                weight: STATIC.height,           filled: filled.height,           category: 'static' },
+    { key: 'startWeight',      label: '시작 체중',         weight: STATIC.startWeight,      filled: filled.startWeight,      category: 'static' },
+    { key: 'medication',       label: '사용 약',           weight: STATIC.medication,       filled: filled.medication,       category: 'static' },
+    { key: 'frequency',        label: '사용 빈도',         weight: STATIC.frequency,        filled: filled.frequency,        category: 'static' },
+    { key: 'signedIn',         label: '가입',              weight: STATIC.signedIn,         filled: filled.signedIn,         category: 'static' },
+    { key: 'visitPurpose',     label: '현재 단계',         weight: STATIC.visitPurpose,     filled: filled.visitPurpose,     category: 'static' },
+    { key: 'gender',           label: '성별',              weight: STATIC.gender,           filled: filled.gender,           category: 'static' },
+    { key: 'ageGroup',         label: '나이대',            weight: STATIC.ageGroup,         filled: filled.ageGroup,         category: 'static' },
+    { key: 'conditionsChecked',label: '동반질환 확인',     weight: STATIC.conditionsChecked,filled: filled.conditionsChecked,category: 'static' },
   ];
   const dynamicItems = Object.entries(DYNAMIC).map(([key, spec]) => {
     const p = dynamicProgress[key];
@@ -168,7 +169,6 @@ export function accuracyBreakdown({ user, simulator = {} }) {
   return { staticItems, dynamicItems };
 }
 
-// 단순 점수만 필요한 호출자용
 export function accuracyScore(args) {
   return calculateAccuracy(args).score;
 }

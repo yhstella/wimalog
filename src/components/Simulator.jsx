@@ -510,13 +510,21 @@ export function Simulator({ onSignup, compact = false, user = null }) {
 function Slider({ label, value, min, max, step, onChange, fmt }) {
   return (
     <div>
-      <div className="flex justify-between text-xs font-semibold mb-1.5">
+      <div className="flex justify-between items-center text-xs font-semibold mb-1.5 gap-2">
         <span className="opacity-90">{label}</span>
-        <span className="tabular-nums">{fmt ? fmt(value) : value}</span>
+        {/* 숫자 직접 입력 — 슬라이더 정확 조작 어려운 경우 fallback */}
+        <input type="number" inputMode="decimal" step={step} min={min} max={max}
+               value={value}
+               onChange={e => {
+                 const v = +e.target.value;
+                 if (!isNaN(v) && v >= min && v <= max) onChange(v);
+               }}
+               className="tabular-nums w-20 px-2 py-1 rounded-md bg-white/20 backdrop-blur text-white text-right text-sm font-bold border border-white/30 focus:bg-white/30 focus:border-white focus:outline-none" />
+        <span className="text-[10px] opacity-70">{fmt ? fmt(value).replace(/[\d.]+\s*/, '') : ''}</span>
       </div>
       <input type="range" min={min} max={max} step={step}
              value={value} onChange={e => onChange(+e.target.value)}
-             className="w-full h-2 bg-white/20 rounded-full appearance-none cursor-pointer accent-white"
+             className="w-full h-3 bg-white/20 rounded-full appearance-none cursor-pointer accent-white wimalog-slider"
              style={{
                backgroundImage: `linear-gradient(to right, white 0%, white ${((value-min)/(max-min))*100}%, rgba(255,255,255,0.2) ${((value-min)/(max-min))*100}%)`,
              }} />

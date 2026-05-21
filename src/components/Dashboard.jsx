@@ -312,13 +312,15 @@ export function Dashboard({ user, navigate }) {
       {/* 목표 예측 */}
       <GoalWidget user={user} navigate={navigate} />
 
-      {/* 이번 주 활동 */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <MiniTile icon="💊" label="이번 주 투약" value={`${thisWeek.doseCount}회`} onClick={() => navigate('records')} />
-        <MiniTile icon="🏃" label="이번 주 운동" value={`${thisWeek.exMinutes}분`} sub={`${thisWeek.exSessions}회`} onClick={() => navigate('records')} />
-        <MiniTile icon="🍽️" label="이번 주 식단" value={`${thisWeek.mealCount}건`} onClick={() => navigate('records')} />
-        <MiniTile icon="💰" label="누적 약 비용" value={`${(doses.reduce((s, d) => s + (d.price || 0), 0)).toLocaleString()}원`} onClick={() => navigate('meds')} />
-      </div>
+      {/* 이번 주 활동 — 활동 있을 때만 (신규 사용자에겐 빈 0 카드 노이즈) */}
+      {(thisWeek.doseCount + thisWeek.exMinutes + thisWeek.mealCount > 0 || doses.length > 0) && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <MiniTile icon="💊" label="이번 주 투약" value={`${thisWeek.doseCount}회`} onClick={() => navigate('records')} />
+          <MiniTile icon="🏃" label="이번 주 운동" value={`${thisWeek.exMinutes}분`} sub={`${thisWeek.exSessions}회`} onClick={() => navigate('records')} />
+          <MiniTile icon="🍽️" label="이번 주 식단" value={`${thisWeek.mealCount}건`} onClick={() => navigate('records')} />
+          <MiniTile icon="💰" label="누적 약 비용" value={`${(doses.reduce((s, d) => s + (d.price || 0), 0)).toLocaleString()}원`} onClick={() => navigate('meds')} />
+        </div>
+      )}
 
       {/* 체중 차트 */}
       <div className="card">

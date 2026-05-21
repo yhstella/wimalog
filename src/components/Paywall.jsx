@@ -192,6 +192,23 @@ export function QuickSignupModal({ onClose, onComplete }) {
       initialSetupComplete: true,  // QuickSignup은 키·체중·목적 모두 받았으므로 setup 완료 간주
     };
     Storage.upsertUser(user);
+    // ⭐ Day-0 정확도 최대화 — 시뮬레이터 prefill medication/frequency가 있고 visitPurpose가 'using' 또는 'planning'이면
+    //   첫 약 코스 자동 등록 → 정확도 가산 5점 (medication) + 3점 (frequency)
+    if (prefill?.medication && prefill?.frequency && (data.visitPurpose === 'using' || data.visitPurpose === 'planning')) {
+      try {
+        Storage.addMedCourse({
+          id: uid('course'),
+          userId,
+          medication: prefill.medication,
+          frequency: prefill.frequency,
+          startDate: todayISO(),
+          endDate: null,
+          initialDose: null,
+          notes: '시뮬레이터에서 자동 등록',
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) { console.warn('[auto-course]', e); }
+    }
     Storage.addLog({
       id: uid('log'),
       userId,
