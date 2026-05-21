@@ -466,7 +466,7 @@ export function Statistics({ user, navigate, onSignup }) {
           />
         ) : (
           <div className="text-sm text-ink-500 dark:text-slate-400 py-6 text-center">
-            📊 데이터가 계속 모이는 중입니다 — 필터를 더 일반적으로 설정해 보세요
+            📊 데이터 분석 중입니다 — 필터를 더 일반적으로 설정해 보세요
           </div>
         )}
         <div className="mt-4 overflow-x-auto -mx-2">

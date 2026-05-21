@@ -178,7 +178,7 @@ export function LineChart({
 
 // 가로 바 차트 — N 카운트는 더 이상 노출하지 않음 (percentage only)
 export function HBarChart({ data, color = '#2E9A58', max = null }) {
-  if (!data?.length) return <div className="text-sm text-ink-500 dark:text-slate-400">데이터가 모이는 중입니다</div>;
+  if (!data?.length) return <div className="text-sm text-ink-500 dark:text-slate-400">데이터 분석 중입니다</div>;
   const m = max ?? Math.max(...data.map(d => d.value), 0.001);
   return (
     <div className="space-y-2">

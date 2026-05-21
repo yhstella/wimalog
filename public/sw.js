@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v18';  // bumped 2026-05-21: 정확도 Static 30 + Dynamic 70 + 동반질환 명시 + Day-0 transfer + 슬라이더
+const VERSION = 'v19';  // bumped 2026-05-22: cold cache 그래프 always 보임 + '데이터 모이는 중' → '분석 중' + 임상 추정 표기 제거
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

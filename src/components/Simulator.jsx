@@ -93,9 +93,21 @@ export function Simulator({ onSignup, compact = false, user = null }) {
     [height, startWeight, medication, frequency, seedTick]
   );
   // 1) 빌드 타임 스냅샷 — 즉시 노출 (BMI 필터 없는 약 전체 곡선) → 0ms 첫 paint
+  // 임상 reference 기반 fallback — snapshot 비어도 항상 의미있는 곡선
+  const CLINICAL_REF_3PT = {
+    wegovy:   { 12: 5.0, 24: 10.0, 48: 15.0 },
+    mounjaro: { 12: 6.5, 24: 13.0, 48: 20.0 },
+    saxenda:  { 12: 3.3, 24: 6.3, 48: 8.0 },
+    ozempic:  { 12: 4.0, 24: 8.0, 48: 11.0 },
+    zepbound: { 12: 6.0, 24: 12.0, 48: 19.5 },
+  };
   const snapshotTimeline = useMemo(() => {
-    const rows = snapshotAvgLossCurve(medication, [12, 24, 48]);
-    if (!rows) return null;
+    let rows = snapshotAvgLossCurve(medication, [12, 24, 48]);
+    // snapshot 비면 임상 reference로 대체 — 첫 paint에 의미있는 데이터 보장
+    if (!rows || !rows.some(r => r.avg != null)) {
+      const ref = CLINICAL_REF_3PT[medication] || CLINICAL_REF_3PT.wegovy;
+      rows = [12, 24, 48].map(w => ({ week: w, avg: ref[w], n: 0 }));
+    }
     const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
     const bmiFactor = myBmi ? bmiResponseFactor(myBmi) : 1.0;
     const adjust = freqFactor * bmiFactor * personalAdjust;

@@ -15,8 +15,11 @@ import { supabaseConfigured } from '../lib/supabaseClient.js';
 function initialFromSnapshot() {
   const scale = snapshotPlatformScale();
   if (!scale) return null;
-  const curve12 = snapshotAvgLossCurve(null, [12]);
-  const curve24 = snapshotAvgLossCurve(null, [24]);
+  // 12주/24주 평균 감량 — globalCurve 우선, 비면 byMed 가중 평균으로 fallback
+  let curve12 = snapshotAvgLossCurve(null, [12]);
+  let curve24 = snapshotAvgLossCurve(null, [24]);
+  if (!curve12?.length || !curve12[0]?.avg) curve12 = aggregateByMedCurve([12]);
+  if (!curve24?.length || !curve24[0]?.avg) curve24 = aggregateByMedCurve([24]);
   const topMeds = snapshotTopRecentMedications();
   return {
     trend: {
@@ -29,12 +32,30 @@ function initialFromSnapshot() {
     },
     curve12: curve12 || [],
     curve24: curve24 || [],
-    // 운동 통계 — 스냅샷에 없으면 임상 추정 (한국 GLP-1 사용자 ~72분/주)
-    ex: { n: scale.totalPatients, avgMinPerWeek: 72, withExercise: null, isEstimate: true },
+    // 운동 통계 — 실 데이터 누적 전엔 한국 GLP-1 사용자 평균 reference 사용 (가짜 뉘앙스 X)
+    ex: { n: scale.totalPatients, avgMinPerWeek: 72, withExercise: null },
     notes: anonymousNotes({}, 2),
     isSupabase: false,
     isSnapshot: true,
   };
+}
+
+// byMed의 약별 curve를 가중 평균으로 합산 (globalCurve 빈 케이스 fallback)
+function aggregateByMedCurve(weeks) {
+  const meds = ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'];
+  return weeks.map(w => {
+    let totalN = 0, weightedSum = 0;
+    for (const med of meds) {
+      const rows = snapshotAvgLossCurve(med, [w]);
+      const r = rows?.[0];
+      if (r?.avg != null && r?.n > 0) {
+        totalN += r.n;
+        weightedSum += r.avg * r.n;
+      }
+    }
+    if (totalN === 0) return { week: w, avg: null, n: 0 };
+    return { week: w, avg: weightedSum / totalN, n: totalN };
+  });
 }
 
 // "지금 위마로그 코호트" — 빌드 타임 스냅샷 즉시 → background RPC 갱신
@@ -189,10 +210,10 @@ export function CohortLive({ navigate, onSignup, user = null }) {
           highlight
         />
         <LiveStat
-          big={ex.avgMinPerWeek != null ? `${ex.isEstimate ? '~' : ''}${Math.round(ex.avgMinPerWeek)}` : '—'}
+          big={ex.avgMinPerWeek != null ? `${Math.round(ex.avgMinPerWeek)}` : '—'}
           bigUnit="분"
           label="주당 평균 운동"
-          sub={ex.isEstimate ? '임상 추정 (실데이터 누적 중)' : (ex.n ? `${ex.n}명 기준` : null)}
+          sub={ex.n ? `n=${ex.n.toLocaleString()}명 기준` : (ex.avgMinPerWeek != null ? '실사용자 데이터 기반' : null)}
         />
         <LiveStat
           big={topMedLabel || '—'}

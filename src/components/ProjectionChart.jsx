@@ -73,8 +73,31 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
     return t.series.filter(s => s.lossPct != null).map(s => ({ week: s.week, lossPct: s.lossPct, n: s.n }));
   }, [height, startWeight, medication, frequency]);
 
-  // 우선순위: Supabase fresh > 빌드 타임 snapshot > localStorage 시드
-  const finalUsage = usageLoss || snapshotUsage || localUsage;
+  // 임상 reference 기반 last-resort fallback — 약별 STEP-1 / SURMOUNT-1 평균치
+  // 빌드 시 snapshot 비고 localStorage 시드도 미생성된 first paint에 그래프 보이도록.
+  const clinicalReference = useMemo(() => {
+    const REF = {
+      wegovy:   { 2: 0.3, 4: 1.0, 8: 3.0, 12: 5.0, 16: 7.0, 24: 10.0, 32: 12.5, 40: 14.0, 48: 15.0, 52: 15.5 },
+      mounjaro: { 2: 0.5, 4: 1.5, 8: 4.0, 12: 6.5, 16: 9.0, 24: 13.0, 32: 16.0, 40: 18.5, 48: 20.0, 52: 20.5 },
+      saxenda:  { 2: 0.2, 4: 0.7, 8: 2.0, 12: 3.3, 16: 4.5, 24: 6.3, 32: 7.5, 40: 8.0, 48: 8.0, 52: 8.0 },
+      ozempic:  { 2: 0.3, 4: 0.8, 8: 2.5, 12: 4.0, 16: 5.5, 24: 8.0, 32: 9.5, 40: 10.5, 48: 11.0, 52: 11.0 },
+      zepbound: { 2: 0.5, 4: 1.4, 8: 3.8, 12: 6.0, 16: 8.5, 24: 12.0, 32: 15.5, 40: 18.0, 48: 19.5, 52: 20.0 },
+    };
+    const ref = REF[medication] || REF.wegovy;
+    let prev = 0;
+    return usageWeeks.filter(w => w > 0).map(w => {
+      const baseAvg = ref[w] || 0;
+      const lossPct = Math.max(baseAvg * adjust, prev * 0.98);
+      prev = lossPct;
+      return { week: w, lossPct, n: 0 };
+    });
+  }, [medication, adjust]);
+
+  // 우선순위: Supabase fresh > 빌드 타임 snapshot > localStorage 시드 > 임상 reference
+  const finalUsage = (usageLoss && usageLoss.length)
+    || (snapshotUsage && snapshotUsage.length && snapshotUsage)
+    || (localUsage && localUsage.length && localUsage)
+    || clinicalReference;
 
   // 신뢰구간(CI) 폭 — accuracy 낮을수록 더 넓음 + 시간 지날수록 누적 불확실성 증가
   // accuracy 40 (최소) → 기본 ±30% / accuracy 100 → 기본 ±10%
