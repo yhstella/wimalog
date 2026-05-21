@@ -211,14 +211,25 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 
       {/* 진료용 리포트 */}
       <div className="card flex justify-between items-center gap-3 border border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-900/15">
-        <div>
-          <h2 className="section-title">📄 진료용 12주 리포트</h2>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="section-title !mb-0">📄 진료용 12주 리포트</h2>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+              Free
+            </span>
+          </div>
           <p className="section-subtitle">병원 방문 시 인쇄 또는 PDF로 저장해 가져가세요</p>
         </div>
         <button onClick={() => navigate('doctor-report')} className="btn-primary !py-2 !px-3 text-sm">
           리포트 보기 →
         </button>
       </div>
+
+      {/* 추천인 시스템 — 본인 코드 + 다른 사람 초대 (Free 베타) */}
+      <ReferralCard user={user} />
+
+      {/* 알림 설정 — 베타 placeholder */}
+      <NotificationSettings user={user} />
 
       {/* 데이터 관리 */}
       <div className="card space-y-3">
@@ -264,6 +275,102 @@ function ReadRow({ k, v }) {
       <dt className="text-ink-500">{k}</dt>
       <dd className="text-ink-900 text-right font-medium tabular-nums">{v}</dd>
     </>
+  );
+}
+
+// 추천인 카드 — 본인 코드 + 친구 초대 (베타 placeholder)
+function ReferralCard({ user }) {
+  const [copied, setCopied] = React.useState(false);
+  // 사용자 ID 기반 짧은 추천 코드 생성 (해시 단순화)
+  const referralCode = React.useMemo(() => {
+    if (!user?.id) return null;
+    const str = user.id.slice(-8).toUpperCase();
+    return str.replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'WIMA' + Math.floor(Math.random() * 10000);
+  }, [user?.id]);
+  const link = `https://wimalog.kr/?ref=${referralCode}`;
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {}
+  };
+
+  return (
+    <div className="card border border-violet-200 dark:border-violet-900/40 bg-violet-50/40 dark:bg-violet-900/15">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">🎁</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="section-title !mb-0">친구·동료 초대</h2>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+              Free 베타
+            </span>
+          </div>
+          <p className="section-subtitle">
+            추후 Premium 출시 시 추천자·신규 가입자 모두에게 Premium 1개월 무료 제공 검토 중
+          </p>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <code className="px-2 py-1 rounded-md bg-white dark:bg-slate-800 border border-violet-200 dark:border-violet-800/40 text-sm font-mono text-violet-700 dark:text-violet-300">
+              {referralCode}
+            </code>
+            <button onClick={copy}
+                    className="text-xs px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-bold transition">
+              {copied ? '✓ 링크 복사됨' : '🔗 초대 링크 복사'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 알림 설정 — 추후 실구현 placeholder
+function NotificationSettings({ user }) {
+  const [prefs, setPrefs] = React.useState({
+    weeklyReport: false,
+    doseReminder: false,
+    visitReminder: false,
+  });
+  return (
+    <div className="card">
+      <div className="flex items-start gap-3">
+        <div className="text-2xl">🔔</div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="section-title !mb-0">알림 설정</h2>
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+              곧 출시
+            </span>
+          </div>
+          <p className="section-subtitle">이메일·카카오톡 알림으로 기록 누락 방지 + 진료·약 떨어질 시점 안내</p>
+          <div className="mt-3 space-y-2">
+            <label className="flex items-center justify-between gap-2 py-1.5">
+              <span className="text-sm text-ink-700 dark:text-slate-300">📊 주간 진척도 요약 (월요일 아침)</span>
+              <input type="checkbox" checked={prefs.weeklyReport}
+                     onChange={e => setPrefs(p => ({ ...p, weeklyReport: e.target.checked }))}
+                     className="accent-brand-500 w-4 h-4" />
+            </label>
+            <label className="flex items-center justify-between gap-2 py-1.5">
+              <span className="text-sm text-ink-700 dark:text-slate-300">💉 다음 투약일 D-1 알림</span>
+              <input type="checkbox" checked={prefs.doseReminder}
+                     onChange={e => setPrefs(p => ({ ...p, doseReminder: e.target.checked }))}
+                     className="accent-brand-500 w-4 h-4" />
+            </label>
+            <label className="flex items-center justify-between gap-2 py-1.5">
+              <span className="text-sm text-ink-700 dark:text-slate-300">🏥 진료 1주 전 리포트 출력 안내</span>
+              <input type="checkbox" checked={prefs.visitReminder}
+                     onChange={e => setPrefs(p => ({ ...p, visitReminder: e.target.checked }))}
+                     className="accent-brand-500 w-4 h-4" />
+            </label>
+          </div>
+          <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-3 leading-relaxed">
+            ※ 현재는 설정 저장만 가능. 실제 알림 전송은 곧 출시 예정.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 

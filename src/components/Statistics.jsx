@@ -13,7 +13,7 @@ import { Storage } from '../lib/storage.js';
 import { LineChart, HBarChart, GroupBarChart } from './Chart.jsx';
 import { MEDS, GENDERS, AGE_GROUPS, CONDITIONS, SIDE_EFFECTS } from '../lib/constants.js';
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
-import { LockedOverlay, LockHint, PremiumBadge, QuickSignupModal } from './Paywall.jsx';
+import { LockedOverlay, LockHint, PremiumBadge, FreeBadge, FuturePricingHint, QuickSignupModal } from './Paywall.jsx';
 import { can } from '../lib/access.js';
 import { StopProjector } from './StopProjector.jsx';
 
@@ -881,28 +881,38 @@ export function Statistics({ user, navigate, onSignup }) {
         )}
       </div>
 
-      {/* Premium 기능 안내 */}
+      {/* Free / Premium 기능 안내 */}
       {user && (
-        <div className="rounded-2xl bg-gradient-to-br from-amber-50 via-white to-white border-2 border-amber-200 p-5">
+        <div className="rounded-2xl bg-gradient-to-br from-emerald-50 via-white to-amber-50/40 dark:from-emerald-900/15 dark:via-slate-900 dark:to-amber-900/15 border-2 border-emerald-200 dark:border-emerald-800/40 p-5">
           <div className="flex items-start gap-3 mb-3">
             <div className="text-2xl">✨</div>
             <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-ink-900">Premium 기능</h2>
-                <PremiumBadge />
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-lg font-bold text-ink-900 dark:text-slate-100">기능 안내</h2>
+                <FreeBadge />
               </div>
-              <p className="text-sm text-ink-500 mt-0.5">곧 출시 예정 · 얼리액세스 신청을 받고 있어요</p>
+              <p className="text-sm text-ink-500 dark:text-slate-400 mt-0.5">
+                현재 모든 기능 무료 · 추후 일부 기능 유료화 검토 중
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PremiumCard icon="📄" title="진료용 12주 리포트"
-                         desc="병원 방문 전 체중·약·부작용 요약을 한 페이지 PDF로 출력" />
-            <PremiumCard icon="🤖" title="AI 주간 리포트"
-                         desc="이번 주 트렌드 + 정체기 예측 + 약제 효과 분석" />
-            <PremiumCard icon="💰" title="약가 가성비 분석"
-                         desc="약제·용량·지역별 비용 대비 감량률" />
-            <PremiumCard icon="🔔" title="이상 신호 알림"
-                         desc="체중 정체, 부작용 급증 등 자동 감지 + 진료 권유" />
+            <PlanFeatureCard icon="📄" title="진료용 12주 리포트" planLabel="Free"
+                         desc="병원 방문 전 체중·약·부작용 요약 + 차트 + 코호트 비교를 한 페이지 PDF로. 클립보드 텍스트 카피도 가능."
+                         action="profile/doctor-report" />
+            <PlanFeatureCard icon="🏪" title="약국 가격 디렉토리" planLabel="Free"
+                         desc="13개 지역 약국별 4주분 가격 + 익명 제보로 글로벌 디렉토리." />
+            <PlanFeatureCard icon="🔮" title="중단 후 본인 맞춤 예측" planLabel="Free"
+                         desc="입력 정보 따라 신뢰구간 좁아지는 본인 맞춤 회복 곡선. Taper · 운동 비교 모드." />
+            <PlanFeatureCard icon="📊" title="부작용 인사이트 위젯" planLabel="Free"
+                         desc="본인 vs 코호트 부작용 발생률 + 자가관리 팁 + 의사 상담 기준." />
+            <PlanFeatureCard icon="🤖" title="AI 주간 리포트" planLabel="Premium 예정"
+                         desc="이번 주 트렌드 + 정체기 예측 + 약제 효과 분석. 추후 유료화 검토 중." />
+            <PlanFeatureCard icon="🔔" title="이상 신호 알림" planLabel="Premium 예정"
+                         desc="체중 정체·부작용 급증 자동 감지 + 진료 권유 알림. 추후 유료화 검토 중." />
+          </div>
+          <div className="mt-4">
+            <FuturePricingHint />
           </div>
         </div>
       )}
@@ -953,13 +963,23 @@ function Tile({ label, value }) {
   );
 }
 
-function PremiumCard({ icon, title, desc }) {
+function PlanFeatureCard({ icon, title, desc, planLabel, action }) {
+  const isFree = planLabel === 'Free';
   return (
-    <div className="rounded-xl bg-white dark:bg-slate-900 border border-amber-100 dark:border-amber-900/30 p-3 flex gap-3">
+    <div className={`rounded-xl border p-3 flex gap-3
+                     ${isFree ? 'bg-white dark:bg-slate-900 border-emerald-200/60 dark:border-emerald-800/30'
+                              : 'bg-white/60 dark:bg-slate-900/60 border-amber-200/60 dark:border-amber-800/30'}`}>
       <div className="text-xl flex-shrink-0">{icon}</div>
-      <div className="min-w-0">
-        <div className="font-semibold text-sm text-ink-900 dark:text-slate-100">{title}</div>
-        <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">{desc}</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="font-semibold text-sm text-ink-900 dark:text-slate-100">{title}</div>
+          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0
+                            ${isFree ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
+                                     : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+            {planLabel}
+          </span>
+        </div>
+        <div className="text-xs text-ink-500 dark:text-slate-400 mt-1 leading-snug">{desc}</div>
       </div>
     </div>
   );

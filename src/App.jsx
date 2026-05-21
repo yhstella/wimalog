@@ -18,6 +18,7 @@ import { GuidePage } from './components/pages/GuidePage.jsx';
 import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
 import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
 import { PharmacyDirectoryPage } from './components/pages/PharmacyDirectoryPage.jsx';
+import { ForDoctorsPage } from './components/pages/ForDoctorsPage.jsx';
 import { DoctorReport } from './components/DoctorReport.jsx';
 import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
@@ -53,6 +54,14 @@ export default function App() {
     applyTheme();
     const unwatch = watchSystemTheme();
     Storage.migrateV1ToV2();
+    // 추천 코드 캡처 — ?ref=XXX → sessionStorage (가입 모달에서 사용)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get('ref');
+      if (ref && /^[A-Z0-9]{4,12}$/i.test(ref)) {
+        sessionStorage.setItem('wimalog_referral_code', ref.toUpperCase());
+      }
+    } catch {}
     // 시드는 main.jsx에서 React mount 전에 이미 호출됨 (sync) — 여기선 보장만
 
     // Supabase storage sync 시작 (모든 add/update/remove → Supabase 자동 push)
@@ -197,6 +206,7 @@ export default function App() {
           {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
           {effectiveRoute === 'pharmacies' && <PharmacyDirectoryPage navigate={navigate} user={user} />}
           {pharmacyRegionId && <PharmacyDirectoryPage navigate={navigate} user={user} regionId={pharmacyRegionId} />}
+          {effectiveRoute === 'for-doctors' && <ForDoctorsPage navigate={navigate} />}
           {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {guideId  && <GuidePage guideId={guideId} navigate={navigate} user={user} onSignup={onSignupStay} />}

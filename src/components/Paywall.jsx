@@ -61,7 +61,7 @@ export function LockHint({ count, label, onUnlock }) {
 }
 
 /* ============================================================
-   Premium Badge
+   Premium Badge — 추후 유료화 시사 placeholder
 ============================================================ */
 export function PremiumBadge({ size = 'sm' }) {
   return (
@@ -69,6 +69,36 @@ export function PremiumBadge({ size = 'sm' }) {
                       ${size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'}`}>
       ✨ Premium
     </span>
+  );
+}
+
+/* ============================================================
+   Free Badge — 베타 기간 무료, 추후 일부 기능 유료 가능성 시사
+============================================================ */
+export function FreeBadge({ size = 'sm' }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold
+                      ${size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'}`}>
+      🆓 Free 베타
+    </span>
+  );
+}
+
+/* ============================================================
+   Future Pricing Hint — '추후 유료화 가능성' 한 줄 안내
+============================================================ */
+export function FuturePricingHint({ inline = false }) {
+  if (inline) {
+    return (
+      <span className="text-[10px] text-ink-500 dark:text-slate-500">
+        🆓 Free 베타 · 추후 일부 기능은 유료화 검토 중
+      </span>
+    );
+  }
+  return (
+    <div className="rounded-lg bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200/40 dark:border-emerald-800/30 px-3 py-2 text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed">
+      🆓 <b>Free 베타 기간</b> — 현재 모든 기능 무료. 추후 진료용 PDF·AI 리포트·약가 가성비 분석 등 일부 기능은 유료화 검토 중입니다.
+    </div>
   );
 }
 
@@ -92,6 +122,10 @@ export function QuickSignupModal({ onClose, onComplete }) {
   const [oauthLoading, setOauthLoading] = useState(null); // provider id 또는 null
   // Simulator에서 입력한 값 자동 prefill — lazy user 마찰 제거
   const prefill = readPrefill();
+  // 추천 코드 (sessionStorage에서)
+  const referralCode = (() => {
+    try { return sessionStorage.getItem('wimalog_referral_code') || null; } catch { return null; }
+  })();
   const [data, setData] = useState({
     nickname: '',
     gender: 'F',
@@ -103,6 +137,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
     visitPurpose: '',  // 'using' | 'planning' | 'curious' | 'stopped'
     consent: false,
     _prefilled: !!prefill,
+    referralCode,
   });
 
   // 실제 OAuth 시작 — Supabase가 redirect 처리, 콜백 후 App.jsx가 syncOAuthUser 호출
@@ -224,6 +259,11 @@ export function QuickSignupModal({ onClose, onComplete }) {
           {data._prefilled && (
             <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-3 py-2 text-xs text-brand-800 dark:text-brand-200">
               ✨ 시뮬레이터에서 입력한 체중을 자동으로 채웠어요.
+            </div>
+          )}
+          {data.referralCode && (
+            <div className="rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/40 px-3 py-2 text-xs text-violet-800 dark:text-violet-200">
+              🎁 추천 코드 <b className="font-mono">{data.referralCode}</b>가 적용됐어요. (추후 Premium 출시 시 1개월 무료 검토 중)
             </div>
           )}
 

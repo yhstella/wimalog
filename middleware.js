@@ -7,7 +7,7 @@
 // 미리보기에서 고유 메타로 노출됨.
 
 export const config = {
-  matcher: ['/drug/:slug', '/effect/:slug', '/guide/:slug', '/calc/:slug', '/compare', '/stats', '/info', '/pharmacies', '/pharmacy/:slug'],
+  matcher: ['/drug/:slug', '/effect/:slug', '/guide/:slug', '/calc/:slug', '/compare', '/stats', '/info', '/pharmacies', '/pharmacy/:slug', '/for-doctors'],
 };
 
 // 봇/스크래퍼 user-agent 패턴 — Googlebot, Kakaotalk, Slack, Facebook 등
@@ -35,7 +35,8 @@ const STATIC_META = {
   '/compare':    { title: '5개 약 한눈 비교 — 위고비·마운자로·삭센다·오젬픽·젭바운드', description: '한국에서 사용 가능한 GLP-1 비만치료제 5종의 효과·부작용·가격·사용법을 한 화면에서 비교하세요.' },
   '/stats':      { title: '통계 — 한국 GLP-1 사용자 익명 비교', description: '약별·BMI별·성별·연령별 감량률, 부작용 발생률, 약값, 중단 후 회복 데이터를 비교합니다.' },
   '/info':       { title: '안전 정보 — GLP-1 즉시 의료 상담 기준', description: '췌장염·담낭질환·저혈당 의심 증상, GLP-1 신중 사용 대상자 등 안전 정보를 정리했습니다.' },
-  '/pharmacies': { title: '한국 GLP-1 약국 가격 디렉토리 — 약국별 4주분 최근 가격', description: '서울 대학로·강남·종로 등 한국 GLP-1 약국별 위고비·마운자로 가격을 사용자 익명 제보로 비교. 4주분(1박스) 기준.' },
+  '/pharmacies':   { title: '한국 GLP-1 약국 가격 디렉토리 — 약국별 4주분 최근 가격', description: '서울 대학로·강남·종로 등 한국 GLP-1 약국별 위고비·마운자로 가격을 사용자 익명 제보로 비교. 4주분(1박스) 기준.' },
+  '/for-doctors':  { title: '의료진 안내 — 위마로그 진료 보조 도구', description: 'GLP-1 비만치료제(위고비·마운자로) 처방 의원·약국을 위한 환자 데이터 안내. 12주 PDF 리포트로 진료 효율화.' },
 };
 
 const PHARMACY_REGION_LABELS = {

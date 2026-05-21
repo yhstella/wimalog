@@ -266,6 +266,12 @@ export function seoFor(route) {
     if (id === 'bmr') return { title: '기초대사량(BMR) 계산기', description: '키·체중·나이·활동량으로 BMR·TDEE·감량 목표 칼로리를 계산합니다.' };
     if (id === 'target') return { title: '목표 체중 계산기', description: 'BMI 기준 정상 체중과 % 감량별 도달 체중을 확인하세요.' };
   }
+  if (route === 'for-doctors') {
+    return {
+      title: '의료진 안내 — 위마로그 진료 보조 도구',
+      description: 'GLP-1 비만치료제(위고비·마운자로) 처방 의원·약국을 위한 환자 데이터 안내. 환자 자가보고 12주 PDF 리포트로 진료 효율화.',
+    };
+  }
   if (route === 'pharmacies') {
     return {
       title: '한국 GLP-1 약국 가격 디렉토리 — 약국별 4주분 최근 가격',

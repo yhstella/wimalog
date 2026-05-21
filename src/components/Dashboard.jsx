@@ -20,6 +20,8 @@ import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
 import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
+import { MilestoneCard } from './MilestoneCard.jsx';
+import { CostInsightCard } from './CostInsightCard.jsx';
 import { InitialSetup } from './InitialSetup.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
@@ -163,6 +165,9 @@ export function Dashboard({ user, navigate }) {
           </button>
         </div>
       </div>
+
+      {/* 마일스톤 카드 — 가입 후 경과 시점별 보상 메시지 */}
+      <MilestoneCard user={liveUser} navigate={navigate} />
 
       {/* 1순위: visitPurpose 분기 — 입력한 단계에 따라 맞춤 첫 경험 */}
       <PurposeCard user={liveUser} navigate={navigate} />
@@ -440,6 +445,9 @@ export function Dashboard({ user, navigate }) {
 
       {/* 부작용 인사이트 — 본인 vs 코호트 비교 + 관리 팁 */}
       <SideEffectInsightWidget user={user} navigate={navigate} />
+
+      {/* 누적 약값 분석 (1달+) */}
+      <CostInsightCard user={user} navigate={navigate} />
 
       {/* fallback: 인사이트가 없지만 최근 부작용 chip만 노출 */}
       {recentSideEffects.length > 0 && (
