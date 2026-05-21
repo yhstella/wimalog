@@ -327,15 +327,15 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
                   r="3" fill="#94A3B8" />
         ))}
 
-        {/* 기존 doses — 점선 + 마커 + 약이름·용량 라벨 */}
+        {/* 기존 doses — 점선 전체 + marker/라벨은 X축 위쪽 (보기 좋은 위치) */}
         {existingDoses.map((d, i) => {
           const x = dateMsToX(Date.parse(d.date));
-          // 같은 X 좌표에 dose 여러 개면 Y offset (라벨 겹침 방지)
+          // 같은 날짜 dose 여러 개면 Y offset (위로 stack)
           const stackIdx = existingDoses.slice(0, i).filter(o => Math.abs(dateMsToX(Date.parse(o.date)) - x) < 2).length;
-          const labelY = PAD.top + 4 + stackIdx * 10;
-          // 약이름 + 용량 짧게: "위고비 2.4mg"
+          // X축 바로 위 (그래프 하단 영역) — 너무 최상단 안 가게
+          const labelY = H - PAD.bottom - 10 - stackIdx * 12;
           const label = d.medLabel && d.dose ? `${d.medLabel} ${d.dose}` : (d.dose || '');
-          // 그래프 우측 끝 가까우면 좌측으로 라벨, 아니면 우측
+          // 그래프 우측 끝 가까우면 좌측으로 라벨
           const rightSide = x < W - 90;
           return (
             <g key={'d'+i}>
@@ -345,7 +345,8 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
               {label && (
                 <text x={x + (rightSide ? 6 : -6)} y={labelY + 3.5}
                       textAnchor={rightSide ? 'start' : 'end'}
-                      fontSize="10" fontWeight="600" fill="#C2410C">
+                      fontSize="10" fontWeight="600" fill="#C2410C"
+                      stroke="white" strokeWidth="3" paintOrder="stroke">
                   {label}
                 </text>
               )}
