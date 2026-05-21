@@ -22,6 +22,7 @@ import { DoctorReport } from './components/DoctorReport.jsx';
 import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
+import { InstallPrompt } from './components/InstallPrompt.jsx';
 import { bootstrapAuth, onAuthChange, signOut as supaSignOut } from './lib/auth.js';
 import { startSupabaseSync, backfillUser } from './lib/supabaseSync.js';
 
@@ -202,6 +203,7 @@ export default function App() {
           {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
         </ErrorBoundary>
       </Layout>
+      <InstallPrompt />
     </ToastProvider>
   );
 }

@@ -6,6 +6,15 @@
     <meta name="theme-color" content="#2E9A58" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Service Worker 등록 — 오프라인 캐싱
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
     <script>
       // FOUC 방지: 페이지 그려지기 전 다크 모드 즉시 적용
       (function() {

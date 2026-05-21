@@ -1,0 +1,56 @@
+{
+  "name": "위마로그 — 위고비·마운자로 리얼데이터",
+  "short_name": "위마로그",
+  "description": "한국 GLP-1(위고비·마운자로) 사용자 익명 코호트 비교 + AI 예측 시뮬레이터 + 진료용 리포트",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#2E9A58",
+  "lang": "ko",
+  "categories": ["health", "medical", "lifestyle"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "체중 기록",
+      "short_name": "기록",
+      "description": "오늘 체중 기록하기",
+      "url": "/records",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "통계",
+      "short_name": "통계",
+      "description": "코호트 통계 보기",
+      "url": "/stats",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "약국 가격",
+      "short_name": "약국",
+      "description": "약국별 가격 디렉토리",
+      "url": "/pharmacies",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}
