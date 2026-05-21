@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES, FREQ_BY_ID, bmiResponseFactor } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
-import { MEDS, MED_BY_ID } from '../lib/constants.js';
+import { MEDS, MED_BY_ID, PEN_INFO } from '../lib/constants.js';
 import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
 import { snapshotAvgLossCurve, snapshotPlatformScale } from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
@@ -257,14 +257,19 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       {profile && (profile.monthlyAvgKrw || profile.topSideEffects?.length) && (
         <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-4 py-3">
           <div className="grid grid-cols-2 gap-3 items-start">
-            {/* 비용 */}
+            {/* 비용 — 4주분(1박스) 평균 */}
             <div>
-              <div className="text-[10px] opacity-70 mb-0.5">💰 월 평균 비용</div>
+              <div className="text-[10px] opacity-70 mb-0.5">💰 4주분(1박스) 평균</div>
               {profile.monthlyAvgKrw != null ? (
-                <div className="text-base font-bold tabular-nums leading-tight">
-                  {(profile.monthlyAvgKrw / 10000).toFixed(0)}만원
-                  <span className="text-[10px] font-normal opacity-70 ml-1">/월</span>
-                </div>
+                <>
+                  <div className="text-base font-bold tabular-nums leading-tight">
+                    {(profile.monthlyAvgKrw / 10000).toFixed(0)}만원
+                    <span className="text-[10px] font-normal opacity-70 ml-1">/4주</span>
+                  </div>
+                  <div className="text-[9px] opacity-60 leading-tight mt-0.5">
+                    {PEN_INFO[medication]?.perBoxText || ''}
+                  </div>
+                </>
               ) : (
                 <div className="text-xs opacity-60">데이터 준비 중</div>
               )}

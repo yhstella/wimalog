@@ -109,7 +109,7 @@ function CostCalculator({ navigate }) {
         </div>
         {monthlyAvg > 0 && (
           <div className="text-sm text-ink-700 dark:text-slate-300 mt-2">
-            월 평균 <b className="tabular-nums">{monthlyAvg.toLocaleString()}원</b>
+            4주분(1박스) 평균 <b className="tabular-nums">{monthlyAvg.toLocaleString()}원</b>
           </div>
         )}
         {cheapByRegion && (

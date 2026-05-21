@@ -10,6 +10,71 @@ export const MEDS = [
 
 export const MED_BY_ID = Object.fromEntries(MEDS.map(m => [m.id, m]));
 
+// 펜·박스 정보 — 한국 처방·약국 단위. 가격을 "4주분(1박스)" 기준으로 표준화.
+// 사용자가 "월 가격" vs "회당 가격" vs "펜당 가격" 혼동하지 않도록.
+export const PEN_INFO = {
+  wegovy: {
+    pensPerBox: 1, dosesPerPen: 4, weeksPerBox: 4,
+    frequency: 'weekly', perBoxText: '1펜 = 4회 (4주분)',
+    note: '주 1회 자가주사 · 1펜에 4회 분량 · 1박스 = 1펜 = 4주분',
+  },
+  mounjaro: {
+    pensPerBox: 1, dosesPerPen: 4, weeksPerBox: 4,
+    frequency: 'weekly', perBoxText: '1펜 = 4회 (4주분)',
+    note: '주 1회 자가주사 · 1펜에 4회 분량 · 1박스 = 1펜 = 4주분',
+  },
+  saxenda: {
+    pensPerBox: 5, dosesPerPen: null, weeksPerBox: 4,
+    frequency: 'daily', perBoxText: '5펜 ≈ 4주분 (3.0mg 매일 기준)',
+    note: '매일 자가주사 · 1펜에 18mg(6일분 @3.0mg) · 한 박스 5펜 = 약 4주분',
+  },
+  ozempic: {
+    pensPerBox: 1, dosesPerPen: 4, weeksPerBox: 4,
+    frequency: 'weekly', perBoxText: '1펜 = 4회 (4주분)',
+    note: '주 1회 자가주사 · 1펜에 4회 분량 · 1박스 = 1펜 = 4주분 (당뇨 적응증 약가)',
+  },
+  zepbound: {
+    pensPerBox: 1, dosesPerPen: 4, weeksPerBox: 4,
+    frequency: 'weekly', perBoxText: '1펜 = 4회 (4주분)',
+    note: '주 1회 자가주사 · 마운자로와 동일 성분(Tirzepatide), 비만 적응증 · 1박스 = 4주분',
+  },
+  other: {
+    pensPerBox: 1, dosesPerPen: null, weeksPerBox: 4,
+    frequency: 'unknown', perBoxText: '약 4주분',
+    note: '',
+  },
+};
+
+// 약/용량별 정가 reference — 한국 약국가 (2026 기준 추정 평균. 약국별 ±30% 변동)
+// 단위: 원/4주분(1박스)
+export const REFERENCE_PRICE_4W = {
+  wegovy: {
+    '0.25mg': 280000, '0.5mg': 300000, '1.0mg': 360000,
+    '1.7mg': 450000, '2.4mg': 560000,
+  },
+  mounjaro: {
+    '2.5mg': 400000, '5mg': 460000, '7.5mg': 540000,
+    '10mg': 620000, '12.5mg': 680000, '15mg': 750000,
+  },
+  saxenda: {
+    '0.6mg': 320000, '1.2mg': 350000, '1.8mg': 380000,
+    '2.4mg': 410000, '3.0mg': 440000,
+  },
+  ozempic: {
+    '0.25mg': 250000, '0.5mg': 280000, '1.0mg': 350000, '2.0mg': 450000,
+  },
+  zepbound: {
+    '2.5mg': 390000, '5mg': 450000, '7.5mg': 530000,
+    '10mg': 610000, '12.5mg': 670000, '15mg': 730000,
+  },
+};
+
+// 헬퍼 — 4주분 가격 라벨링
+export function formatPrice4W(amountKrw) {
+  if (!amountKrw) return null;
+  return `${(amountKrw / 10000).toFixed(0)}만원/4주분`;
+}
+
 export const GENDERS = [
   { id: 'F', label: '여성' },
   { id: 'M', label: '남성' },

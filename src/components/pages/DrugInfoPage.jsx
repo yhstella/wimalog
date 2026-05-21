@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { DRUG_CONTENT, SIDE_EFFECT_CONTENT } from '../../lib/content.js';
+import { PEN_INFO, REFERENCE_PRICE_4W } from '../../lib/constants.js';
 import { avgLossCurve, cohortSize, sideEffectRates, anonymousNotes, priceStats, userDemographics } from '../../lib/stats.js';
 import { fetchAvgLossCurve, fetchSideEffectRates, fetchPriceStats } from '../../lib/supabaseStats.js';
 import { supabaseConfigured } from '../../lib/supabaseClient.js';
@@ -146,38 +147,70 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </ul>
       </section>
 
-      {/* 용량 + 가격 */}
+      {/* 용량 + 가격 — 4주분(1박스) 기준 표준화 */}
       <section className="card" id="price">
-        <h2 className="section-title">{drug.label} 가격 · 용량</h2>
+        <h2 className="section-title">{drug.label} 가격 · 용량 (4주분 기준)</h2>
+        {PEN_INFO[medId]?.note && (
+          <div className="mt-2 rounded-lg bg-brand-50 dark:bg-brand-900/15 px-3 py-2 text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
+            💉 {PEN_INFO[medId].note}
+          </div>
+        )}
         <div className="mt-3 space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-ink-500 dark:text-slate-400">투약 주기</span>
             <span className="font-medium text-ink-900 dark:text-slate-100">{drug.frequency}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-ink-500 dark:text-slate-400">용량 단계</span>
-            <span className="font-medium text-ink-900 dark:text-slate-100">{drug.doses.join(' → ')}</span>
+            <span className="text-ink-500 dark:text-slate-400">처방 단위</span>
+            <span className="font-medium text-ink-900 dark:text-slate-100">{PEN_INFO[medId]?.perBoxText || '4주분'}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-ink-500 dark:text-slate-400">증량 일정</span>
             <span className="font-medium text-ink-900 dark:text-slate-100 text-right">{drug.doseSchedule}</span>
           </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-ink-500 dark:text-slate-400">가격 범위</span>
-            <span className="font-semibold text-brand-700 dark:text-brand-400">{drug.priceRange}</span>
+        </div>
+
+        {/* 용량별 정가 reference — 약국에서 묻기 전 미리 비교용 */}
+        {REFERENCE_PRICE_4W[medId] && (
+          <div className="mt-4 pt-3 border-t border-ink-100 dark:border-slate-800">
+            <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-2">
+              용량별 약국 평균 (4주분 / 1박스)
+            </div>
+            <div className="space-y-1">
+              {Object.entries(REFERENCE_PRICE_4W[medId]).map(([dose, price]) => (
+                <div key={dose} className="flex justify-between text-sm">
+                  <span className="text-ink-700 dark:text-slate-300 tabular-nums">{dose}</span>
+                  <span className="tabular-nums text-ink-900 dark:text-slate-100 font-medium">
+                    {(price / 10000).toFixed(0)}만원
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-2 text-[10px] text-ink-500 dark:text-slate-500 leading-relaxed">
+              ⚠ 약국별 ±30% 변동. 정확한 가격은 약국에 직접 문의 또는
+              <button onClick={() => navigate('pharmacies')} className="underline text-brand-700 dark:text-brand-400 ml-0.5">
+                약국별 최근 가격
+              </button>
+              에서 확인하세요.
+            </div>
           </div>
-          {prices?.byRegion?.length > 0 && (
-            <div className="pt-2 border-t border-ink-100 dark:border-slate-800">
-              <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">지역별 평균 (사용자 보고)</div>
-              {prices.byRegion.slice(0, 3).map(r => (
+        )}
+
+        {prices?.byRegion?.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-ink-100 dark:border-slate-800">
+            <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-2">
+              지역별 평균 (사용자 보고 · 4주분 기준)
+            </div>
+            <div className="space-y-1">
+              {prices.byRegion.slice(0, 5).map(r => (
                 <div key={r.region} className="flex justify-between text-sm">
                   <span className="text-ink-700 dark:text-slate-300">{r.region}</span>
                   <span className="tabular-nums text-ink-900 dark:text-slate-100">{Math.round(r.avg).toLocaleString()}원</span>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </section>
 
       {/* 부작용 Top 5 + 클릭으로 상세 페이지 */}

@@ -687,14 +687,14 @@ export function Statistics({ user, navigate, onSignup }) {
         <div className="card">
           <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
             <div>
-              <h2 className="section-title">약 가격 (지역별)</h2>
+              <h2 className="section-title">약 가격 (지역별 · 4주분 기준)</h2>
               <p className="section-subtitle">
-                투약 1회분 가격. n≥3인 지역만 표시
+                1박스(4주분) 가격. n≥3인 지역만 표시
                 {!user && <> · <b className="text-brand-600">전체 평균 + 1개 지역만 공개</b></>}
               </p>
             </div>
             <div className="text-right">
-              <div className="text-xs text-ink-500">전체 평균 (1회)</div>
+              <div className="text-xs text-ink-500">전체 평균 (4주분)</div>
               <div className="text-2xl font-extrabold tabular-nums text-ink-900">
                 {Math.round(priceData.avg).toLocaleString()}원
               </div>
@@ -707,7 +707,7 @@ export function Statistics({ user, navigate, onSignup }) {
                   <thead>
                     <tr className="text-left text-ink-500">
                       <th className="py-2 px-2 font-medium">지역</th>
-                      <th className="py-2 px-2 font-medium text-right">평균</th>
+                      <th className="py-2 px-2 font-medium text-right">평균 (4주분)</th>
                       {user && <th className="py-2 px-2 font-medium text-right">중앙값</th>}
                       <th className="py-2 px-2 font-medium text-right">투약 건수</th>
                     </tr>
