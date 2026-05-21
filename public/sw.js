@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v9';   // bumped 2026-05-21: Compare 정렬·sticky + Guide cross-link
+const VERSION = 'v10';  // bumped 2026-05-21: 시뮬레이터 cold cache 즉시 데이터 + BMI 박스 제거 + 색상 5색
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

@@ -184,7 +184,7 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
                 pattern:   'border-sky-300 dark:border-sky-800/50 bg-sky-50/50 dark:bg-sky-900/15',
                 'dose-up': 'border-amber-300 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/15',
                 'dose-down': 'border-amber-300 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/15',
-                switch:    'border-violet-300 dark:border-violet-800/50 bg-violet-50/50 dark:bg-violet-900/15',
+                switch:    'border-brand-300 dark:border-brand-800/50 bg-brand-50/50 dark:bg-brand-900/15',
                 manage:    'border-brand-300 dark:border-brand-800/50 bg-brand-50/50 dark:bg-brand-900/15',
                 lifestyle: 'border-brand-300 dark:border-brand-800/50 bg-brand-50/50 dark:bg-brand-900/15',
                 temporary: 'border-ink-300 dark:border-slate-700 bg-ink-100/40 dark:bg-slate-800/40',

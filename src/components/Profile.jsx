@@ -298,7 +298,7 @@ function ReferralCard({ user }) {
   };
 
   return (
-    <div className="card border border-violet-200 dark:border-violet-900/40 bg-violet-50/40 dark:bg-violet-900/15">
+    <div className="card border border-brand-200 dark:border-brand-900/40 bg-brand-50/40 dark:bg-brand-900/15">
       <div className="flex items-start gap-3">
         <div className="text-2xl">🎁</div>
         <div className="flex-1 min-w-0">
@@ -312,11 +312,11 @@ function ReferralCard({ user }) {
             추후 Premium 출시 시 추천자·신규 가입자 모두에게 Premium 1개월 무료 제공 검토 중
           </p>
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <code className="px-2 py-1 rounded-md bg-white dark:bg-slate-800 border border-violet-200 dark:border-violet-800/40 text-sm font-mono text-violet-700 dark:text-violet-300">
+            <code className="px-2 py-1 rounded-md bg-white dark:bg-slate-800 border border-brand-200 dark:border-brand-800/40 text-sm font-mono text-brand-700 dark:text-brand-300">
               {referralCode}
             </code>
             <button onClick={copy}
-                    className="text-xs px-3 py-1.5 rounded-md bg-violet-600 hover:bg-violet-700 text-white font-bold transition">
+                    className="text-xs px-3 py-1.5 rounded-md bg-brand-600 hover:bg-brand-700 text-white font-bold transition">
               {copied ? '✓ 링크 복사됨' : '🔗 초대 링크 복사'}
             </button>
           </div>

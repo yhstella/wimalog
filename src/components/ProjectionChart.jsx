@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { simulateTimeline, FREQ_BY_ID, bmiResponseFactor, bmi as calcBmi, USAGE_FREQUENCIES } from '../lib/stats.js';
 import { fetchAvgLossCurve, fetchReboundCurve } from '../lib/supabaseStats.js';
+import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 
 // 체중 추이 예측 그래프 — 약 사용 + 중단 후 회복 시각화 + 신뢰구간 (CI)
@@ -52,13 +53,28 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
     return () => { cancelled = true; };
   }, [medication, myBmi, frequency]);
 
-  // localStorage fallback
+  // 빌드 타임 스냅샷 — 첫 진입 시 즉시 표시 (cold cache friendly)
+  const snapshotUsage = useMemo(() => {
+    const rows = snapshotAvgLossCurve(medication, usageWeeks.filter(w => w > 0));
+    if (!rows || rows.length === 0) return null;
+    let prev = 0;
+    const adjusted = rows.map(r => {
+      if (r.avg == null) return null;
+      const lossPct = Math.max(r.avg * adjust, prev * 0.98);
+      prev = lossPct;
+      return { week: r.week, lossPct, n: r.n };
+    }).filter(Boolean);
+    return adjusted.length > 0 ? adjusted : null;
+  }, [medication, adjust]);
+
+  // localStorage fallback (시드 누적 후 의미)
   const localUsage = useMemo(() => {
     const t = simulateTimeline({ height, startWeight, medication, weeks: usageWeeks.filter(w => w > 0), frequency });
     return t.series.filter(s => s.lossPct != null).map(s => ({ week: s.week, lossPct: s.lossPct, n: s.n }));
   }, [height, startWeight, medication, frequency]);
 
-  const finalUsage = usageLoss || localUsage;
+  // 우선순위: Supabase fresh > 빌드 타임 snapshot > localStorage 시드
+  const finalUsage = usageLoss || snapshotUsage || localUsage;
 
   // 신뢰구간(CI) 폭 — accuracy 낮을수록 더 넓음 + 시간 지날수록 누적 불확실성 증가
   // accuracy 40 (최소) → 기본 ±30% / accuracy 100 → 기본 ±10%

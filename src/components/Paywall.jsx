@@ -263,7 +263,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
             </div>
           )}
           {data.referralCode && (
-            <div className="rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/40 px-3 py-2 text-xs text-violet-800 dark:text-violet-200">
+            <div className="rounded-lg bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-3 py-2 text-xs text-brand-800 dark:text-brand-200">
               🎁 추천 코드 <b className="font-mono">{data.referralCode}</b>가 적용됐어요. (추후 Premium 출시 시 1개월 무료 검토 중)
             </div>
           )}

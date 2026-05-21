@@ -3,7 +3,7 @@ import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES,
 import { Storage } from '../lib/storage.js';
 import { MEDS, MED_BY_ID, PEN_INFO } from '../lib/constants.js';
 import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
-import { snapshotAvgLossCurve, snapshotPlatformScale } from '../lib/snapshot.js';
+import { snapshotAvgLossCurve, snapshotPlatformScale, snapshotPriceStats, snapshotSideEffectRates } from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { ProjectionChart } from './ProjectionChart.jsx';
 
@@ -162,7 +162,30 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   }, [medication, frequency, myBmi, startWeight]);
   // 우선순위: Supabase fresh > 스냅샷 > localStorage 시드. 모두 즉시 사용 가능.
   const timeline = supaTimeline || snapshotTimeline || localTimeline;
-  const profile = useMemo(() => medQuickProfile(medication, frequency), [medication, frequency, seedTick]);
+  // 약 프로필 — snapshot 우선 (cold cache), 시드 후 fallback
+  const profile = useMemo(() => {
+    // snapshot priceStats + sideEffectRates → 즉시 데이터
+    const snapPrice = snapshotPriceStats(medication);
+    const snapSides = snapshotSideEffectRates(medication);
+    if (snapPrice || snapSides) {
+      const freqFactor = frequency === 'biweekly' ? 0.5 : frequency === 'occasional' ? 0.25 : frequency === 'intro' ? 0.8 : 1.0;
+      const monthlyAvg = snapPrice?.avg ? Math.round(snapPrice.avg * freqFactor / 10000) * 10000 : null;
+      const topSides = (snapSides || [])
+        .filter(s => s.rate > 0.05)
+        .sort((a, b) => b.rate - a.rate)
+        .slice(0, 3)
+        .map(s => {
+          const labelMap = {
+            nausea: '오심(메스꺼움)', vomiting: '구토', constipation: '변비', diarrhea: '설사',
+            fatigue: '피로감', dizziness: '어지러움', abdomenPain: '복통', hairLoss: '탈모',
+            reflux: '역류성', headache: '두통',
+          };
+          return { label: labelMap[s.id] || s.id, rate: s.rate };
+        });
+      return { monthlyAvgKrw: monthlyAvg, topSideEffects: topSides, frequency };
+    }
+    return medQuickProfile(medication, frequency);
+  }, [medication, frequency, seedTick]);
 
   const medLabel = MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '') || '';
   const freqLabel = USAGE_FREQUENCIES.find(f => f.id === frequency)?.shortLabel || '매주';
@@ -469,16 +492,13 @@ export function Simulator({ onSignup, compact = false, user = null }) {
         </button>
       )}
       <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">
-        <div className="flex items-start gap-2">
-          <span className="text-base flex-shrink-0">🤖</span>
-          <p className="text-[11px] leading-relaxed">
-            <b>입력이 자세할수록 AI 예측이 정확해져요.</b><br />
-            {user
-              ? <>본인 체중 추이·운동·식단·부작용·동반질환을 더 입력할수록 본인 조건에 맞춘 정밀 예측으로 바뀝니다.</>
-              : <>지금은 키·체중·약·빈도만 사용 중 — 가입 후 본인 체중 추이·운동·식단·부작용·동반질환까지 추가하면 본인 조건에 맞춘 정밀 예측으로 바뀝니다.</>
-            }
-          </p>
-        </div>
+        <p className="text-[11px] leading-relaxed">
+          <b>입력이 자세할수록 예측이 정확해져요.</b>
+          {user
+            ? <> 체중 추이·운동·식단·부작용·동반질환을 더 입력하면 본인 조건에 맞춤화됩니다.</>
+            : <> 가입 후 체중 추이·운동·식단·부작용·동반질환까지 추가하면 본인 조건에 맞춤화됩니다.</>
+          }
+        </p>
       </div>
     </div>
   );

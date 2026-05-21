@@ -13,9 +13,9 @@ export function MilestoneCard({ user, navigate }) {
     const courses = Storage.getMedCoursesByUser(user.id);
     const exercises = Storage.getExercisesByUser(user.id);
 
-    // 가입 후 경과 일
+    // 가입 후 경과 일 (가입 당일 = 0)
     const ageDays = Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000);
-    if (ageDays < 1) return null;
+    // 0일도 표시 — 가입 직후 첫 인상 보상
 
     // 현재 체중
     const sortedLogs = [...logs].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -130,10 +130,15 @@ export function MilestoneCard({ user, navigate }) {
 
 // 마일스톤 시점 — 가입 후 일수
 function pickMilestone(ageDays) {
+  if (ageDays === 0) {
+    return { label: '환영', icon: '🌱', borderColor: 'border-brand-400',
+      title: '오늘 위마로그 시작',
+      message: '오른쪽 위 빠른 기록에서 체중을 입력해 보세요. 매일 30초만 투자해도 1주차부터 본인 트렌드가 보이기 시작합니다.' };
+  }
   if (ageDays <= 1) {
-    return { label: '시작', icon: '🌱', borderColor: 'border-brand-400',
-      title: '오늘부터 첫 기록',
-      message: '매일 30초만 기록해도 1주차에 트렌드가 보이기 시작합니다. 첫 체중 기록부터 시작하세요.' };
+    return { label: '1일째', icon: '🌱', borderColor: 'border-brand-400',
+      title: '첫 기록을 시작했네요',
+      message: '내일도 같은 시간에 체중 한 번 기록하면 첫 변화 추이가 보입니다.' };
   }
   if (ageDays <= 7) {
     return { label: `${ageDays}일째`, icon: '✨', borderColor: 'border-emerald-400',
@@ -161,11 +166,11 @@ function pickMilestone(ageDays) {
       message: '대부분의 임상 가이드는 6개월 시점에 5% 이상 감량을 효과 기준으로 봅니다. 유지 vs 중단 결정을 의사와 상의해 보세요.' };
   }
   if (ageDays <= 365) {
-    return { label: '1년', icon: '🌟', borderColor: 'border-violet-500',
+    return { label: '1년', icon: '🌟', borderColor: 'border-brand-500',
       title: '1년 — 장기 사용자 데이터 자산',
       message: '1년 누적 데이터는 본인의 가장 정확한 referrence가 됩니다. 유지 용량 검토 또는 단계적 중단 시나리오를 통계 페이지에서 시뮬레이션하세요.' };
   }
-  return { label: `${Math.floor(ageDays / 365)}년+`, icon: '🌟', borderColor: 'border-violet-500',
+  return { label: `${Math.floor(ageDays / 365)}년+`, icon: '🌟', borderColor: 'border-brand-500',
     title: '장기 사용자 — 깊은 데이터 자산',
     message: '1년+ 누적 데이터를 보유한 사용자입니다. 의사와 함께 장기 전략을 검토해 보세요.' };
 }
