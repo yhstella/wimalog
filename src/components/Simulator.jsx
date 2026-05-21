@@ -373,7 +373,8 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           📈 예측 체중 곡선 — 사용 + 중단 시점 시뮬레이션
         </div>
         <ProjectionChart startWeight={+startWeight} height={+height}
-                         medication={medication} frequency={frequency} compact />
+                         medication={medication} frequency={frequency}
+                         accuracy={accuracy} compact />
       </div>
 
       {/* 3시점 감량 결과 — 빈도/BMI 보정된 한국 실사용 추정치 */}

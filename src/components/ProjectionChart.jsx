@@ -3,9 +3,12 @@ import { simulateTimeline, FREQ_BY_ID, bmiResponseFactor, bmi as calcBmi, USAGE_
 import { fetchAvgLossCurve, fetchReboundCurve } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 
-// 체중 추이 예측 그래프 — 약 사용 + 중단 후 회복 시각화
-// props: startWeight (kg), height (cm), medication, frequency
-export function ProjectionChart({ startWeight, height, medication = 'wegovy', frequency = 'weekly', compact = false }) {
+// 체중 추이 예측 그래프 — 약 사용 + 중단 후 회복 시각화 + 신뢰구간 (CI)
+// props:
+//   startWeight (kg), height (cm), medication, frequency
+//   accuracy (0-100): 입력 정보 양 반영. 낮을수록 CI band 더 넓음
+//   compact: 작은 모드
+export function ProjectionChart({ startWeight, height, medication = 'wegovy', frequency = 'weekly', accuracy = 40, compact = false }) {
   // 중단 시점 — 사용자 슬라이더 (4/12/24/48주 선택 또는 끝까지 사용)
   const [stopWeek, setStopWeek] = useState(24);
   const [showStopped, setShowStopped] = useState(true);
@@ -57,14 +60,32 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
 
   const finalUsage = usageLoss || localUsage;
 
-  // 사용 중 weight 곡선 (week → kg)
+  // 신뢰구간(CI) 폭 — accuracy 낮을수록 더 넓음 + 시간 지날수록 누적 불확실성 증가
+  // accuracy 40 (최소) → 기본 ±30% / accuracy 100 → 기본 ±10%
+  // 시점별 추가 확산: t주차 → +sqrt(t/52) × 8% (불확실성 누적)
+  const ciWidthAt = (week) => {
+    const base = Math.max(0.10, 0.50 - (accuracy / 100) * 0.40);
+    const drift = Math.sqrt(Math.max(0, week) / 52) * 0.08;
+    return Math.min(0.60, base + drift);
+  };
+
+  // 사용 중 weight 곡선 (week → kg) + CI 상·하한
   const usagePoints = useMemo(() => {
-    const pts = [{ week: 0, weight: startWeight }];
+    const pts = [{ week: 0, weight: startWeight, lower: startWeight, upper: startWeight }];
     for (const u of finalUsage) {
-      pts.push({ week: u.week, weight: startWeight * (1 - u.lossPct / 100) });
+      const mean = startWeight * (1 - u.lossPct / 100);
+      const lossKgMean = startWeight - mean;
+      // CI는 lossKg에 비례 — 감량 폭 자체에 ±ciWidth 적용
+      const ci = ciWidthAt(u.week) * Math.max(2, lossKgMean);
+      pts.push({
+        week: u.week,
+        weight: mean,
+        lower: Math.max(mean - ci, mean * 0.85),   // best case (더 빠짐)
+        upper: Math.min(mean + ci, startWeight),    // worst case (덜 빠짐, 시작체중 넘지 않음)
+      });
     }
     return pts;
-  }, [finalUsage, startWeight]);
+  }, [finalUsage, startWeight, accuracy]);
 
   // 중단 시점 체중 (interpolation)
   const stopWeight = useMemo(() => {
@@ -85,8 +106,9 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
   // 중단 후 회복 — gainPct는 중단 시점 체중 기준 % 회복 (수정값)
   // reboundData가 avgGainPct (%) → stopWeight × (1 + gain/100)
   // 데이터 없으면 임상 추정 (24주 30%, 48주 50% 회복)
+  // CI는 회복기에 더 넓음 — 운동·식이 의지에 따라 편차 크기 때문
   const reboundPoints = useMemo(() => {
-    const pts = [{ week: stopWeek, weight: stopWeight }];
+    const pts = [{ week: stopWeek, weight: stopWeight, lower: stopWeight, upper: stopWeight }];
     const FALLBACK_REGAIN = { 4: 0.08, 8: 0.15, 12: 0.22, 24: 0.35, 36: 0.45, 48: 0.55, 52: 0.58 };
     for (const w of reboundWeeks) {
       let regainRatio = null;
@@ -96,10 +118,18 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
       }
       if (regainRatio == null) regainRatio = FALLBACK_REGAIN[w] ?? 0.4;
       const gainedKg = Math.max(0, lostKg * regainRatio);
-      pts.push({ week: stopWeek + w, weight: stopWeight + gainedKg });
+      const mean = stopWeight + gainedKg;
+      // 회복기 CI = 사용기 + 1.5배 (운동/식이 의지 변동 큼)
+      const ci = ciWidthAt(w) * Math.max(2, gainedKg) * 1.5;
+      pts.push({
+        week: stopWeek + w,
+        weight: mean,
+        lower: Math.max(mean - ci, stopWeight * 0.95),    // best case (덜 회복)
+        upper: Math.min(mean + ci, startWeight * 1.05),   // worst case (더 회복, 시작 약간 초과 가능)
+      });
     }
     return pts;
-  }, [stopWeek, stopWeight, lostKg, reboundData]);
+  }, [stopWeek, stopWeight, lostKg, reboundData, startWeight, accuracy]);
 
   // 끝까지 사용 (52주) 곡선
   const continuousPoints = usagePoints;
@@ -119,6 +149,14 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
   const yToPx = (w) => PAD.top + (1 - (w - minW) / (maxW - minW)) * innerH;
 
   const pathFrom = (pts) => pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xToPx(p.week).toFixed(1)} ${yToPx(p.weight).toFixed(1)}`).join(' ');
+
+  // CI band path — upper 위에서 lower로 닫힌 polygon
+  const bandPathFrom = (pts) => {
+    if (pts.length < 2) return '';
+    const upPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xToPx(p.week).toFixed(1)} ${yToPx(p.upper).toFixed(1)}`).join(' ');
+    const downPath = [...pts].reverse().map(p => `L ${xToPx(p.week).toFixed(1)} ${yToPx(p.lower).toFixed(1)}`).join(' ');
+    return `${upPath} ${downPath} Z`;
+  };
 
   // x축 tick
   const xTicks = [0, 12, 24, 48, 72, 104];
@@ -180,7 +218,10 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
         <text x={W - PAD.right} y={yToPx(startWeight) - 4}
               fontSize="9" textAnchor="end" fill="#64748B">시작 {startWeight} kg</text>
 
-        {/* 사용 중 곡선 — solid brand */}
+        {/* 사용 중 CI band (shaded) — accuracy 낮으면 폭 넓음 */}
+        <path d={bandPathFrom(continuousPoints)} fill="#0EA5E9" fillOpacity="0.12" stroke="none" />
+
+        {/* 사용 중 곡선 — solid sky */}
         <path d={pathFrom(continuousPoints)} fill="none"
               stroke="#0EA5E9" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         {continuousPoints.map((p, i) => (
@@ -195,9 +236,10 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
         </text>
         <circle cx={stopX} cy={stopY} r="5" fill="#F43F5E" stroke="white" strokeWidth="2" />
 
-        {/* 중단 후 회복 곡선 — dashed rose */}
+        {/* 중단 후 CI band + 회복 곡선 — dashed rose */}
         {showStopped && (
           <>
+            <path d={bandPathFrom(reboundPoints)} fill="#F43F5E" fillOpacity="0.10" stroke="none" />
             <path d={pathFrom(reboundPoints)} fill="none"
                   stroke="#F43F5E" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
             {reboundPoints.map((p, i) => (
@@ -222,7 +264,13 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
       <div className="flex flex-wrap gap-3 text-[11px] text-ink-600 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
           <svg width="20" height="3"><line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#0EA5E9" strokeWidth="2.5" /></svg>
-          약 사용 중 (예측)
+          약 사용 중 평균
+        </span>
+        <span className="flex items-center gap-1.5">
+          <svg width="20" height="10" viewBox="0 0 20 10">
+            <rect x="0" y="2" width="20" height="6" fill="#0EA5E9" fillOpacity="0.12" />
+          </svg>
+          예측 신뢰구간 (CI)
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="20" height="3"><line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#F43F5E" strokeWidth="2.5" strokeDasharray="5 4" /></svg>
@@ -232,6 +280,28 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
           <svg width="20" height="3"><line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#94A3B8" strokeWidth="1" strokeDasharray="4 4" /></svg>
           시작 체중 baseline
         </span>
+      </div>
+
+      {/* CI 폭 안내 — accuracy에 따라 동적 */}
+      <div className={`rounded-lg px-3 py-2 text-xs leading-relaxed flex items-start gap-2
+                       ${accuracy >= 80 ? 'bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200/40 dark:border-emerald-800/30'
+                         : accuracy >= 60 ? 'bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200/40 dark:border-amber-800/30'
+                         : 'bg-ink-100/50 dark:bg-slate-800/50 border border-ink-200/40 dark:border-slate-700/40'}`}>
+        <span className="text-base flex-shrink-0">
+          {accuracy >= 80 ? '🎯' : accuracy >= 60 ? '⚡' : '📊'}
+        </span>
+        <div className="flex-1 min-w-0">
+          <b className={`${accuracy >= 80 ? 'text-emerald-700 dark:text-emerald-400'
+                          : accuracy >= 60 ? 'text-amber-700 dark:text-amber-400'
+                          : 'text-ink-700 dark:text-slate-300'}`}>
+            예측 정확도 {accuracy}% — {accuracy >= 80 ? '신뢰구간 좁음 (정밀 예측)' : accuracy >= 60 ? '신뢰구간 중간' : '신뢰구간 넓음 (정보 부족)'}
+          </b>
+          {accuracy < 80 && (
+            <span className="text-ink-600 dark:text-slate-400 ml-1">
+              · {accuracy < 60 ? '나이·성별·운동·동반질환을 입력하면' : '본인 체중 추이가 누적되면'} 음영 폭이 좁아져요
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 핵심 인사이트 */}
