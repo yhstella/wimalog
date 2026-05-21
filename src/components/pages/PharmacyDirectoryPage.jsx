@@ -198,6 +198,11 @@ function RegionCard({ region, navigate, medFilter }) {
                   className="font-bold text-lg text-ink-900 dark:text-slate-100 hover:text-brand-600 transition text-left">
             {region.region} →
           </button>
+          {region.landmark && (
+            <div className="text-[11px] text-brand-700 dark:text-brand-400 mt-0.5">
+              📍 {region.landmark}
+            </div>
+          )}
           <div className="text-xs text-ink-500 dark:text-slate-500 mt-0.5">
             {region.pharmacies.length}개 약국
             {hasReports && <> · {region.reportCount}건 제보</>}

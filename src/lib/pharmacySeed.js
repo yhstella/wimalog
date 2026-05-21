@@ -7,79 +7,81 @@ import { REFERENCE_PRICE_4W } from './constants.js';
 // 한국에서 GLP-1을 처방·판매하는 클러스터 — 의원·약국이 한 지역에 모여 가격 경쟁이 일어나는 패턴
 // 대학로·강남·종로 등 핵심 + 지방 광역시
 const PHARMACY_CLUSTERS = [
-  // 서울 대학로 — 다이어트 한약·비만 클리닉 밀집
+  // 서울 대학로 — 다이어트 한약·비만 클리닉 밀집. 한국에서 가장 저렴한 편.
   { id: 'seoul-daehakro', region: '서울 대학로', priceMult: 0.78,
+    landmark: '혜화역·대학로 비만 클리닉 클러스터',
     pharmacies: [
-      { name: '대학로A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 14 },
-      { name: '대학로B약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 9 },
-      { name: '혜화C약국',  medsHandled: ['wegovy', 'mounjaro', 'ozempic'], rep: 7 },
+      { name: '혜화동 비만클리닉 인근 약국 A', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 14 },
+      { name: '대학로 비만클리닉 인근 약국 B', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 9 },
+      { name: '명륜동 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'ozempic'], rep: 7 },
     ] },
-  // 서울 강남 — 강남역·역삼동 라인. 일반적으로 가장 비쌈
   { id: 'seoul-gangnam', region: '서울 강남', priceMult: 1.10,
+    landmark: '강남역·역삼동·논현동 비만 클리닉',
     pharmacies: [
-      { name: '강남역A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 11 },
-      { name: '역삼B약국',   medsHandled: ['wegovy', 'mounjaro'], rep: 8 },
-      { name: '논현C약국',   medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
+      { name: '강남역 비만클리닉 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 11 },
+      { name: '역삼동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 8 },
+      { name: '논현동 비만클리닉 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
     ] },
-  // 서울 종로 — 광화문·종로3가
   { id: 'seoul-jongno', region: '서울 종로', priceMult: 0.85,
+    landmark: '광화문·종로3가 의원 밀집',
     pharmacies: [
-      { name: '종로A약국',   medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
-      { name: '광화문B약국', medsHandled: ['wegovy', 'mounjaro'], rep: 5 },
+      { name: '종로3가 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
+      { name: '광화문 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 5 },
     ] },
-  // 서울 신촌 — 대학가 + 의원 밀집
   { id: 'seoul-sinchon', region: '서울 신촌', priceMult: 0.95,
+    landmark: '신촌·연대 대학가',
     pharmacies: [
-      { name: '신촌A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '연대B약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '신촌역 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '연대 후문 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
-  // 서울 송파
   { id: 'seoul-songpa', region: '서울 송파', priceMult: 1.05,
+    landmark: '잠실역·석촌·문정',
     pharmacies: [
-      { name: '잠실A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '석촌B약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '잠실역 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '석촌역 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
-  // 경기 분당
   { id: 'gyeonggi-bundang', region: '경기 분당', priceMult: 1.00,
+    landmark: '서현·정자·미금',
     pharmacies: [
-      { name: '서현역A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic'], rep: 6 },
-      { name: '정자동B약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '서현역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic'], rep: 6 },
+      { name: '정자동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
-  // 경기 일산
   { id: 'gyeonggi-ilsan', region: '경기 일산', priceMult: 1.00,
+    landmark: '주엽·정발산',
     pharmacies: [
-      { name: '주엽A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
+      { name: '주엽역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
     ] },
-  // 경기 수원
   { id: 'gyeonggi-suwon', region: '경기 수원', priceMult: 0.98,
+    landmark: '수원역·인계동',
     pharmacies: [
-      { name: '수원역A약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '수원역 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
-  // 부산
   { id: 'busan', region: '부산', priceMult: 0.95,
+    landmark: '서면·해운대·동래',
     pharmacies: [
-      { name: '서면A약국',   medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '해운대B약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '서면역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '해운대 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
-  // 대구
   { id: 'daegu', region: '대구', priceMult: 0.95,
+    landmark: '동성로·반월당',
     pharmacies: [
-      { name: '동성로A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
+      { name: '동성로 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
     ] },
-  // 인천
   { id: 'incheon', region: '인천', priceMult: 1.00,
+    landmark: '구월동·부평',
     pharmacies: [
-      { name: '구월동A약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '구월동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
-  // 대전
   { id: 'daejeon', region: '대전', priceMult: 0.95,
+    landmark: '둔산동·유성',
     pharmacies: [
-      { name: '둔산동A약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 3 },
+      { name: '둔산동 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 3 },
     ] },
   // 광주
   { id: 'gwangju', region: '광주', priceMult: 0.95,
+    landmark: '상무지구·충장로',
     pharmacies: [
-      { name: '상무지구A약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '상무지구 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
 ];
 

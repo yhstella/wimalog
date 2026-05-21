@@ -24,7 +24,7 @@ export function pharmaciesByRegion(filter = {}) {
     if (!inRegion.length) {
       // 보고 0건이어도 클러스터는 표시 — 디렉토리 모양 유지
       result.push({
-        region: cluster.region, regionId: cluster.id,
+        region: cluster.region, regionId: cluster.id, landmark: cluster.landmark || null,
         reportCount: 0, pharmacies: cluster.pharmacies.map(p => ({
           name: p.name, reportCount: 0, lastReportAt: null,
           medsHandled: p.medsHandled, avgPrice: null, medianPrice: null,
@@ -54,7 +54,7 @@ export function pharmaciesByRegion(filter = {}) {
     // 보고 많은 순
     pharmacies.sort((a, b) => b.reportCount - a.reportCount);
     result.push({
-      region: cluster.region, regionId: cluster.id,
+      region: cluster.region, regionId: cluster.id, landmark: cluster.landmark || null,
       reportCount: inRegion.length, pharmacies,
     });
   }

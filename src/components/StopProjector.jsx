@@ -21,6 +21,8 @@ export function StopProjector({ user = null, defaultMedication = 'wegovy' }) {
   const [currentWeight, setCurrentWeight] = useState(userCurrentWeight ?? 70);
   const [medication, setMedication] = useState(defaultMedication);
   const [exerciseLevel, setExerciseLevel] = useState('mid'); // low/mid/high
+  const [compareMode, setCompareMode] = useState(false);     // 운동 high vs low 동시 비교
+  const [taperMode, setTaperMode] = useState(false);         // 단계적 중단 (4주 점진 -15% 회복률)
 
   // 감량분
   const lostKg = Math.max(0, startWeight - currentWeight);
@@ -53,25 +55,26 @@ export function StopProjector({ user = null, defaultMedication = 'wegovy' }) {
   // Fallback (RPC 없을 때): 임상 추정값 (24주 35%, 48주 55% — 미지속 / 지속자는 절반 수준)
   const FALLBACK_REGAIN = { 4: 0.08, 8: 0.15, 12: 0.22, 24: 0.35, 36: 0.45, 48: 0.55, 52: 0.58 };
 
-  const exerciseFactor = exerciseLevel === 'high' ? 0.35 : exerciseLevel === 'low' ? 1.20 : 0.75;
+  const exerciseFactorMap = { high: 0.35, mid: 0.75, low: 1.20 };
+  const exerciseFactor = exerciseFactorMap[exerciseLevel];
+  // 단계적 중단(Taper) — 4주 점진 감량 시 회복률 -15% 보정 (식욕 회복 충격 완화)
+  const taperFactor = taperMode ? 0.85 : 1.0;
 
-  const projectionPoints = useMemo(() => {
+  // 단일 시리즈 계산 함수
+  const buildSeries = (exFactor) => {
     const weeks = [0, 4, 8, 12, 24, 36, 48, 52];
     const ciBase = Math.max(0.10, 0.50 - (accuracy / 100) * 0.40);
     return weeks.map(w => {
       if (w === 0) return { week: 0, weight: currentWeight, lower: currentWeight, upper: currentWeight };
-      // 데이터 우선, 임상 추정 fallback
       let baseRatio = null;
       if (reboundData) {
         const r = reboundData.find(x => x.week === w);
         if (r && r.avgRegainRatio != null) baseRatio = r.avgRegainRatio;
       }
       if (baseRatio == null) baseRatio = FALLBACK_REGAIN[w] ?? 0.4;
-      // 운동 수준 적용
-      const ratio = Math.max(0, Math.min(1.2, baseRatio * exerciseFactor));
+      const ratio = Math.max(0, Math.min(1.2, baseRatio * exFactor * taperFactor));
       const gainedKg = lostKg * ratio;
       const mean = currentWeight + gainedKg;
-      // CI 폭 — 시간 누적 + 운동 수준 변동성
       const ci = (ciBase + Math.sqrt(w / 52) * 0.08) * Math.max(2, gainedKg) * 1.2;
       return {
         week: w,
@@ -80,7 +83,15 @@ export function StopProjector({ user = null, defaultMedication = 'wegovy' }) {
         upper: Math.min(startWeight * 1.05, mean + ci),
       };
     });
-  }, [currentWeight, startWeight, lostKg, exerciseFactor, reboundData, accuracy]);
+  };
+
+  const projectionPoints = useMemo(() => buildSeries(exerciseFactor),
+    [currentWeight, startWeight, lostKg, exerciseFactor, taperFactor, reboundData, accuracy]);
+  // 비교 모드: 운동 high + low 두 시리즈
+  const highSeries = useMemo(() => compareMode ? buildSeries(exerciseFactorMap.high) : null,
+    [compareMode, currentWeight, startWeight, lostKg, taperFactor, reboundData, accuracy]);
+  const lowSeries = useMemo(() => compareMode ? buildSeries(exerciseFactorMap.low) : null,
+    [compareMode, currentWeight, startWeight, lostKg, taperFactor, reboundData, accuracy]);
 
   // SVG 좌표
   const W = 600, H = 260;
@@ -177,10 +188,25 @@ export function StopProjector({ user = null, defaultMedication = 'wegovy' }) {
         </div>
       </div>
 
+      {/* 옵션 토글 — 비교 모드 + 단계적 중단 */}
+      <div className="flex gap-3 flex-wrap text-xs">
+        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={compareMode} onChange={e => setCompareMode(e.target.checked)}
+                 className="accent-brand-500" />
+          <span>운동 high vs low 동시 비교</span>
+        </label>
+        <label className="inline-flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" checked={taperMode} onChange={e => setTaperMode(e.target.checked)}
+                 className="accent-brand-500" />
+          <span>단계적 중단 (4주 점진 감량, 회복률 -15%)</span>
+        </label>
+      </div>
+
       {/* 요약 한 줄 */}
       <div className="rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200/40 dark:border-amber-800/30 px-3 py-2.5 text-sm leading-relaxed">
         지금 끊으면 — <b>24주 후 <span className="tabular-nums">{at24?.weight.toFixed(1) ?? '?'} kg</span></b> (+{regain24Kg.toFixed(1)} kg),
         <b className="ml-1">1년 후 <span className="tabular-nums">{at52?.weight.toFixed(1) ?? '?'} kg</span></b> (감량분 <b className="text-amber-700 dark:text-amber-400">{keptPct52}%</b> 유지)
+        {taperMode && <span className="text-emerald-700 dark:text-emerald-400 ml-1">· 단계적 중단으로 -15% 보정 적용</span>}
       </div>
 
       {/* SVG 그래프 */}
@@ -213,20 +239,56 @@ export function StopProjector({ user = null, defaultMedication = 'wegovy' }) {
         <text x={PAD.left + 3} y={yToPx(currentWeight) - 4}
               fontSize="9" fill="#059669">현재(중단 시점) {currentWeight.toFixed(1)} kg</text>
 
-        {/* CI band */}
-        <path d={bandPathFrom(projectionPoints)} fill="#F43F5E" fillOpacity="0.13" stroke="none" />
-        {/* 회복 곡선 — dashed rose */}
-        <path d={pathFrom(projectionPoints)} fill="none"
-              stroke="#F43F5E" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
-        {projectionPoints.map((p, i) => (
-          <circle key={'p'+i} cx={xToPx(p.week)} cy={yToPx(p.weight)} r="3" fill="#F43F5E" />
-        ))}
-        {/* 1년 라벨 */}
-        {at52 && (
-          <text x={xToPx(52)} y={yToPx(at52.weight) - 8}
-                fontSize="11" textAnchor="end" fill="#F43F5E" fontWeight="bold">
-            +{regain52Kg.toFixed(1)} kg
-          </text>
+        {compareMode ? (
+          <>
+            {/* 운동 low (회복 빨라짐) — rose 진하게 */}
+            <path d={bandPathFrom(lowSeries)} fill="#F43F5E" fillOpacity="0.08" stroke="none" />
+            <path d={pathFrom(lowSeries)} fill="none"
+                  stroke="#F43F5E" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
+            {lowSeries.map((p, i) => (
+              <circle key={'l'+i} cx={xToPx(p.week)} cy={yToPx(p.weight)} r="2.5" fill="#F43F5E" />
+            ))}
+            {/* 운동 high (회복 적음) — emerald */}
+            <path d={bandPathFrom(highSeries)} fill="#10B981" fillOpacity="0.08" stroke="none" />
+            <path d={pathFrom(highSeries)} fill="none"
+                  stroke="#10B981" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
+            {highSeries.map((p, i) => (
+              <circle key={'h'+i} cx={xToPx(p.week)} cy={yToPx(p.weight)} r="2.5" fill="#10B981" />
+            ))}
+            {/* 1년 라벨 */}
+            {(() => {
+              const lowLast = lowSeries[lowSeries.length - 1];
+              const highLast = highSeries[highSeries.length - 1];
+              return (
+                <>
+                  <text x={xToPx(52)} y={yToPx(lowLast.weight) - 6} fontSize="10" textAnchor="end" fill="#F43F5E" fontWeight="bold">
+                    운동 ✗ +{(lowLast.weight - currentWeight).toFixed(1)}kg
+                  </text>
+                  <text x={xToPx(52)} y={yToPx(highLast.weight) - 6} fontSize="10" textAnchor="end" fill="#059669" fontWeight="bold">
+                    운동 ✓ +{(highLast.weight - currentWeight).toFixed(1)}kg
+                  </text>
+                </>
+              );
+            })()}
+          </>
+        ) : (
+          <>
+            {/* CI band */}
+            <path d={bandPathFrom(projectionPoints)} fill="#F43F5E" fillOpacity="0.13" stroke="none" />
+            {/* 회복 곡선 — dashed rose */}
+            <path d={pathFrom(projectionPoints)} fill="none"
+                  stroke="#F43F5E" strokeWidth="2.5" strokeDasharray="5 4" strokeLinecap="round" strokeLinejoin="round" />
+            {projectionPoints.map((p, i) => (
+              <circle key={'p'+i} cx={xToPx(p.week)} cy={yToPx(p.weight)} r="3" fill="#F43F5E" />
+            ))}
+            {/* 1년 라벨 */}
+            {at52 && (
+              <text x={xToPx(52)} y={yToPx(at52.weight) - 8}
+                    fontSize="11" textAnchor="end" fill="#F43F5E" fontWeight="bold">
+                +{regain52Kg.toFixed(1)} kg
+              </text>
+            )}
+          </>
         )}
       </svg>
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Storage, uid } from '../lib/storage.js';
 import {
   SIDE_EFFECTS, EXERCISE_TYPES, EXERCISE_BY_ID, MEAL_TYPES, MEAL_BY_ID,
@@ -605,11 +605,22 @@ function FirstDoseForm({ user, medId, onCancel, onSaved, navigate }) {
 function ExerciseTab({ user, version, refresh }) {
   const toast = useToast();
   const allEx = useMemo(() => Storage.getExercisesByUser(user.id), [user.id, version]);
+  // 자동완성 — 마지막 운동의 type/duration/intensity로 prefill
+  const lastEx = allEx[allEx.length - 1];
   const [date, setDate] = useState(todayISO());
-  const [type, setType] = useState('walking');
-  const [durationMin, setDurationMin] = useState(30);
-  const [intensity, setIntensity] = useState(3);
+  const [type, setType] = useState(lastEx?.type || 'walking');
+  const [durationMin, setDurationMin] = useState(lastEx?.durationMin || 30);
+  const [intensity, setIntensity] = useState(lastEx?.intensity || 3);
   const [notes, setNotes] = useState('');
+  // type 변경 시 같은 type의 마지막 기록으로 duration/intensity 자동 갱신
+  useEffect(() => {
+    const sameType = allEx.filter(e => e.type === type);
+    const last = sameType[sameType.length - 1];
+    if (last) {
+      setDurationMin(last.durationMin);
+      setIntensity(last.intensity);
+    }
+  }, [type]);
 
   // 사용자 체중 — 최신 log 우선, 없으면 startWeight
   const allLogs = useMemo(() => Storage.getLogsByUser(user.id), [user.id, version]);
@@ -811,12 +822,23 @@ function DietTab({ user, version, refresh }) {
     : daysSinceLastDose <= 6 ? `🕓 투약 중간 (${daysSinceLastDose}일째)`
     : `🌿 다음 투약 직전 (${daysSinceLastDose}일째)`;
 
+  // 자동완성 — 같은 mealType의 마지막 식단으로 pattern·proteinG·estCalories prefill
+  const lastDiet = allDiets[allDiets.length - 1];
   const [date, setDate] = useState(todayISO());
-  const [mealType, setMealType] = useState('lunch');
+  const [mealType, setMealType] = useState(lastDiet?.mealType || 'lunch');
   const [description, setDescription] = useState('');
   const [proteinG, setProteinG] = useState('');
   const [estCalories, setEstCalories] = useState('');
-  const [pattern, setPattern] = useState('');
+  const [pattern, setPattern] = useState(lastDiet?.pattern || '');
+  // mealType 바꿀 때 같은 mealType의 마지막 pattern prefill (단, 사용자가 메뉴를 입력하지 않았을 때만)
+  useEffect(() => {
+    if (description.trim()) return;
+    const sameMeal = allDiets.filter(d => d.mealType === mealType);
+    const last = sameMeal[sameMeal.length - 1];
+    if (last) {
+      setPattern(last.pattern || '');
+    }
+  }, [mealType]);
 
   const submit = () => {
     if (!description.trim()) return;

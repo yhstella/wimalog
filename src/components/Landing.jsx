@@ -49,6 +49,20 @@ export function Landing({ navigate, onSignup, user }) {
         </p>
       </section>
 
+      {/* BMI 자격 + 실사용 패턴 안내 — 첫 진입자 "내가 자격되나" 즉답 */}
+      <section className="rounded-xl bg-gradient-to-br from-amber-50 to-brand-50 dark:from-amber-900/15 dark:to-brand-900/15 border border-amber-200/60 dark:border-amber-800/30 p-3 sm:p-4">
+        <div className="flex items-start gap-2.5">
+          <span className="text-xl flex-shrink-0">💉</span>
+          <div className="flex-1 min-w-0 text-sm text-ink-800 dark:text-slate-200 leading-relaxed">
+            <b>국내 비만 적응증: BMI 27 + 동반질환 또는 BMI 30 이상.</b>
+            <span className="text-ink-600 dark:text-slate-400">
+              {' '}다만 한국에서는 BMI 23-27 미용 목적 사용자도 많으며, 격주·저용량·간헐 사용 등 패턴이 다양합니다.
+              본인 의사와 상의해 결정하세요.
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* 최근 본 페이지 (재방문자) */}
       <RecentPagesRow navigate={navigate} />
 
