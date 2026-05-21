@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v11';  // bumped 2026-05-21: 실사용자 데이터 톤 원복 + 베타 제거 + Dashboard cohort snapshot fallback
+const VERSION = 'v12';  // bumped 2026-05-21: WeightChartInline 약별 color + 주사기 + 우드래그 누적 증감
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
