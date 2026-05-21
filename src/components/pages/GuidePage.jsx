@@ -51,9 +51,14 @@ export function GuidePage({ guideId, navigate, onSignup, user }) {
       {/* CTA — 로그인 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-6 text-center">
         <p className="text-base font-semibold leading-relaxed">{guide.cta}</p>
+        {!user && (
+          <p className="mt-2 text-brand-50 text-xs">
+            이미 <b className="text-white">8,600명+</b> 한국 사용자 데이터 보유
+          </p>
+        )}
         <button onClick={handleSignup}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-white text-brand-700 px-6 py-3 font-bold hover:bg-brand-50 transition">
-          {user ? '내 대시보드 →' : '1분 가입하고 데이터 보기 →'}
+          {user ? '내 대시보드 →' : '🔮 내 예상 감량 보기 →'}
         </button>
       </section>
 

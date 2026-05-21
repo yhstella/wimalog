@@ -157,14 +157,14 @@ export function CompareDrugsPage({ navigate, user }) {
         <h2 className="text-xl font-bold">
           {user ? '본인 약 등록하고 비교 시작' : '고민 중인 약을 알려주세요'}
         </h2>
-        <p className="mt-2 text-brand-50 text-sm">
+        <p className="mt-2 text-brand-50 text-sm leading-relaxed">
           {user
             ? '약 탭에서 본인이 사용하는 약을 등록하면 비슷한 사용자 데이터와 자동 비교.'
-            : '1분 가입 후 약 시작 시 비슷한 사용자 데이터와 본인 진척도가 자동 비교됩니다.'}
+            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자 데이터 보유 — 내 조건 입력하면 비슷한 사용자의 약별 감량 곡선이 바로 나옵니다.</>}
         </p>
         <button onClick={() => user ? navigate('meds') : setShowSignup(true)}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-white text-brand-700 px-6 py-3 font-bold hover:bg-brand-50 transition">
-          {user ? '약 관리로 →' : '1분 가입 →'}
+          {user ? '약 관리로 →' : '🔮 내 예상 감량 보기 →'}
         </button>
       </section>
 
