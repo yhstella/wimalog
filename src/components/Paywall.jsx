@@ -244,9 +244,11 @@ export function QuickSignupModal({ onClose, onComplete }) {
                 { id: 'planning',   icon: '🤔', label: '곧 시작 예정' },
                 { id: 'stopped',    icon: '⏸️', label: '중단 고려 중' },
                 { id: 'sideeffect', icon: '⚠️', label: '부작용 경험' },
-              ].map(o => (
+                { id: 'curious',    icon: '🔍', label: '그냥 알아보는 중' },
+              ].map((o, i, arr) => (
                 <button key={o.id} type="button" onClick={() => set('visitPurpose', o.id)}
                         className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition text-left
+                                    ${i === arr.length - 1 ? 'col-span-2' : ''}
                                     ${data.visitPurpose === o.id
                                       ? 'bg-brand-500 text-white border-brand-500'
                                       : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>

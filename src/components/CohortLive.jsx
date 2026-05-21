@@ -6,13 +6,44 @@ import { MED_BY_ID } from '../lib/constants.js';
 import {
   fetchPlatformScale, fetchAvgLossCurve, fetchTopRecentMedications, fetchExerciseStats,
 } from '../lib/supabaseStats.js';
+import {
+  snapshotPlatformScale, snapshotAvgLossCurve, snapshotTopRecentMedications, SNAPSHOT_AT,
+} from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 
-// "지금 위마로그 코호트" — Supabase 3000명+ 실제 데이터를 우선 표시
-// Supabase 미설정/연결 실패 시 localStorage 시드(1031명)로 자동 fallback
+// 빌드 타임 스냅샷 → mount 즉시 표시 → background에서 Supabase RPC로 fresh 갱신
+function initialFromSnapshot() {
+  const scale = snapshotPlatformScale();
+  if (!scale) return null;
+  const curve12 = snapshotAvgLossCurve(null, [12]);
+  const curve24 = snapshotAvgLossCurve(null, [24]);
+  const topMeds = snapshotTopRecentMedications();
+  return {
+    trend: {
+      totalUsers: scale.totalPatients,
+      activeUsers7d: scale.activeUsers7d,
+      newUsers7d: scale.newPatients7d,
+      logs7d: scale.totalWeightLogs,
+      doses7d: scale.totalDoses,
+      topMedsNow: topMeds || [],
+    },
+    curve12: curve12 || [],
+    curve24: curve24 || [],
+    // 운동 통계 — 스냅샷에 없으면 임상 추정 (한국 GLP-1 사용자 ~72분/주)
+    ex: { n: scale.totalPatients, avgMinPerWeek: 72, withExercise: null, isEstimate: true },
+    notes: anonymousNotes({}, 2),
+    isSupabase: false,
+    isSnapshot: true,
+  };
+}
+
+// "지금 위마로그 코호트" — 빌드 타임 스냅샷 즉시 → background RPC 갱신
+// 스냅샷 없을 때만 localStorage 시드로 fallback
 export function CohortLive({ navigate, onSignup, user = null }) {
-  const [data, setData] = useState(null);
-  const [source, setSource] = useState('seed'); // 'supabase' | 'seed'
+  // 첫 paint를 막지 않기 위해 snapshot으로 동기 초기화 → null/'—' 깜빡임 제거
+  const [data, setData] = useState(() => initialFromSnapshot());
+  const [source, setSource] = useState(() => snapshotPlatformScale() ? 'snapshot' : 'seed');
+  const [refreshing, setRefreshing] = useState(false);
 
   const refreshFromSeed = () => {
     const trend = recentTrend();
@@ -32,15 +63,18 @@ export function CohortLive({ navigate, onSignup, user = null }) {
   };
 
   const refreshFromSupabase = async () => {
+    setRefreshing(true);
     try {
+      // RPC 5개 동시 — 8초 statement_timeout가 자주 걸리는 RPC가 있어 individual catch
+      const safe = (p) => p.catch(() => null);
       const [scale, curve12, curve24, topMeds, exStat] = await Promise.all([
-        fetchPlatformScale(),
-        fetchAvgLossCurve({}, [12]),
-        fetchAvgLossCurve({}, [24]),
-        fetchTopRecentMedications(30),
-        fetchExerciseStats(30),   // 새 RPC — 없을 수도 있어 fallback 처리
+        safe(fetchPlatformScale()),
+        safe(fetchAvgLossCurve({}, [12])),
+        safe(fetchAvgLossCurve({}, [24])),
+        safe(fetchTopRecentMedications(30)),
+        safe(fetchExerciseStats(30)),
       ]);
-      if (!scale) return false;
+      if (!scale) { setRefreshing(false); return false; }
       // notes는 supabase에 따로 RPC 없음 → localStorage 메모 사용
       const notes = anonymousNotes({}, 2);
       // 운동 통계 — 3중 fallback: Supabase RPC → localStorage 시드 → 임상 추정값
@@ -72,29 +106,33 @@ export function CohortLive({ navigate, onSignup, user = null }) {
         scale,
       });
       setSource('supabase');
+      setRefreshing(false);
       return true;
     } catch (e) {
       console.warn('[CohortLive] supabase fetch failed', e);
+      setRefreshing(false);
       return false;
     }
   };
 
   useEffect(() => {
-    // 1. localStorage 시드 즉시 표시 (offline OK)
-    if (!Storage.isSeeded()) {
-      try { seedIfNeeded(); } catch {}
+    // 1. 스냅샷이 있으면 그대로 사용 (이미 useState init에서 세팅됨). 없으면 시드.
+    if (!snapshotPlatformScale()) {
+      if (!Storage.isSeeded()) {
+        try { seedIfNeeded(); } catch {}
+      }
+      refreshFromSeed();
+      if (!Storage.isSeeded()) {
+        const id = setInterval(() => {
+          if (Storage.isSeeded()) { refreshFromSeed(); clearInterval(id); }
+        }, 200);
+        setTimeout(() => clearInterval(id), 5000);
+      }
     }
-    refreshFromSeed();
-    // 시드 진행 중이면 backup polling
-    if (!Storage.isSeeded()) {
-      const id = setInterval(() => {
-        if (Storage.isSeeded()) { refreshFromSeed(); clearInterval(id); }
-      }, 200);
-      setTimeout(() => clearInterval(id), 5000);
-    }
-    // 2. Supabase 통계 시도 — 성공 시 위 데이터 교체
+    // 2. Supabase fresh fetch — idle 시점에 (첫 paint 방해 안 하도록)
     if (supabaseConfigured) {
-      refreshFromSupabase();
+      const ric = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+      ric(() => { refreshFromSupabase(); });
     }
   }, []);
 
@@ -122,8 +160,12 @@ export function CohortLive({ navigate, onSignup, user = null }) {
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <h2 className="font-bold text-ink-900 dark:text-slate-100">지금 위마로그 코호트</h2>
-          <span className="text-[10px] text-ink-500 dark:text-slate-500">
-            {source === 'supabase' ? '실시간 DB 집계' : '실시간 익명 집계'}
+          <span className="text-[10px] text-ink-500 dark:text-slate-500 inline-flex items-center gap-1">
+            {source === 'supabase' ? '실시간 DB 집계' : source === 'snapshot' ? '최근 스냅샷' : '익명 집계'}
+            {refreshing && (
+              <span title="최신 데이터 가져오는 중" aria-label="새로고침 중"
+                    className="inline-block w-3 h-3 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+            )}
           </span>
         </div>
         <button onClick={() => navigate('stats')} className="text-xs text-brand-700 dark:text-brand-400 font-semibold hover:underline">

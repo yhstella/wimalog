@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "node scripts/build-snapshot.mjs && vite build",
+    "build:novite": "vite build",
     "preview": "vite preview --host",
+    "snapshot": "node scripts/build-snapshot.mjs",
     "seed:supabase": "node scripts/seed-supabase.js",
     "export:supabase": "node scripts/export-supabase.js"
   },

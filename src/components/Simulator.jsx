@@ -3,6 +3,7 @@ import { simulateTimeline, medQuickProfile, bmi, bmiCategory, USAGE_FREQUENCIES,
 import { Storage } from '../lib/storage.js';
 import { MEDS, MED_BY_ID } from '../lib/constants.js';
 import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
+import { snapshotAvgLossCurve, snapshotPlatformScale } from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { ProjectionChart } from './ProjectionChart.jsx';
 
@@ -48,13 +49,41 @@ export function Simulator({ onSignup, compact = false, user = null }) {
     () => simulateTimeline({ height, startWeight, medication, frequency }),
     [height, startWeight, medication, frequency, seedTick]
   );
-  // Supabase 8000+명 풀데이터 기반 — 우선 사용. 결과 도착 시 localTimeline 덮어씀.
+  // 1) 빌드 타임 스냅샷 — 즉시 노출 (BMI 필터 없는 약 전체 곡선) → 0ms 첫 paint
+  const snapshotTimeline = useMemo(() => {
+    const rows = snapshotAvgLossCurve(medication, [12, 24, 48]);
+    if (!rows) return null;
+    const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
+    const bmiFactor = myBmi ? bmiResponseFactor(myBmi) : 1.0;
+    const adjust = freqFactor * bmiFactor;
+    let prev = 0;
+    const series = [12, 24, 48].map(w => {
+      const r = rows.find(x => x.week === w);
+      if (!r || r.avg == null) return { week: w, lossPct: null, lossKg: null, n: 0 };
+      const lossPct = Math.max(r.avg * adjust, prev * 0.98);
+      prev = lossPct;
+      return { week: w, lossPct, lossKg: startWeight * lossPct / 100, n: r.n };
+    });
+    return { series };
+  }, [medication, frequency, myBmi, startWeight]);
+
+  // 2) Supabase fresh 데이터 — BMI ±4 좁은 코호트로 refine. 사용자 입력 시 갱신.
   const [supaTimeline, setSupaTimeline] = useState(null);
+  const [supaRefreshing, setSupaRefreshing] = useState(false);
   useEffect(() => {
     if (!supabaseConfigured || !myBmi) return;
     let cancelled = false;
+    setSupaRefreshing(true);
     const filter = { medication, bmiRange: [Math.max(15, myBmi - 4), Math.min(50, myBmi + 4)] };
     fetchAvgLossCurve(filter, [12, 24, 48]).then(rows => {
+      if (cancelled) return;
+      setSupaRefreshing(false);
+      if (!rows) return;
+      // 아래 본문은 기존 그대로
+      handleRows(rows);
+    }).catch(() => { if (!cancelled) setSupaRefreshing(false); });
+
+    function handleRows(rows) {
       if (cancelled || !rows) return;
       // BMI/빈도 보정 후처리 (localStorage simulateTimeline 로직과 동일)
       const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
@@ -85,10 +114,11 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       } else {
         setSupaTimeline({ series });
       }
-    });
+    }
     return () => { cancelled = true; };
   }, [medication, frequency, myBmi, startWeight]);
-  const timeline = supaTimeline || localTimeline;
+  // 우선순위: Supabase fresh > 스냅샷 > localStorage 시드. 모두 즉시 사용 가능.
+  const timeline = supaTimeline || snapshotTimeline || localTimeline;
   const profile = useMemo(() => medQuickProfile(medication, frequency), [medication, frequency, seedTick]);
 
   const medLabel = MED_BY_ID[medication]?.label.replace(/\s*\(.+\)/, '') || '';
@@ -102,11 +132,22 @@ export function Simulator({ onSignup, compact = false, user = null }) {
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
           🤖 AI 예측
         </span>
+        {supaRefreshing && (
+          <span title="입력값에 맞춰 최신 데이터 가져오는 중"
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur text-[10px]">
+            <span className="inline-block w-2.5 h-2.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            계산 중…
+          </span>
+        )}
       </div>
       <div className="text-xs text-brand-50 mb-4 opacity-90 leading-relaxed">
-        {compact
-          ? 'AI가 11,000명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측 — 가입 없이 가능'
-          : 'AI가 11,000명+ 익명 코호트에서 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다'}
+        {(() => {
+          const scale = snapshotPlatformScale();
+          const n = scale ? scale.totalPatients.toLocaleString() : '11,000';
+          return compact
+            ? `AI가 ${n}명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측 — 가입 없이 가능`
+            : `AI가 ${n}명+ 익명 코호트에서 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다`;
+        })()}
       </div>
 
       <div className="space-y-3">
