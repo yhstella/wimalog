@@ -33,19 +33,18 @@ export function Landing({ navigate, onSignup, user }) {
 
   return (
     <div className="space-y-8 sm:space-y-10">
-      {/* Hero — 차별화 명시 (단순 tracker가 아닌 리얼데이터 비교 플랫폼) */}
-      <section className="text-center pt-4 sm:pt-8">
-        <div className="inline-flex items-center gap-2 chip-brand mb-3">
+      {/* Hero — TOSS 톤: 큰 숫자 + 짧은 메시지 + 단일 액션 */}
+      <section className="text-center pt-2 sm:pt-6">
+        <div className="inline-flex items-center gap-1.5 chip-brand mb-4">
           <span>🇰🇷</span>
-          <span>위고비·마운자로 한국 사용자 리얼데이터 · 베타</span>
+          <span>한국 GLP-1 리얼데이터 · 베타</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-extrabold text-ink-900 dark:text-slate-100 leading-tight">
+        <h1 className="text-3xl sm:text-5xl font-extrabold text-ink-900 dark:text-slate-100 leading-[1.15] tracking-tight">
           위고비·마운자로,<br />
-          <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은 얼마나 빠졌을까?
+          <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은<br className="sm:hidden" /> 얼마나 빠졌을까?
         </h1>
-        <p className="mt-3 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          한국 사용자 익명 코호트 비교 + 본인 맞춤 감량·부작용·중단 후 회복 곡선 예측.
-          <button onClick={() => navigate('about')} className="ml-1 text-brand-700 dark:text-brand-400 underline text-xs">데이터 출처 →</button>
+        <p className="mt-4 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+          본인 키·체중·약을 입력하면 비슷한 사용자의 1년 감량 곡선이 바로 나와요.
         </p>
       </section>
 

@@ -172,9 +172,6 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <span className="text-xl">🔮</span>
         <div className="font-bold text-lg">내가 쓰면 어떻게 될까?</div>
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
-          🤖 AI 예측
-        </span>
         {supaRefreshing && (
           <span title="입력값에 맞춰 최신 데이터 가져오는 중"
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur text-[10px]">
@@ -419,7 +416,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           <div className="rounded-xl bg-white/15 backdrop-blur p-4 text-center">
             <div className="inline-flex items-center gap-2 text-sm opacity-90">
               <span className="inline-block w-3 h-3 rounded-full bg-white/60 animate-pulse" />
-              데이터 준비 중…
+              데이터 분석 중…
             </div>
           </div>
         )}
@@ -443,7 +440,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
                   </div>
                 </>
               ) : (
-                <div className="text-xs opacity-60">데이터 준비 중</div>
+                <div className="text-xs opacity-60">데이터 분석 중</div>
               )}
             </div>
             {/* 주요 부작용 — 상위 2개만 */}
@@ -458,7 +455,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
                   ))}
                 </div>
               ) : (
-                <div className="text-xs opacity-60">데이터 준비 중</div>
+                <div className="text-xs opacity-60">데이터 분석 중</div>
               )}
             </div>
           </div>

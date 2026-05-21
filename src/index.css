@@ -63,14 +63,15 @@ button, [role="button"], input[type="button"], input[type="submit"], a {
   .card {
     @apply bg-white dark:bg-slate-900 rounded-2xl shadow-card p-5 transition-colors;
   }
+  /* TOSS 톤: 큰 터치 영역 (min-h-44px), 명확한 active feedback (scale-[.97]), 그림자 부드럽게 */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 text-white font-semibold shadow-sm hover:bg-brand-600 active:scale-[.99] transition disabled:bg-ink-300 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 min-h-[44px] text-white font-semibold shadow-sm hover:bg-brand-600 hover:shadow-md active:scale-[.97] active:shadow-sm transition disabled:bg-ink-300 disabled:cursor-not-allowed;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-ink-300 dark:border-slate-700 px-5 py-3 text-ink-700 dark:text-slate-200 font-medium hover:bg-ink-100 dark:hover:bg-slate-700 transition;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-slate-800 border border-ink-300 dark:border-slate-700 px-5 py-3 min-h-[44px] text-ink-700 dark:text-slate-200 font-medium hover:bg-ink-100 dark:hover:bg-slate-700 active:scale-[.97] transition;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 text-ink-500 dark:text-slate-400 hover:text-ink-900 dark:hover:text-slate-100 hover:bg-ink-100 dark:hover:bg-slate-800 transition;
+    @apply inline-flex items-center justify-center gap-1 rounded-lg px-3 py-2 min-h-[36px] text-ink-500 dark:text-slate-400 hover:text-ink-900 dark:hover:text-slate-100 hover:bg-ink-100 dark:hover:bg-slate-800 active:scale-[.97] transition;
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full bg-ink-100 dark:bg-slate-800 px-2.5 py-1 text-xs font-medium text-ink-700 dark:text-slate-200;
@@ -79,7 +80,7 @@ button, [role="button"], input[type="button"], input[type="submit"], a {
     @apply inline-flex items-center gap-1 rounded-full bg-brand-100 dark:bg-brand-900/40 px-2.5 py-1 text-xs font-medium text-brand-700 dark:text-brand-300;
   }
   .input {
-    @apply w-full rounded-xl border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-ink-900 dark:text-slate-100 placeholder:text-ink-500 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition;
+    @apply w-full rounded-xl border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 min-h-[44px] text-ink-900 dark:text-slate-100 placeholder:text-ink-500 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition;
   }
   .label {
     @apply block text-sm font-semibold text-ink-700 dark:text-slate-300 mb-1.5;

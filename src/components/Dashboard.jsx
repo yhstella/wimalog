@@ -239,39 +239,49 @@ export function Dashboard({ user, navigate }) {
         )}
       </div>
 
-      {/* 입력 보상 — 자세히 입력할수록 더 많은 데이터 잠금 해제 */}
-      <InputProgressCard user={user} navigate={navigate} />
+      {/* 신규 사용자(14일 미만)만 — 입력 보상 + Notification 노이즈 줄임 */}
+      {(() => {
+        const ageDays = user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000) : 0;
+        if (ageDays >= 14) return null;
+        return (
+          <>
+            <InputProgressCard user={user} navigate={navigate} />
+            <NotificationBanner user={user} />
+          </>
+        );
+      })()}
 
-      {/* 건강지표 입력 시 자동 unlock되는 본인 vs 표준 비교 카드 */}
+      {/* 건강지표 입력 시 자동 unlock — 항상 노출 (건강지표 입력자에만 보임) */}
       <UnlockedInsights user={user} />
 
-      {/* Notification banner (한 번만) */}
-      <NotificationBanner user={user} />
-
-      {/* 요약 카드 */}
+      {/* 요약 카드 — TOSS 톤: 1 큰 hero + 3 보조 */}
       {summary ? (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryCard
-            label={current ? '현재 약 누적 감량' : '시작 대비 감량'}
-            value={`${summary.lossKg >= 0 ? '-' : '+'}${Math.abs(summary.lossKg).toFixed(1)} kg`}
-            sub={`${Math.abs(summary.lossPct).toFixed(1)}%`}
-            highlight={summary.lossKg > 0}
-          />
-          <SummaryCard
-            label="현재 BMI"
-            value={summary.curBmi?.toFixed(1) ?? '—'}
-            sub={summary.curBmi ? bmiCategory(summary.curBmi) : ''}
-          />
-          <SummaryCard
-            label="목표까지"
-            value={summary.targetRemaining > 0 ? `${summary.targetRemaining.toFixed(1)} kg` : '도달 🎉'}
-            sub={`목표 ${user.targetWeight} kg`}
-          />
-          <SummaryCard
-            label="기록"
-            value={`${logs.length}회`}
-            sub={`${summary.weeks}주차`}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Hero 카드 — 누적 감량 */}
+          <div className="sm:col-span-3 card !p-5 sm:!p-6 border-2 border-brand-200 dark:border-brand-800/40 bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/15 dark:to-slate-900">
+            <div className="text-xs text-ink-500 dark:text-slate-400 font-medium">
+              {current ? '현재 약 누적 감량' : '시작 대비 감량'}
+            </div>
+            <div className="mt-2 flex items-baseline gap-3 flex-wrap">
+              <div className={`text-5xl sm:text-6xl font-extrabold tabular-nums tracking-tight ${summary.lossKg > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {summary.lossKg > 0 ? '−' : '+'}{Math.abs(summary.lossKg).toFixed(1)}
+                <span className="text-2xl ml-1">kg</span>
+              </div>
+              <div className="text-base text-ink-500 dark:text-slate-400 tabular-nums">
+                ({Math.abs(summary.lossPct).toFixed(1)}%)
+              </div>
+            </div>
+          </div>
+          {/* 보조 3개 */}
+          <SummaryCard label="현재 BMI"
+                       value={summary.curBmi?.toFixed(1) ?? '—'}
+                       sub={summary.curBmi ? bmiCategory(summary.curBmi) : ''} />
+          <SummaryCard label="목표까지"
+                       value={summary.targetRemaining > 0 ? `${summary.targetRemaining.toFixed(1)} kg` : '도달 🎉'}
+                       sub={`목표 ${user.targetWeight} kg`} />
+          <SummaryCard label="기록 누적"
+                       value={`${logs.length}회`}
+                       sub={`${summary.weeks}주차`} />
         </div>
       ) : (
         <div className="card text-center py-10">

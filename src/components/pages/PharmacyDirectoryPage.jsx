@@ -421,8 +421,9 @@ export function PharmacyReportModal({ onClose, onComplete, defaultRegion = null,
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink-900/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink-900/60 backdrop-blur-sm p-0 sm:p-4 animate-fadeIn"
+         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
         <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-ink-100 dark:border-slate-800 px-5 py-3 flex justify-between items-center">
           <div>
             <div className="font-bold text-ink-900 dark:text-slate-100">약국 가격 제보</div>
@@ -439,10 +440,10 @@ export function PharmacyReportModal({ onClose, onComplete, defaultRegion = null,
             </select>
           </div>
           <div>
-            <div className="label">약국명 <span className="text-[10px] text-ink-500 font-normal">(예: 대학로A약국)</span></div>
+            <div className="label">약국명 <span className="text-[10px] text-ink-500 font-normal">— 다른 사용자에게도 표시됩니다</span></div>
             <input type="text" className="input" value={form.pharmacyName}
                    onChange={e => set('pharmacyName', e.target.value)}
-                   placeholder="약국 상호 또는 약사·위치 식별 키워드" maxLength={30} />
+                   placeholder="예: 혜화동 비만클리닉 인근 약국 A" maxLength={30} />
           </div>
           <div>
             <div className="label">약</div>
@@ -479,12 +480,10 @@ export function PharmacyReportModal({ onClose, onComplete, defaultRegion = null,
               💉 펜·박스 1개 가격을 입력해주세요 (회당·일당 X)
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="label">구매일</div>
-              <input type="date" className="input" value={form.purchaseDate}
-                     onChange={e => set('purchaseDate', e.target.value)} />
-            </div>
+          <div>
+            <div className="label">구매일</div>
+            <input type="date" className="input" value={form.purchaseDate}
+                   onChange={e => set('purchaseDate', e.target.value)} />
           </div>
           <div>
             <div className="label">메모 <span className="text-[10px] text-ink-500 font-normal">(선택)</span></div>

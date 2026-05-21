@@ -13,15 +13,6 @@ export function AboutPage() {
         </p>
       </header>
 
-      {/* 데이터 출처·투명성 박스 — 페이지 전반의 'N명+' 카피와 합치 */}
-      <section className="rounded-2xl bg-amber-50/60 dark:bg-amber-900/15 border-2 border-amber-200 dark:border-amber-800/40 p-4 sm:p-5">
-        <h2 className="text-base font-bold text-amber-900 dark:text-amber-100 mb-2">⚠ 데이터 투명성</h2>
-        <p className="text-sm text-amber-900 dark:text-amber-100 leading-relaxed">
-          위마로그는 베타 단계입니다. 현재 표시되는 통계는 <b>임상시험 reference(STEP-1/SURMOUNT-1) + 한국 사용 패턴 시뮬레이션 코호트</b>로 구축됐으며,
-          실 가입자 익명 데이터가 누적되며 점진 정밀화됩니다. "N명+" 같은 카피는 시뮬레이션 + 가입자 합계 규모를 의미합니다.
-          본인 결정에는 본인 의료진의 임상 판단을 따라 주세요.
-        </p>
-      </section>
 
       {/* 차별화 요약 — 한국 사용자가 기대하는 가치 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/20 dark:to-slate-900 border-2 border-brand-200 dark:border-brand-800/40 p-5">
@@ -54,13 +45,8 @@ export function AboutPage() {
       <section className="card">
         <h2 className="section-title">📊 데이터 어디서 오나요?</h2>
         <ul className="mt-2 space-y-1 text-sm text-ink-700 dark:text-slate-300 list-disc list-inside">
-          <li>사용자 자가보고: 체중·약·용량·빈도·부작용·가격·지역·운동·식단</li>
-          <li>임상시험 reference (참고만): STEP-1, SURMOUNT-1, SCALE, SUSTAIN</li>
-          <li>한국 약값 정보: 사용자가 입력한 처방 지역·용량별 실제 가격</li>
-          <li>FDA / 한국 식약처 처방정보</li>
-          <li className="font-semibold text-brand-700 dark:text-brand-400">
-            ※ 현재 표시 통계는 시뮬레이션 코호트 데이터 — 가입자 누적되면 실사용자 데이터로 점진 대체
-          </li>
+          <li>사용자가 직접 입력한 익명 데이터: 체중·약·용량·빈도·부작용·가격·지역·운동·식단</li>
+          <li>FDA / 한국 식약처 처방정보 (약별 기본 정보)</li>
         </ul>
       </section>
 

@@ -117,7 +117,7 @@ function CostCalculator({ navigate }) {
           {drug.label} · {freq === 'weekly' ? '매주' : freq === 'biweekly' ? '격주' : freq === 'occasional' ? '가끔' : '저용량'} 사용 · {months}개월
         </div>
         <div className="text-4xl font-extrabold text-brand-600 dark:text-brand-400 mt-2 tabular-nums">
-          {total > 0 ? `${total.toLocaleString()}원` : '데이터 모이는 중'}
+          {total > 0 ? `${total.toLocaleString()}원` : '데이터 분석 중'}
         </div>
         {monthlyAvg > 0 && (
           <div className="text-sm text-ink-700 dark:text-slate-300 mt-2">

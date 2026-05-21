@@ -159,9 +159,9 @@ export function CohortLive({ navigate, onSignup, user = null }) {
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <h2 className="font-bold text-ink-900 dark:text-slate-100">지금 위마로그 코호트</h2>
+          <h2 className="font-bold text-ink-900 dark:text-slate-100">지금 위마로그</h2>
           <span className="text-[10px] text-ink-500 dark:text-slate-500 inline-flex items-center gap-1">
-            {source === 'supabase' ? '실시간 DB 집계' : source === 'snapshot' ? '최근 스냅샷' : '익명 집계'}
+            {source === 'supabase' ? '실시간' : '익명 집계'}
             {refreshing && (
               <span title="최신 데이터 가져오는 중" aria-label="새로고침 중"
                     className="inline-block w-3 h-3 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
@@ -178,14 +178,14 @@ export function CohortLive({ navigate, onSignup, user = null }) {
           big={avg12kg != null ? `−${avg12kg.toFixed(1)}` : '—'}
           bigUnit="%"
           label="12주 평균 감량"
-          sub={avg12kg != null ? `n=${curve12[0].n}명` : '데이터 모이는 중'}
+          sub={avg12kg != null ? `n=${curve12[0].n}명` : '데이터 분석 중'}
           highlight
         />
         <LiveStat
           big={avg24kg != null ? `−${avg24kg.toFixed(1)}` : '—'}
           bigUnit="%"
           label="24주 평균 감량"
-          sub={avg24kg != null ? `n=${curve24[0].n}명` : '데이터 모이는 중'}
+          sub={avg24kg != null ? `n=${curve24[0].n}명` : '데이터 분석 중'}
           highlight
         />
         <LiveStat
@@ -213,7 +213,7 @@ export function CohortLive({ navigate, onSignup, user = null }) {
       {/* 익명 후기 — 2개만 컴팩트하게 */}
       {notes.length > 0 && (
         <div className="mt-4 pt-3 border-t border-ink-100 dark:border-slate-800">
-          <div className="text-[10px] font-semibold text-ink-500 dark:text-slate-500 mb-2 uppercase tracking-wider">최근 코호트 메모</div>
+          <div className="text-[10px] font-semibold text-ink-500 dark:text-slate-500 mb-2 uppercase tracking-wider">최근 익명 후기</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {notes.slice(0, 2).map((n, i) => (
               <div key={i} className="rounded-lg bg-ink-100/60 dark:bg-slate-800/60 px-3 py-2">

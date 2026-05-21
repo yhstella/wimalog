@@ -207,7 +207,7 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
             })}
           </div>
           <p className="helptext mt-3">
-            ※ 위마로그 코호트 익명 후기. 개인차가 크므로 본인 상황에 그대로 적용하지 마세요.
+            ※ 익명 후기 모음. 개인차가 크므로 본인 상황에 그대로 적용하지 마세요.
             본인 후기는 가입 후 기록 + 메모로 남길 수 있습니다.
           </p>
         </section>

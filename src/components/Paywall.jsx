@@ -216,8 +216,9 @@ export function QuickSignupModal({ onClose, onComplete }) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink-900/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink-900/60 backdrop-blur-sm p-0 sm:p-4 animate-fadeIn"
+         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
         <div className="sticky top-0 bg-white border-b border-ink-100 px-5 py-3 flex justify-between items-center">
           <div>
             <div className="font-bold text-ink-900 dark:text-slate-100">🔮 내 감량 곡선 보기</div>
