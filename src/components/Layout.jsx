@@ -89,20 +89,11 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                   </span>
                 </button>
                 <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
-                {/* TODO(임시): 가입 테스트용 탈퇴 — 사용자가 본인 구글 계정 반복 가입 테스트 위해. 출시 전 제거 */}
-                <button onClick={() => {
-                          if (!confirm('정말 탈퇴하시겠습니까? 본인 데이터가 영구 삭제됩니다.')) return;
-                          Storage.deleteUser(user.id);
-                          onLogout();
-                        }}
-                        title="테스트용 탈퇴 (출시 전 제거 예정)"
-                        className="text-[11px] font-semibold px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white transition">
-                  ✕ 탈퇴
-                </button>
+                {/* 탈퇴는 Profile → 데이터 관리 섹션에서만 가능 (헤더의 우발적 클릭 제거) */}
               </div>
             ) : (
               <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">
-                내 예상 보기
+                내 감량 곡선
               </button>
             )}
           </div>
@@ -162,20 +153,33 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
         )}
       </nav>
 
-      {/* 모바일 floating 가입 CTA — 비가입자만, nav 위로 떠 있음 */}
-      {!user && (
-        <button onClick={() => setShowSignup(true)}
-                aria-label="내 예상 감량 보기"
-                className="sm:hidden fixed right-4 z-40 inline-flex items-center gap-1.5 rounded-full bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold px-4 py-3 shadow-cardHover transition text-sm"
-                style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
-          🔮 <span>내 예상 보기</span>
-        </button>
-      )}
+      {/* 모바일 floating CTA — 비가입자만, 첫 viewport 지나친 후에만 노출 (Hero 가림 방지) */}
+      {!user && <MobileFloatingCTA onClick={() => setShowSignup(true)} />}
 
       {showSignup && (
         <QuickSignupModal onClose={() => setShowSignup(false)}
                           onComplete={(id) => { setShowSignup(false); onSignup?.(id); }} />
       )}
     </div>
+  );
+}
+
+// 모바일 floating CTA — 첫 viewport 지나친 후에만 표시 (P0: hero·하단 컨텐츠 가림 방지)
+function MobileFloatingCTA({ onClick }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const check = () => setShow(window.scrollY > 200);
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    return () => window.removeEventListener('scroll', check);
+  }, []);
+  if (!show) return null;
+  return (
+    <button onClick={onClick}
+            aria-label="내 감량 곡선 보기"
+            className="sm:hidden fixed right-4 z-40 inline-flex items-center gap-1.5 rounded-full bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold px-4 py-3 shadow-cardHover transition text-sm animate-fadeIn"
+            style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
+      🔮 <span>내 감량 곡선</span>
+    </button>
   );
 }

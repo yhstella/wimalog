@@ -100,7 +100,7 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
-      <h1 className="text-2xl font-extrabold text-ink-900">프로필</h1>
+      <h1 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">프로필</h1>
 
       <div className="card space-y-3">
         <div className="flex justify-between items-center">
@@ -272,8 +272,8 @@ export function Profile({ user, navigate, onLogout, refresh }) {
 function ReadRow({ k, v }) {
   return (
     <>
-      <dt className="text-ink-500">{k}</dt>
-      <dd className="text-ink-900 text-right font-medium tabular-nums">{v}</dd>
+      <dt className="text-ink-500 dark:text-slate-400">{k}</dt>
+      <dd className="text-ink-900 dark:text-slate-100 text-right font-medium tabular-nums">{v}</dd>
     </>
   );
 }

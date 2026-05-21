@@ -31,7 +31,7 @@ export function Records({ user, navigate, initialTab = 'weight' }) {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-extrabold text-ink-900">기록</h1>
+        <h1 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">기록</h1>
         <p className="text-sm text-ink-500 mt-1">
           빈 항목은 그냥 두셔도 됩니다. 모두 1분 안에 끝납니다.
         </p>

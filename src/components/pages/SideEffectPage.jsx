@@ -244,11 +244,11 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
         <p className="mt-2 text-slate-300 text-sm leading-relaxed">
           {user
             ? '기록 탭에서 부작용을 입력하면 비슷한 사용자 회복 패턴이 자동 비교됩니다.'
-            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자의 부작용 시점·회복 데이터 보유. 본인 조건 입력하면 비슷한 사용자의 회복 패턴을 바로 확인하세요.</>}
+            : <>본인 조건 입력하면 한국 사용 패턴 코호트의 부작용 시점·회복 패턴을 바로 확인하세요.</>}
         </p>
         <button onClick={() => user ? navigate('records') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          {user ? '기록하러 가기 →' : '🔮 내 회복 패턴 예측 보기 →'}
+          {user ? '기록하러 가기 →' : '내 감량 곡선 보기 →'}
         </button>
       </section>
 

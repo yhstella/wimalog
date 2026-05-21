@@ -100,6 +100,16 @@ function CostCalculator({ navigate }) {
             {months} 개월
           </div>
         </div>
+
+        <div>
+          <div className="label">시작 체중 (kg) <span className="text-[10px] text-ink-500 font-normal">— 1kg당 비용 / 재증가 계산에 사용</span></div>
+          <input type="range" min={45} max={150} step={0.5}
+                 value={startWeight} onChange={e => setStartWeight(+e.target.value)}
+                 className="w-full accent-brand-500" />
+          <div className="text-center text-2xl font-bold mt-1 tabular-nums text-ink-900 dark:text-slate-100">
+            {startWeight.toFixed(1)} kg
+          </div>
+        </div>
       </div>
 
       <div className="card text-center">
@@ -178,19 +188,8 @@ function CostCalculator({ navigate }) {
               </div>
             </div>
             <p className="text-[10px] text-ink-500 dark:text-slate-500 leading-relaxed">
-              ※ 시작 체중 슬라이더로 본인 조건에 맞춰보세요. 실제 결과는 개인차가 큽니다.
+              ※ 시작 체중은 위 슬라이더에서 변경 가능. 실제 결과는 개인차가 큽니다.
             </p>
-            <div>
-              <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-1">시작 체중 (kg)</div>
-              <input type="range" min={45} max={150} step={0.5}
-                     value={startWeight} onChange={e => setStartWeight(+e.target.value)}
-                     className="w-full h-2 bg-ink-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-brand-500" />
-              <div className="flex justify-between text-[10px] text-ink-500 mt-1">
-                <span>45</span>
-                <b className="tabular-nums text-ink-900 dark:text-slate-100">{startWeight.toFixed(1)}kg</b>
-                <span>150</span>
-              </div>
-            </div>
           </div>
         );
       })()}

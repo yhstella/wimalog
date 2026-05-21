@@ -96,11 +96,12 @@ export function ForDoctorsPage({ navigate }) {
         <h2 className="section-title">데이터 협력·연구 문의</h2>
         <p className="section-subtitle">
           위마로그는 한국 GLP-1 사용자의 real-world evidence 플랫폼을 지향합니다.
-          익명화된 코호트 데이터·연구 협력에 관심 있으시면 문의해 주세요.
+          익명화된 코호트 데이터·연구 협력에 관심 있으시면 GitHub Issues로 문의해 주세요.
         </p>
-        <p className="mt-3 text-sm text-ink-700 dark:text-slate-300">
-          📧 contact@wimalog.kr (예정)
-        </p>
+        <a href="https://github.com/yhstella/wimalog/issues" target="_blank" rel="noopener noreferrer"
+           className="mt-3 inline-flex items-center gap-1 text-sm text-brand-700 dark:text-brand-400 hover:underline">
+          💬 GitHub Issues로 문의 →
+        </a>
       </section>
 
       <MedicalDisclaimer />

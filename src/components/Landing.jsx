@@ -44,8 +44,8 @@ export function Landing({ navigate, onSignup, user }) {
           <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은 얼마나 빠졌을까?
         </h1>
         <p className="mt-3 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          이미 <b className="text-ink-900 dark:text-slate-100">8,600명+ 한국 사용자</b> 익명 데이터를 보유한 <b className="text-ink-900 dark:text-slate-100">리얼월드 코호트 플랫폼</b>.
-          가입하면 나와 비슷한 사용자의 주차별 감량·부작용·중단 후 회복 곡선까지 실시간 확인.
+          한국 사용자 익명 코호트 비교 + 본인 맞춤 감량·부작용·중단 후 회복 곡선 예측.
+          <button onClick={() => navigate('about')} className="ml-1 text-brand-700 dark:text-brand-400 underline text-xs">데이터 출처 →</button>
         </p>
       </section>
 
@@ -82,11 +82,11 @@ export function Landing({ navigate, onSignup, user }) {
                   방금 입력한 <span className="tabular-nums">{prefill.height}cm · {prefill.startWeight}kg</span> 조건의 상세 예측을 볼까요?
                 </div>
                 <div className="text-xs text-amber-800 dark:text-amber-200/80 mt-1 leading-relaxed">
-                  이미 <b>8,600명+</b> 한국 사용자 실제 데이터가 쌓여있어요. 가입하면 <b>나와 비슷한 사용자</b>의 주차별 감량·부작용·중단 후 회복 곡선을 실시간으로 확인합니다.
+                  가입하면 <b>나와 비슷한 사용자</b> 코호트의 주차별 감량·부작용·중단 후 회복 곡선이 실시간으로 정밀화됩니다.
                 </div>
                 <button onClick={handleSignup}
                         className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 text-sm font-bold transition shadow-sm">
-                  🔮 내 예상 감량 자세히 보기 →
+                  내 감량 곡선 보기 →
                 </button>
               </div>
             </div>
@@ -240,16 +240,16 @@ export function Landing({ navigate, onSignup, user }) {
       {/* 하단 CTA — 로그인 상태 따라 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 text-center">
         <h2 className="text-xl font-extrabold">
-          {user ? `${user.nickname || '나'}님 환영합니다 👋` : '내 예상 체중 곡선 자세히 보기'}
+          {user ? `${user.nickname || '나'}님 환영합니다 👋` : '내 감량 곡선 자세히 보기'}
         </h2>
         <p className="mt-2 text-slate-300 text-xs leading-relaxed">
           {user
             ? '대시보드에서 본인 데이터 + 비슷한 사용자 평균을 확인하세요'
-            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자 데이터 보유 — 가입하면 <b className="text-white">나와 같은 BMI·약·빈도</b> 사용자의 주차별 곡선 + 부작용 시점 + 중단 후 회복률 실시간 확인</>}
+            : <>가입하면 <b className="text-white">나와 같은 BMI·약·빈도</b> 사용자의 주차별 곡선 + 부작용 시점 + 중단 후 회복률 실시간 확인</>}
         </p>
         <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold hover:bg-brand-600 transition">
-          {user ? '내 대시보드 →' : '🔮 내 예상 체중 보기 →'}
+          {user ? '내 대시보드 →' : '내 감량 곡선 보기 →'}
         </button>
       </section>
 

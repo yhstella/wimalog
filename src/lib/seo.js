@@ -295,7 +295,7 @@ export function seoFor(route) {
   const STATIC = {
     landing: { title: null, description: FALLBACK_DESC },
     about:   { title: '소개 — 위마로그가 다른 점', description: '위마로그는 단순 GLP-1 tracker 앱이 아닌, 한국 사용자 익명 코호트 비교 플랫폼입니다. 해외 앱(Glapp·Shotsy 등)과의 4가지 차별화 — 한국 처방 현실·익명 비교·의사 관점 안전·구조화 데이터.' },
-    onboarding: { title: '내 예상 결과 보기' },
+    onboarding: { title: '내 감량 곡선 보기' },
     dashboard: { title: '대시보드' },
     records: { title: '기록' },
     meds: { title: '약 관리' },

@@ -259,11 +259,11 @@ export function Statistics({ user, navigate, onSignup }) {
           <div className="flex-1">
             <div className="font-bold text-ink-900 dark:text-slate-100">지금 보고 계신 것은 전체 데이터의 일부입니다</div>
             <div className="text-sm text-ink-500 dark:text-slate-400 mt-1">
-              본인 키·체중·약만 입력하면 8,600명+ 한국 사용자의 전체 평균 곡선·약제 비교·지역별 가격·부작용 발생률을 모두 보여드려요.
+              본인 키·체중·약만 입력하면 한국 사용 패턴 코호트의 전체 평균 곡선·약제 비교·지역별 가격·부작용 발생률을 모두 보여드려요.
             </div>
           </div>
           <button onClick={handleSignup} className="btn-primary !py-2 !px-3 text-sm flex-shrink-0">
-            🔮 내 예상 보기 →
+            내 감량 곡선 보기 →
           </button>
         </div>
       )}
@@ -427,10 +427,17 @@ export function Statistics({ user, navigate, onSignup }) {
       <div className="card">
         <div className="flex justify-between items-start mb-3">
           <div>
-            <h2 className="section-title">주차별 평균 감량 (kg)</h2>
+            <h2 className="section-title flex items-center gap-2 flex-wrap">
+              주차별 평균 감량 (kg)
+              {!user && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                  🔒 4주차 미리보기
+                </span>
+              )}
+            </h2>
             <p className="section-subtitle">
               본인 시작 체중 <b>{refWeight} kg</b> 기준으로 환산
-              {!user && <> · <b className="text-brand-600 dark:text-brand-400">처음 4주만 미리 보기</b></>}
+              {!user && <> · <b className="text-brand-600 dark:text-brand-400">가입하면 48주까지 전체 곡선</b></>}
               {myPersonalCurve.length > 0 && <> · <b className="text-rose-600 dark:text-rose-400">빨간 선 = 본인</b></>}
             </p>
           </div>

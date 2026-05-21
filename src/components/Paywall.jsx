@@ -22,20 +22,20 @@ export function LockedOverlay({
       <div className="blur-[6px] pointer-events-none select-none" aria-hidden>
         {children}
       </div>
-      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 via-white/70 to-white/90 rounded-2xl">
+      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-white/40 via-white/70 to-white/90 dark:from-slate-900/40 dark:via-slate-900/70 dark:to-slate-900/90 rounded-2xl">
         <div className="text-center max-w-xs px-6 py-5">
           <div className="text-3xl mb-1">{isPremium ? '✨' : '🔒'}</div>
-          <div className="font-bold text-ink-900">
+          <div className="font-bold text-ink-900 dark:text-slate-100">
             {title || (isPremium ? 'Premium 기능' : '가입자 전용')}
           </div>
-          <div className="text-sm text-ink-500 mt-1 leading-snug">
+          <div className="text-sm text-ink-500 dark:text-slate-400 mt-1 leading-snug">
             {message || (isPremium
               ? '곧 출시될 Premium 기능입니다. 알림을 신청해 주세요.'
               : '1분만 입력하면 전체 데이터를 볼 수 있어요')}
           </div>
           {onUnlock && (
             <button onClick={onUnlock} className="btn-primary mt-3 !py-2 !px-4 text-sm">
-              {isPremium ? '얼리액세스 신청' : '🔮 내 예상 결과 보기 →'}
+              {isPremium ? '얼리액세스 신청' : '내 감량 곡선 보기 →'}
             </button>
           )}
         </div>
@@ -51,7 +51,7 @@ export function LockHint({ count, label, onUnlock }) {
   return (
     <button
       onClick={onUnlock}
-      className="w-full flex items-center justify-center gap-2 py-3 text-sm rounded-xl bg-brand-50 hover:bg-brand-100 transition border border-dashed border-brand-200 text-brand-700 font-medium"
+      className="w-full flex items-center justify-center gap-2 py-3 text-sm rounded-xl bg-brand-50 hover:bg-brand-100 dark:bg-brand-900/20 dark:hover:bg-brand-900/30 transition border border-dashed border-brand-200 dark:border-brand-800/40 text-brand-700 dark:text-brand-300 font-medium"
     >
       <span>🔒</span>
       <span>{count ? `${count}개 더 보기` : (label || '전체 데이터 보기')}</span>
@@ -220,8 +220,8 @@ export function QuickSignupModal({ onClose, onComplete }) {
       <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-ink-100 px-5 py-3 flex justify-between items-center">
           <div>
-            <div className="font-bold text-ink-900">🔮 내 예상 결과 보기</div>
-            <div className="text-xs text-ink-500">키·체중만 알려주면 8,600명+ 데이터로 즉시 예측</div>
+            <div className="font-bold text-ink-900 dark:text-slate-100">🔮 내 감량 곡선 보기</div>
+            <div className="text-xs text-ink-500">키·체중만 알려주면 한국 사용 패턴 코호트로 즉시 예측</div>
           </div>
           <button onClick={onClose} className="btn-ghost !p-2">✕</button>
         </div>
@@ -352,7 +352,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
                    checked={data.consent}
                    onChange={e => set('consent', e.target.checked)} />
             <div>
-              <div className="text-sm font-medium text-ink-900">개인정보·민감정보 수집·이용에 동의합니다</div>
+              <div className="text-sm font-medium text-ink-900 dark:text-slate-100">개인정보·민감정보 수집·이용에 동의합니다</div>
               <div className="text-xs text-ink-500 mt-0.5">개인정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다</div>
             </div>
           </label>

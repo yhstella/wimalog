@@ -184,13 +184,9 @@ export function Simulator({ onSignup, compact = false, user = null }) {
         )}
       </div>
       <div className="text-xs text-brand-50 mb-3 opacity-90 leading-relaxed">
-        {(() => {
-          const scale = snapshotPlatformScale();
-          const n = scale ? scale.totalPatients.toLocaleString() : '11,000';
-          return compact
-            ? `AI가 ${n}명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측`
-            : `AI가 ${n}명+ 익명 코호트에서 본인 조건과 비슷한 사용자를 찾아 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.`;
-        })()}
+        {compact
+          ? '한국 사용 패턴 코호트에서 본인 조건과 비슷한 결과를 즉시 예측'
+          : '한국 사용 패턴 코호트(임상 reference + 시뮬레이션 + 익명 가입자 누적)에서 본인 조건과 비슷한 사용자를 찾아 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.'}
       </div>
 
       {/* 정확도 게이지 — 입력한 정보 수에 따라 0~100% */}
@@ -262,7 +258,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
               </div>
               <button onClick={onSignup}
                       className="mt-2 inline-flex items-center gap-1 rounded-lg bg-white text-brand-700 px-3 py-1.5 text-xs font-bold hover:bg-brand-50 transition">
-                🔮 정밀 예측 보기 →
+                내 감량 곡선 정밀화 →
               </button>
             </div>
           </div>
@@ -472,7 +468,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       {onSignup && (
         <button onClick={onSignup}
                 className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-3 font-bold hover:bg-brand-50 transition">
-          {user ? '내 대시보드 보기 →' : '🔮 내 예상 체중 곡선 자세히 보기 →'}
+          {user ? '내 대시보드 보기 →' : '내 감량 곡선 자세히 보기 →'}
         </button>
       )}
       <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">

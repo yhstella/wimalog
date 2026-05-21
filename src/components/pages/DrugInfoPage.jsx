@@ -86,16 +86,16 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </div>
       </header>
 
-      {/* 시뮬레이터 빠른 진입 — P1 페르소나 */}
-      <SimulatorCTA navigate={navigate} user={user} context="drug" />
-
-      {/* 효과 헤드라인 */}
+      {/* 효과 헤드라인 — SEO 검색 의도 매칭 우선 (시뮬레이터 위로) */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-5 sm:p-6">
         <h2 className="text-xs uppercase tracking-wider opacity-80">{drug.label} 효과 · 평균 체중 감량</h2>
         <div className="text-4xl sm:text-5xl font-extrabold mt-1 tabular-nums">{drug.efficacy.headlineKg}</div>
         <div className="text-base mt-1 opacity-90">{drug.efficacy.headlinePct} · {drug.efficacy.trial}</div>
         <p className="mt-3 text-sm opacity-80 leading-relaxed">{drug.efficacy.caveat}</p>
       </section>
+
+      {/* 시뮬레이터 빠른 진입 — 헤드라인 효과 본 후 본인 조건으로 입력 유도 */}
+      <SimulatorCTA navigate={navigate} user={user} context="drug" />
 
       {/* 빠른 anchor links — 검색 의도 매칭 */}
       <nav className="card !p-3">
@@ -381,11 +381,11 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         <p className="mt-2 text-slate-300 text-sm leading-relaxed">
           {user
             ? '대시보드에서 본인 진척도 + 비슷한 사용자 비교를 확인하세요.'
-            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자 데이터 보유 — 본인 키·체중·약 입력하면 비슷한 사용자의 주차별 감량 곡선이 바로 나옵니다.</>}
+            : <>본인 키·체중·약 입력하면 한국 사용 패턴 코호트의 주차별 감량 곡선이 바로 나옵니다.</>}
         </p>
         <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          {user ? '내 대시보드 →' : '🔮 내 예상 감량 보기 →'}
+          {user ? '내 대시보드 →' : '내 감량 곡선 보기 →'}
         </button>
       </section>
 

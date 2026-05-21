@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v6';   // bumped 2026-05-21: 마일스톤·누적약값·추천·알림·의료진 안내·Free/Premium 라벨
+const VERSION = 'v7';   // bumped 2026-05-21: P0 10개 일괄 — 탈퇴버튼·8600명출처·CTA통일·다크모드
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
