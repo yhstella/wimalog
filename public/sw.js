@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v3';   // bumped 2026-05-21: CI 그래프 + 잔여 testimonials — 옛 HTML 캐시 무효화
+const VERSION = 'v4';   // bumped 2026-05-21: StopProjector + 비핵심 요소 정리 — 옛 HTML 캐시 무효화
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

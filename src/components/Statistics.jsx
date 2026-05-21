@@ -15,6 +15,7 @@ import { MEDS, GENDERS, AGE_GROUPS, CONDITIONS, SIDE_EFFECTS } from '../lib/cons
 import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, LockHint, PremiumBadge, QuickSignupModal } from './Paywall.jsx';
 import { can } from '../lib/access.js';
+import { StopProjector } from './StopProjector.jsx';
 
 const BMI_RANGES = [
   { id: 'all',   label: '전체',  range: null },
@@ -544,15 +545,30 @@ export function Statistics({ user, navigate, onSignup }) {
         )}
       </div>
 
-      {/* === 약 중단 후 체중 회복 (Rebound) === */}
+      {/* === 본인 맞춤 중단 후 예측 — 시뮬레이터 패턴 (모든 사용자 노출) === */}
+      <div className="card border-2 border-rose-200 dark:border-rose-900/40">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="text-2xl">🔮</div>
+          <div className="flex-1 min-w-0">
+            <h2 className="section-title">지금 끊으면 어떻게 될까? — 본인 맞춤 예측</h2>
+            <p className="section-subtitle">
+              본인 시작 체중·현재 체중·약·운동 의지를 입력하면 중단 후 4주~1년 회복 곡선을 즉시 예측합니다.
+              {can(user, 'discontinuation') ? '' : ' — 가입자 전용 데이터 일부 포함.'}
+            </p>
+          </div>
+        </div>
+        <StopProjector user={user} />
+      </div>
+
+      {/* === 약 중단 후 체중 회복 (Rebound) — 코호트 평균 === */}
       {reboundData.some(r => r.n >= 3) && (
         <div className="card border-2 border-amber-200 dark:border-amber-900/40">
           <div className="flex items-start gap-3 mb-2">
             <div className="text-2xl">📉➡️📈</div>
             <div>
-              <h2 className="section-title">약 중단 후 체중은 어떻게 될까?</h2>
+              <h2 className="section-title">코호트 평균 — 약 중단 후 회복률</h2>
               <p className="section-subtitle">
-                중단된 사용자 데이터를 기반으로 한 평균적인 회복 곡선입니다.
+                중단된 사용자 전체 평균 회복 곡선입니다.
                 개인차가 크며, 운동·식이 지속 여부가 큰 영향을 줍니다.
               </p>
             </div>

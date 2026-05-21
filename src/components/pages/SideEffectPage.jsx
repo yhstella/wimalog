@@ -4,7 +4,7 @@ import { sideEffectRates, sideEffectTiming, avgLossCurve } from '../../lib/stats
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
-import { InterestButton } from '../InterestButton.jsx';
+// InterestButton 제거 — '저도 겪고 있어요' 1탭 수집은 비즈니스 핵심 X
 import { TestimonialBox } from '../TestimonialBox.jsx';
 import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
@@ -58,9 +58,6 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
           {content.label}
         </h1>
         <p className="text-sm text-ink-500 dark:text-slate-400 mt-2">{content.summary}</p>
-        <div className="mt-3">
-          <InterestButton topicId={`effect:${effectId}`} label="저도 겪고 있어요" />
-        </div>
       </header>
 
       {/* 시뮬레이터 빠른 진입 — P2 페르소나 */}

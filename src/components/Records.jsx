@@ -11,7 +11,7 @@ import { DialInput } from './DialInput.jsx';
 import { WeightCurveInput } from './WeightCurveInput.jsx';
 import { WeightChartInline } from './WeightChartInline.jsx';
 import { HealthMetricsForm } from './HealthMetricsForm.jsx';
-import { MotivationBanner } from './MotivationBanner.jsx';
+// MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -36,8 +36,6 @@ export function Records({ user, navigate, initialTab = 'weight' }) {
           빈 항목은 그냥 두셔도 됩니다. 모두 1분 안에 끝납니다.
         </p>
       </div>
-      <MotivationBanner user={user} tone="inline" />
-
       <div className="flex gap-1 bg-ink-100 rounded-xl p-1 overflow-x-auto">
         {TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}

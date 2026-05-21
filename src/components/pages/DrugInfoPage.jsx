@@ -9,7 +9,7 @@ import { LineChart, HBarChart } from '../Chart.jsx';
 import { QuickSignupModal } from '../Paywall.jsx';
 import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
-import { InterestButton } from '../InterestButton.jsx';
+// InterestButton 제거 — '관심 있어요' 1탭 수집은 비즈니스 핵심 X
 import { TestimonialBox } from '../TestimonialBox.jsx';
 import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
@@ -83,7 +83,6 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         </p>
         <div className="mt-3 flex flex-wrap gap-2 items-center">
           <span className="chip-brand">{drug.indication}</span>
-          <InterestButton topicId={`drug:${drug.id}`} label="관심 있어요" />
         </div>
       </header>
 

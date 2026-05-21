@@ -10,7 +10,8 @@ import { MED_BY_ID, SIDE_EFFECTS } from '../lib/constants.js';
 import { QuickWeightCard, QuickDoseCard } from './QuickEntry.jsx';
 import { PremiumBadge } from './Paywall.jsx';
 import { useToast } from './Toast.jsx';
-import { StreakCard, WeeklySummaryCard, BadgesRow, DiscontinuerPanel } from './RetentionCards.jsx';
+// RetentionCards 제거 — 스트릭·배지·주간요약·중단자 패널은 비즈니스 핵심 X.
+// 중단자 패널 기능은 Statistics 페이지의 StopProjector로 대체됨.
 import { WelcomeTour } from './WelcomeTour.jsx';
 import { GoalWidget } from './GoalWidget.jsx';
 import { InputProgressCard } from './InputProgressCard.jsx';
@@ -20,7 +21,7 @@ import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
 import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
 import { InitialSetup } from './InitialSetup.jsx';
-import { MotivationBanner } from './MotivationBanner.jsx';
+// MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
 
@@ -163,11 +164,6 @@ export function Dashboard({ user, navigate }) {
         </div>
       </div>
 
-      {/* 부드러운 격려 메시지 — 사용자 컨텍스트에 따라 분기 */}
-      <MotivationBanner user={liveUser}
-                        weeks={summary?.weeks}
-                        hasStall={!!stallAlert} />
-
       {/* 1순위: visitPurpose 분기 — 입력한 단계에 따라 맞춤 첫 경험 */}
       <PurposeCard user={liveUser} navigate={navigate} />
 
@@ -247,12 +243,6 @@ export function Dashboard({ user, navigate }) {
       {/* Notification banner (한 번만) */}
       <NotificationBanner user={user} />
 
-      {/* Streak + Badges */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <StreakCard user={user} navigate={navigate} />
-        <BadgesRow user={user} />
-      </div>
-
       {/* 요약 카드 */}
       {summary ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -286,14 +276,8 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 목표 예측 + 주간 요약 */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <GoalWidget user={user} navigate={navigate} />
-        <WeeklySummaryCard user={user} navigate={navigate} />
-      </div>
-
-      {/* 중단자 패널 */}
-      <DiscontinuerPanel user={user} navigate={navigate} />
+      {/* 목표 예측 */}
+      <GoalWidget user={user} navigate={navigate} />
 
       {/* 이번 주 활동 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
