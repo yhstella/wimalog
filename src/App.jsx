@@ -17,6 +17,7 @@ import { SideEffectPage } from './components/pages/SideEffectPage.jsx';
 import { GuidePage } from './components/pages/GuidePage.jsx';
 import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
 import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
+import { PharmacyDirectoryPage } from './components/pages/PharmacyDirectoryPage.jsx';
 import { DoctorReport } from './components/DoctorReport.jsx';
 import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
@@ -152,7 +153,8 @@ export default function App() {
 
   const authedRoutes = ['dashboard', 'records', 'meds', 'profile'];
   const isPublicContent = route.startsWith('drug/') || route.startsWith('effect/')
-    || route.startsWith('guide/') || route.startsWith('calc/') || route === 'compare';
+    || route.startsWith('guide/') || route.startsWith('calc/') || route === 'compare'
+    || route === 'pharmacies' || route.startsWith('pharmacy/');
   const effectiveRoute = (!user && authedRoutes.includes(route)) ? 'landing' : route;
 
   // route 파싱: 'drug/wegovy' → { kind: 'drug', id: 'wegovy' }
@@ -161,6 +163,7 @@ export default function App() {
   const effectId = parseSub(effectiveRoute, 'effect/');
   const guideId = parseSub(effectiveRoute, 'guide/');
   const calcKind = parseSub(effectiveRoute, 'calc/');
+  const pharmacyRegionId = parseSub(effectiveRoute, 'pharmacy/');
 
   const onSignupGo = (id) => { setUserId(id); navigate('dashboard'); };
   const onSignupStay = (id) => { setUserId(id); refresh(); }; // 가입 후 현재 페이지 유지
@@ -191,6 +194,8 @@ export default function App() {
 
           {/* SEO 콘텐츠 페이지 */}
           {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}
+          {effectiveRoute === 'pharmacies' && <PharmacyDirectoryPage navigate={navigate} user={user} />}
+          {pharmacyRegionId && <PharmacyDirectoryPage navigate={navigate} user={user} regionId={pharmacyRegionId} />}
           {drugId   && <DrugInfoPage medId={drugId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {guideId  && <GuidePage guideId={guideId} navigate={navigate} user={user} onSignup={onSignupStay} />}

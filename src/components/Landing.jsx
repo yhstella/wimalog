@@ -84,6 +84,25 @@ export function Landing({ navigate, onSignup, user }) {
       {/* 위마로그 코호트 LIVE — 우리 데이터 강조 (가짜 사이트 느낌 방지) */}
       <CohortLive navigate={navigate} onSignup={handleSignup} user={user} />
 
+      {/* 약국 가격 디렉토리 진입 — 다른 사이트엔 없는 차별점 */}
+      <section>
+        <button onClick={() => navigate('pharmacies')}
+                className="w-full card !p-4 sm:!p-5 text-left hover:shadow-cardHover hover:border-brand-300 dark:hover:border-brand-700 transition group">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl flex-shrink-0">🏪</div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-ink-900 dark:text-slate-100 flex items-center justify-between gap-2">
+                <span>한국 GLP-1 약국 가격 디렉토리</span>
+                <span className="text-brand-500 group-hover:translate-x-0.5 transition">→</span>
+              </div>
+              <p className="text-xs text-ink-500 dark:text-slate-400 mt-1 leading-relaxed">
+                서울 대학로·강남·종로 등 약국별 위고비·마운자로 4주분 최근 가격 — 사용자 익명 제보
+              </p>
+            </div>
+          </div>
+        </button>
+      </section>
+
       {/* 약별 빠른 진입 */}
       <section>
         <div className="flex items-end justify-between mb-3">

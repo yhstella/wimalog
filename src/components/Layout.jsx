@@ -14,10 +14,10 @@ const NAV_AUTHED = [
 ];
 
 const NAV_GUEST = [
-  { id: 'drug/wegovy', label: '약 정보', icon: '💉' },
-  { id: 'stats',       label: '통계',   icon: '📊' },
-  { id: 'calc/cost',   label: '계산기', icon: '🧮' },
-  { id: 'info',        label: '안전',   icon: '🛡️' },
+  { id: 'drug/wegovy',  label: '약 정보',  icon: '💉' },
+  { id: 'pharmacies',   label: '약국 가격', icon: '🏪' },
+  { id: 'stats',        label: '통계',     icon: '📊' },
+  { id: 'info',         label: '안전',     icon: '🛡️' },
 ];
 
 export function Layout({ route, navigate, user, onLogout, onSignup, children }) {

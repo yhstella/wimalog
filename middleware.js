@@ -7,7 +7,7 @@
 // 미리보기에서 고유 메타로 노출됨.
 
 export const config = {
-  matcher: ['/drug/:slug', '/effect/:slug', '/guide/:slug', '/calc/:slug', '/compare', '/stats', '/info'],
+  matcher: ['/drug/:slug', '/effect/:slug', '/guide/:slug', '/calc/:slug', '/compare', '/stats', '/info', '/pharmacies', '/pharmacy/:slug'],
 };
 
 // 봇/스크래퍼 user-agent 패턴 — Googlebot, Kakaotalk, Slack, Facebook 등
@@ -32,9 +32,17 @@ const EFFECT_META = {
 };
 
 const STATIC_META = {
-  '/compare': { title: '5개 약 한눈 비교 — 위고비·마운자로·삭센다·오젬픽·젭바운드', description: '한국에서 사용 가능한 GLP-1 비만치료제 5종의 효과·부작용·가격·사용법을 한 화면에서 비교하세요.' },
-  '/stats':   { title: '통계 — 한국 GLP-1 사용자 익명 비교', description: '약별·BMI별·성별·연령별 감량률, 부작용 발생률, 약값, 중단 후 회복 데이터를 비교합니다.' },
-  '/info':    { title: '안전 정보 — GLP-1 즉시 의료 상담 기준', description: '췌장염·담낭질환·저혈당 의심 증상, GLP-1 신중 사용 대상자 등 안전 정보를 정리했습니다.' },
+  '/compare':    { title: '5개 약 한눈 비교 — 위고비·마운자로·삭센다·오젬픽·젭바운드', description: '한국에서 사용 가능한 GLP-1 비만치료제 5종의 효과·부작용·가격·사용법을 한 화면에서 비교하세요.' },
+  '/stats':      { title: '통계 — 한국 GLP-1 사용자 익명 비교', description: '약별·BMI별·성별·연령별 감량률, 부작용 발생률, 약값, 중단 후 회복 데이터를 비교합니다.' },
+  '/info':       { title: '안전 정보 — GLP-1 즉시 의료 상담 기준', description: '췌장염·담낭질환·저혈당 의심 증상, GLP-1 신중 사용 대상자 등 안전 정보를 정리했습니다.' },
+  '/pharmacies': { title: '한국 GLP-1 약국 가격 디렉토리 — 약국별 4주분 최근 가격', description: '서울 대학로·강남·종로 등 한국 GLP-1 약국별 위고비·마운자로 가격을 사용자 익명 제보로 비교. 4주분(1박스) 기준.' },
+};
+
+const PHARMACY_REGION_LABELS = {
+  'seoul-daehakro': '서울 대학로', 'seoul-gangnam': '서울 강남', 'seoul-jongno': '서울 종로',
+  'seoul-sinchon': '서울 신촌',   'seoul-songpa': '서울 송파',
+  'gyeonggi-bundang': '경기 분당', 'gyeonggi-ilsan': '경기 일산', 'gyeonggi-suwon': '경기 수원',
+  'busan': '부산', 'daegu': '대구', 'incheon': '인천', 'daejeon': '대전', 'gwangju': '광주',
 };
 
 const SITE = '위마로그';
@@ -72,6 +80,14 @@ function metaFor(pathname) {
     if (id === 'cost') return { title: `약 비용 계산기 — ${SITE}`, description: '위고비·마운자로·삭센다 평균 가격과 사용 기간으로 총 비용을 계산하세요.' };
     if (id === 'bmr')  return { title: `기초대사량(BMR) 계산기 — ${SITE}`, description: '키·체중·나이·활동량으로 BMR·TDEE·감량 목표 칼로리를 계산합니다.' };
     if (id === 'target') return { title: `목표 체중 계산기 — ${SITE}`, description: 'BMI 기준 정상 체중과 % 감량별 도달 체중을 확인하세요.' };
+  }
+  if (pathname.startsWith('/pharmacy/')) {
+    const id = pathname.slice('/pharmacy/'.length).split('/')[0];
+    const r = PHARMACY_REGION_LABELS[id];
+    if (r) return {
+      title: `${r} 위고비·마운자로 약국 가격 — 4주분 최근 시세 — ${SITE}`,
+      description: `${r} 지역 GLP-1 비만치료제 취급 약국 목록과 약·용량별 최근 가격(4주분). 사용자 익명 제보 기반의 약국 디렉토리.`,
+    };
   }
   return STATIC_META[pathname] || null;
 }

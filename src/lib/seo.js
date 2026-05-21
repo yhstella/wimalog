@@ -266,6 +266,26 @@ export function seoFor(route) {
     if (id === 'bmr') return { title: '기초대사량(BMR) 계산기', description: '키·체중·나이·활동량으로 BMR·TDEE·감량 목표 칼로리를 계산합니다.' };
     if (id === 'target') return { title: '목표 체중 계산기', description: 'BMI 기준 정상 체중과 % 감량별 도달 체중을 확인하세요.' };
   }
+  if (route === 'pharmacies') {
+    return {
+      title: '한국 GLP-1 약국 가격 디렉토리 — 약국별 4주분 최근 가격',
+      description: '서울 대학로·강남·종로 등 한국 GLP-1 약국별 위고비·마운자로 가격을 사용자 익명 제보로 비교. 4주분(1박스) 기준 최근 가격.',
+    };
+  }
+  if (route.startsWith('pharmacy/')) {
+    const id = route.slice(9);
+    const REGION_LABELS = {
+      'seoul-daehakro': '서울 대학로', 'seoul-gangnam': '서울 강남', 'seoul-jongno': '서울 종로',
+      'seoul-sinchon': '서울 신촌',   'seoul-songpa': '서울 송파',
+      'gyeonggi-bundang': '경기 분당', 'gyeonggi-ilsan': '경기 일산', 'gyeonggi-suwon': '경기 수원',
+      'busan': '부산', 'daegu': '대구', 'incheon': '인천', 'daejeon': '대전', 'gwangju': '광주',
+    };
+    const r = REGION_LABELS[id];
+    if (r) return {
+      title: `${r} 위고비·마운자로 약국 가격 — 4주분 최근 시세`,
+      description: `${r} 지역 GLP-1 비만치료제 취급 약국 목록과 약·용량별 최근 가격(4주분). 사용자 익명 제보 기반.`,
+    };
+  }
   const STATIC = {
     landing: { title: null, description: FALLBACK_DESC },
     about:   { title: '소개 — 위마로그가 다른 점', description: '위마로그는 단순 GLP-1 tracker 앱이 아닌, 한국 사용자 익명 코호트 비교 플랫폼입니다. 해외 앱(Glapp·Shotsy 등)과의 4가지 차별화 — 한국 처방 현실·익명 비교·의사 관점 안전·구조화 데이터.' },

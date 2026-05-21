@@ -7,8 +7,9 @@ const KEYS = {
   exercises: 'gl_exercises',   // 운동 기록
   diets: 'gl_diets',           // 식단 기록
   health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
+  pharmacyReports: 'gl_pharmacy_reports', // 공개 약국 가격 제보 (디렉토리)
   session: 'gl_session',
-  seeded: 'gl_seeded_v13',  // v13: 시드 운동/dose 데이터 정합성 (0분/null 운동 제거, '온라인' region 제거)
+  seeded: 'gl_seeded_v14',  // v14: 약국 가격 디렉토리 시드 추가
   migrated: 'gl_migrated_v2',
 };
 
@@ -82,6 +83,7 @@ const dosesCol     = makeCollection(KEYS.doses,      'doses');
 const exercisesCol = makeCollection(KEYS.exercises,  'exercises');
 const dietsCol     = makeCollection(KEYS.diets,      'diets');
 const healthCol    = makeCollection(KEYS.health,     'health_metrics');
+const pharmacyCol  = makeCollection(KEYS.pharmacyReports, 'pharmacy_reports');
 
 export const Storage = {
   // ---- users ----
@@ -159,6 +161,12 @@ export const Storage = {
   addHealthMetric: healthCol.add,
   updateHealthMetric: healthCol.update,
   deleteHealthMetric: healthCol.remove,
+
+  // ---- pharmacy price reports (공개 약국 가격 디렉토리) ----
+  getPharmacyReports: pharmacyCol.all,
+  setPharmacyReports: pharmacyCol.set,
+  addPharmacyReport: pharmacyCol.add,
+  deletePharmacyReport: pharmacyCol.remove,
 
   // ---- session ----
   getSession() { return read(KEYS.session, null); },
