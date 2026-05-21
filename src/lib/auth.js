@@ -67,11 +67,16 @@ export function syncOAuthUser(session) {
       targetWeight: null,
       conditions: {},
       purpose: 'weight',
+      visitPurpose: 'using',  // OAuth 신규 가입은 사용 중으로 기본 가정 — InitialSetup 우발적 재노출 방지
       concerns: [],
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
       createdAt: new Date().toISOString(),
       profileIncomplete: true, // height/weight 미입력 표시
     };
+    Storage.upsertUser(user);
+  } else if (!user.visitPurpose) {
+    // 기존 OAuth 사용자에 visitPurpose 없으면 default 부여 (재로그인 시 InitialSetup 우발 노출 방지)
+    user = { ...user, visitPurpose: 'using' };
     Storage.upsertUser(user);
   }
   Storage.setSession(userId);

@@ -145,8 +145,12 @@ export function Dashboard({ user, navigate }) {
   const liveUser = useMemo(() => Storage.getUser(user.id), [user.id, version]) || user;
   // OAuth 가입자는 profileIncomplete=true (height/startWeight 없음)
   const needsProfile = liveUser.profileIncomplete || !liveUser.height || !liveUser.startWeight;
-  // 신규 가입자 — 체중 log 0 또는 방문 목적 미입력 → InitialSetup만 표시 (다른 위젯 모두 숨김)
-  const needsInitialSetup = !liveUser.visitPurpose || logs.length === 0;
+  // 신규 가입자 — 모든 신호 부재 시에만 InitialSetup (한 가지라도 있으면 정상 dashboard).
+  // 이전 버그: OR 조건이라 OAuth 가입 후 데이터 입력했어도 재로그인 시 우발적 재노출.
+  const hasAnyData = logs.length > 0
+    || !!liveUser.startWeight
+    || (Storage.getDosesByUser(user.id)?.length || 0) > 0;
+  const needsInitialSetup = !liveUser.visitPurpose && !hasAnyData;
   if (needsInitialSetup) {
     return <InitialSetup user={liveUser} onDone={refresh} />;
   }

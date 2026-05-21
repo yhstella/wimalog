@@ -89,7 +89,21 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                   </span>
                 </button>
                 <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
-                {/* 탈퇴는 Profile → 데이터 관리 섹션에서만 가능 (헤더의 우발적 클릭 제거) */}
+                {/* 테스트용 탈퇴 — confirm 2회 + 본인 닉네임 입력 확인으로 우발 클릭 방지 */}
+                <button onClick={() => {
+                          if (!confirm(`정말 탈퇴하시겠습니까?\n\n${user.nickname || '본인'}님의 모든 데이터가 영구 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`)) return;
+                          const conf = prompt(`확인을 위해 닉네임 "${user.nickname || '나'}"을 정확히 입력해 주세요:`);
+                          if (conf !== (user.nickname || '나')) {
+                            alert('닉네임이 일치하지 않아 탈퇴가 취소되었습니다.');
+                            return;
+                          }
+                          Storage.deleteUser(user.id);
+                          onLogout();
+                        }}
+                        title="탈퇴 (테스트용)"
+                        className="text-[11px] font-semibold px-2 py-1 rounded-md bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition hidden sm:inline-flex">
+                  탈퇴
+                </button>
               </div>
             ) : (
               <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">
