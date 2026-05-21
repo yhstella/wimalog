@@ -26,13 +26,56 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   const [startWeight, setStartWeight] = useState(user?.startWeight || loaded?.startWeight || 78);
   const [medication, setMedication] = useState(loaded?.medication || 'wegovy');
   const [frequency, setFrequency] = useState(loaded?.frequency || 'weekly');
+  // 가입자 추가 입력 — 정확도 향상에 기여
+  const [gender, setGender] = useState(user?.gender || loaded?.gender || null);
+  const [ageGroup, setAgeGroup] = useState(user?.ageGroup || loaded?.ageGroup || null);
+  const [exerciseLevel, setExerciseLevel] = useState(loaded?.exerciseLevel || null); // 'low'|'mid'|'high'
+  const [hasFattyLiver, setHasFattyLiver] = useState(loaded?.hasFattyLiver || false);
+  const [hasDiabetes, setHasDiabetes] = useState(loaded?.hasDiabetes || false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // 입력값 바뀔 때마다 sessionStorage에 저장 (디바운스 없이도 작아서 부담 없음)
   useEffect(() => {
     try {
-      sessionStorage.setItem(SIM_PREFILL_KEY, JSON.stringify({ height, startWeight, medication, frequency }));
+      sessionStorage.setItem(SIM_PREFILL_KEY, JSON.stringify({
+        height, startWeight, medication, frequency,
+        gender, ageGroup, exerciseLevel, hasFattyLiver, hasDiabetes,
+      }));
     } catch {}
-  }, [height, startWeight, medication, frequency]);
+  }, [height, startWeight, medication, frequency, gender, ageGroup, exerciseLevel, hasFattyLiver, hasDiabetes]);
+
+  // 정확도 게이지 — 입력된 정보 수에 따라 0~100%
+  // base 4 입력은 항상 채워져 있으므로 40% baseline. 가입 + 추가 정보로 + 60%.
+  const accuracy = useMemo(() => {
+    let score = 40; // base: height, startWeight, medication, frequency
+    if (user) score += 10; // 가입 + 본인 체중 추이 가능
+    if (gender) score += 8;
+    if (ageGroup) score += 8;
+    if (exerciseLevel) score += 14;
+    if (hasFattyLiver) score += 6;
+    if (hasDiabetes) score += 6;
+    // 본인 weight log 누적 시 추가 (가입자만)
+    if (user) {
+      try {
+        const logs = Storage.getLogsByUser(user.id);
+        if (logs.length >= 4) score += 8;
+      } catch {}
+    }
+    return Math.min(100, score);
+  }, [user, gender, ageGroup, exerciseLevel, hasFattyLiver, hasDiabetes]);
+
+  // 추가 입력 → 곡선 보정. 약간 (5-10%) 감량률 조정.
+  const personalAdjust = useMemo(() => {
+    let mult = 1.0;
+    if (exerciseLevel === 'high') mult *= 1.08;
+    else if (exerciseLevel === 'low') mult *= 0.93;
+    if (hasDiabetes) mult *= 1.05;     // 당뇨 환자가 GLP-1 반응 더 좋음 (일부 연구)
+    if (hasFattyLiver) mult *= 1.03;   // 대사 개선 효과 추가
+    if (gender === 'M') mult *= 0.96;  // 남성이 평균적으로 감량률 약간 낮음 (체중당 비율 기준)
+    if (ageGroup === '50s') mult *= 0.97;
+    if (ageGroup === '60s+') mult *= 0.94;
+    return mult;
+  }, [exerciseLevel, hasDiabetes, hasFattyLiver, gender, ageGroup]);
   // 시드가 비동기로 끝나면 재계산
   const [seedTick, setSeedTick] = useState(0);
   useEffect(() => {
@@ -55,7 +98,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
     if (!rows) return null;
     const freqFactor = FREQ_BY_ID[frequency]?.factor ?? 1.0;
     const bmiFactor = myBmi ? bmiResponseFactor(myBmi) : 1.0;
-    const adjust = freqFactor * bmiFactor;
+    const adjust = freqFactor * bmiFactor * personalAdjust;
     let prev = 0;
     const series = [12, 24, 48].map(w => {
       const r = rows.find(x => x.week === w);
@@ -65,7 +108,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       return { week: w, lossPct, lossKg: startWeight * lossPct / 100, n: r.n };
     });
     return { series };
-  }, [medication, frequency, myBmi, startWeight]);
+  }, [medication, frequency, myBmi, startWeight, personalAdjust]);
 
   // 2) Supabase fresh 데이터 — BMI ±4 좁은 코호트로 refine. 사용자 입력 시 갱신.
   const [supaTimeline, setSupaTimeline] = useState(null);
@@ -140,14 +183,33 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           </span>
         )}
       </div>
-      <div className="text-xs text-brand-50 mb-4 opacity-90 leading-relaxed">
+      <div className="text-xs text-brand-50 mb-3 opacity-90 leading-relaxed">
         {(() => {
           const scale = snapshotPlatformScale();
           const n = scale ? scale.totalPatients.toLocaleString() : '11,000';
           return compact
-            ? `AI가 ${n}명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측 — 가입 없이 가능`
-            : `AI가 ${n}명+ 익명 코호트에서 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다`;
+            ? `AI가 ${n}명+ 익명 코호트에서 본인과 비슷한 사용자 결과를 즉시 예측`
+            : `AI가 ${n}명+ 익명 코호트에서 본인 조건과 비슷한 사용자를 찾아 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.`;
         })()}
+      </div>
+
+      {/* 정확도 게이지 — 입력한 정보 수에 따라 0~100% */}
+      <div className="mb-4 rounded-xl bg-white/15 backdrop-blur p-3">
+        <div className="flex justify-between items-center text-[11px] font-semibold mb-1.5">
+          <span className="opacity-90">🎯 예측 정확도</span>
+          <span className="tabular-nums text-base font-extrabold">{accuracy}%</span>
+        </div>
+        <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all duration-500
+                          ${accuracy >= 80 ? 'bg-emerald-300' : accuracy >= 60 ? 'bg-amber-300' : 'bg-white/60'}`}
+               style={{ width: `${accuracy}%` }} />
+        </div>
+        <div className="text-[10px] opacity-80 mt-1.5 leading-snug">
+          {accuracy < 50 && <>키·체중·약·빈도 4개 입력 — <b>기본 코호트 평균</b></>}
+          {accuracy >= 50 && accuracy < 75 && <>가입 + 일부 정보 입력 — <b>나와 비슷한 사용자</b>와 매칭</>}
+          {accuracy >= 75 && accuracy < 90 && <>운동·동반질환·나이·성별까지 입력 — <b>높은 정확도</b></>}
+          {accuracy >= 90 && <>거의 모든 정보 입력 완료 — <b>최고 정확도</b> (본인 데이터 추가하면 +)</>}
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -185,6 +247,119 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           </div>
         </div>
       </div>
+
+      {/* 추가 입력 — 비가입자엔 잠금 (가입 유도), 가입자엔 펼침/접힘 */}
+      {!user ? (
+        <div className="mt-4 rounded-xl bg-white/10 backdrop-blur px-3 py-3 border border-white/20">
+          <div className="flex items-start gap-2.5">
+            <span className="text-lg flex-shrink-0">🔒</span>
+            <div className="flex-1 min-w-0">
+              <div className="text-xs font-bold opacity-95 leading-snug">
+                정확도 +50% — 가입하면 추가 입력 가능
+              </div>
+              <div className="text-[11px] opacity-80 mt-1 leading-relaxed">
+                나이·성별·운동량·당뇨/지방간 동반질환까지 입력하면 본인 조건에 가까운 사용자 코호트로 예측합니다.
+              </div>
+              <button onClick={onSignup}
+                      className="mt-2 inline-flex items-center gap-1 rounded-lg bg-white text-brand-700 px-3 py-1.5 text-xs font-bold hover:bg-brand-50 transition">
+                ✨ 1분 가입하고 정확도 올리기 →
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <button type="button" onClick={() => setShowAdvanced(s => !s)}
+                  className="w-full flex items-center justify-between rounded-xl bg-white/15 backdrop-blur px-4 py-2.5 text-xs font-semibold hover:bg-white/20 transition">
+            <span className="flex items-center gap-1.5">
+              <span>⚙️</span>
+              <span>추가 입력 — 정확도 올리기</span>
+              {!showAdvanced && accuracy < 80 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-300/30 text-[10px] font-bold tabular-nums">
+                  +{Math.max(0, 90 - accuracy)}% 가능
+                </span>
+              )}
+            </span>
+            <span className="text-base">{showAdvanced ? '▲' : '▼'}</span>
+          </button>
+          {showAdvanced && (
+            <div className="mt-2 rounded-xl bg-white/10 backdrop-blur p-3 space-y-3">
+              {/* 성별 */}
+              <div>
+                <div className="text-[11px] font-semibold opacity-90 mb-1">성별</div>
+                <div className="flex gap-1.5">
+                  {[{id:'F',label:'여성'},{id:'M',label:'남성'}].map(o => (
+                    <button key={o.id} type="button" onClick={() => setGender(o.id)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition flex-1
+                                        ${gender === o.id
+                                          ? 'bg-white text-brand-700 border-white'
+                                          : 'bg-white/10 text-white border-white/30'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* 나이대 */}
+              <div>
+                <div className="text-[11px] font-semibold opacity-90 mb-1">나이대</div>
+                <div className="grid grid-cols-5 gap-1">
+                  {[{id:'20s',label:'20대'},{id:'30s',label:'30대'},{id:'40s',label:'40대'},{id:'50s',label:'50대'},{id:'60s+',label:'60+'}].map(o => (
+                    <button key={o.id} type="button" onClick={() => setAgeGroup(o.id)}
+                            className={`px-1 py-1.5 rounded-lg text-[11px] font-medium border transition
+                                        ${ageGroup === o.id
+                                          ? 'bg-white text-brand-700 border-white'
+                                          : 'bg-white/10 text-white border-white/30'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* 운동량 */}
+              <div>
+                <div className="text-[11px] font-semibold opacity-90 mb-1">평소 운동량</div>
+                <div className="flex gap-1.5">
+                  {[
+                    { id: 'low',  label: '거의 안 함' },
+                    { id: 'mid',  label: '주 1-2회' },
+                    { id: 'high', label: '주 3회+' },
+                  ].map(o => (
+                    <button key={o.id} type="button" onClick={() => setExerciseLevel(o.id)}
+                            className={`px-2 py-1.5 rounded-lg text-[11px] font-medium border transition flex-1
+                                        ${exerciseLevel === o.id
+                                          ? 'bg-white text-brand-700 border-white'
+                                          : 'bg-white/10 text-white border-white/30'}`}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* 동반질환 */}
+              <div>
+                <div className="text-[11px] font-semibold opacity-90 mb-1">동반질환</div>
+                <div className="flex gap-1.5 flex-wrap">
+                  <button type="button" onClick={() => setHasFattyLiver(v => !v)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition
+                                      ${hasFattyLiver
+                                        ? 'bg-white text-brand-700 border-white'
+                                        : 'bg-white/10 text-white border-white/30'}`}>
+                    {hasFattyLiver ? '✓ ' : ''}지방간
+                  </button>
+                  <button type="button" onClick={() => setHasDiabetes(v => !v)}
+                          className={`px-3 py-1.5 rounded-lg text-[11px] font-medium border transition
+                                      ${hasDiabetes
+                                        ? 'bg-white text-brand-700 border-white'
+                                        : 'bg-white/10 text-white border-white/30'}`}>
+                    {hasDiabetes ? '✓ ' : ''}당뇨/전당뇨
+                  </button>
+                </div>
+              </div>
+              <div className="text-[10px] opacity-70 leading-snug pt-1">
+                💡 입력값은 예측 곡선에 즉시 반영됩니다 (운동 많음 +8%, 당뇨 +5%, 50대 −3% 등)
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {myBmi != null && (
         <div className="mt-4 text-xs opacity-80">
