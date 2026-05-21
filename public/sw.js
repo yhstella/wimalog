@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v8';   // bumped 2026-05-21: TOSS 톤 — 큰 숫자·짧은 카피·터치 44px·백드롭 닫기·jargon 정리
+const VERSION = 'v9';   // bumped 2026-05-21: Compare 정렬·sticky + Guide cross-link
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

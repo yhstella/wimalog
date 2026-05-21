@@ -64,7 +64,37 @@ export function CompareDrugsPage({ navigate, user }) {
   const sideByMed = supaSideByMed || localSideByMed;
   const priceByMed = supaPriceByMed || localPriceByMed;
 
-  const drugs = Object.values(DRUG_CONTENT);
+  // 정렬 — TOSS 톤: 사용자가 원하는 기준으로 정렬
+  const [sortKey, setSortKey] = useState('default');  // 'default' | 'loss' | 'side' | 'price'
+  const drugs = useMemo(() => {
+    const list = Object.values(DRUG_CONTENT);
+    if (sortKey === 'loss') {
+      return [...list].sort((a, b) => {
+        const av = compare12.find(c => c.id === a.id)?.avg ?? 0;
+        const bv = compare12.find(c => c.id === b.id)?.avg ?? 0;
+        return bv - av;  // 큰 감량 먼저
+      });
+    }
+    if (sortKey === 'side') {
+      return [...list].sort((a, b) => (sideByMed[a.id]?.nausea ?? 0) - (sideByMed[b.id]?.nausea ?? 0));
+    }
+    if (sortKey === 'price') {
+      return [...list].sort((a, b) => (priceByMed[a.id] ?? Infinity) - (priceByMed[b.id] ?? Infinity));
+    }
+    return list;
+  }, [sortKey, compare12, sideByMed, priceByMed]);
+
+  const SortHeader = ({ col, label, align = 'right' }) => (
+    <th className={`py-2 px-2 text-${align} ${col ? 'cursor-pointer hover:text-brand-700 dark:hover:text-brand-400 transition select-none' : ''}`}
+        onClick={col ? () => setSortKey(sortKey === col ? 'default' : col) : undefined}>
+      {label}
+      {col && (
+        <span className={`ml-0.5 text-[9px] ${sortKey === col ? 'text-brand-700 dark:text-brand-400' : 'opacity-40'}`}>
+          {sortKey === col ? '↑' : '⇅'}
+        </span>
+      )}
+    </th>
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -77,50 +107,57 @@ export function CompareDrugsPage({ navigate, user }) {
         </p>
       </header>
 
-      {/* 한눈 비교 표 */}
-      <section className="card overflow-x-auto">
-        <h2 className="section-title mb-3">핵심 지표</h2>
-        <table className="w-full text-sm min-w-[600px]">
-          <thead>
-            <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800">
-              <th className="py-2 pr-2">약</th>
-              <th className="py-2 px-2 text-right">12주 감량</th>
-              <th className="py-2 px-2 text-right">최종 효과</th>
-              <th className="py-2 px-2 text-right">오심</th>
-              <th className="py-2 px-2 text-right">평균 가격(1회)</th>
-              <th className="py-2 px-2">주기</th>
-            </tr>
-          </thead>
-          <tbody>
-            {drugs.map(d => {
-              const c12 = compare12.find(c => c.id === d.id);
-              const kg12 = c12?.avg != null ? (refWeight * c12.avg / 100).toFixed(1) : null;
-              return (
-                <tr key={d.id} className="border-b border-ink-100 dark:border-slate-800 hover:bg-ink-100/30 dark:hover:bg-slate-800/30">
-                  <td className="py-2 pr-2">
-                    <button onClick={() => navigate(`drug/${d.id}`)}
-                            className="font-bold text-ink-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-400">
-                      {d.label} <span className="text-[10px] text-ink-300 dark:text-slate-600">▸</span>
-                    </button>
-                  </td>
-                  <td className="py-2 px-2 text-right tabular-nums">
-                    {kg12 ? <span className="font-semibold text-brand-700 dark:text-brand-400">−{kg12} kg</span> : '—'}
-                  </td>
-                  <td className="py-2 px-2 text-right tabular-nums text-ink-700 dark:text-slate-300">{d.efficacy.headlineKg}</td>
-                  <td className="py-2 px-2 text-right tabular-nums text-rose-600 dark:text-rose-400">
-                    {Math.round((sideByMed[d.id]?.nausea ?? 0) * 100)}%
-                  </td>
-                  <td className="py-2 px-2 text-right tabular-nums">
-                    {priceByMed[d.id] ? `${Math.round(priceByMed[d.id]).toLocaleString()}원` : '—'}
-                  </td>
-                  <td className="py-2 px-2 text-xs text-ink-500 dark:text-slate-400">{d.frequency}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <p className="helptext mt-3">
-          12주 감량은 본인 시작 체중 <b>{refWeight} kg</b> 기준 환산. 최종 효과는 임상시험 결과 (68-72주).
+      {/* 한눈 비교 표 — 모바일 sticky 첫 열 + 정렬 */}
+      <section className="card !p-0 overflow-hidden">
+        <div className="p-5 pb-3">
+          <div className="flex justify-between items-center gap-2 flex-wrap">
+            <h2 className="section-title !mb-0">핵심 지표</h2>
+            <span className="text-[10px] text-ink-500 dark:text-slate-500">컬럼명 클릭 = 정렬</span>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[600px]">
+            <thead>
+              <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800">
+                <th className="py-2 pl-5 pr-2 sticky left-0 bg-white dark:bg-slate-900 z-10">약</th>
+                <SortHeader col="loss" label="12주 감량" />
+                <th className="py-2 px-2 text-right">최종 효과</th>
+                <SortHeader col="side" label="오심" />
+                <SortHeader col="price" label="평균 (4주분)" />
+                <th className="py-2 px-2 pr-5">주기</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drugs.map(d => {
+                const c12 = compare12.find(c => c.id === d.id);
+                const kg12 = c12?.avg != null ? (refWeight * c12.avg / 100).toFixed(1) : null;
+                return (
+                  <tr key={d.id} className="border-b border-ink-100 dark:border-slate-800 hover:bg-ink-100/30 dark:hover:bg-slate-800/30">
+                    <td className="py-2 pl-5 pr-2 sticky left-0 bg-white dark:bg-slate-900">
+                      <button onClick={() => navigate(`drug/${d.id}`)}
+                              className="font-bold text-ink-900 dark:text-slate-100 hover:text-brand-700 dark:hover:text-brand-400 whitespace-nowrap">
+                        {d.label.replace(/\s*\(.+\)/, '')} <span className="text-[10px] text-ink-300 dark:text-slate-600">▸</span>
+                      </button>
+                    </td>
+                    <td className="py-2 px-2 text-right tabular-nums">
+                      {kg12 ? <span className="font-semibold text-brand-700 dark:text-brand-400">−{kg12} kg</span> : '—'}
+                    </td>
+                    <td className="py-2 px-2 text-right tabular-nums text-ink-700 dark:text-slate-300 whitespace-nowrap">{d.efficacy.headlineKg}</td>
+                    <td className="py-2 px-2 text-right tabular-nums text-rose-600 dark:text-rose-400">
+                      {Math.round((sideByMed[d.id]?.nausea ?? 0) * 100)}%
+                    </td>
+                    <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">
+                      {priceByMed[d.id] ? `${Math.round(priceByMed[d.id] / 10000)}만원` : '—'}
+                    </td>
+                    <td className="py-2 px-2 pr-5 text-xs text-ink-500 dark:text-slate-400 whitespace-nowrap">{d.frequency}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <p className="helptext px-5 pb-4 mt-3">
+          12주 감량은 본인 시작 체중 <b>{refWeight} kg</b> 기준. 평균 가격은 4주분(1박스). 최종 효과는 임상시험 결과 (68-72주).
         </p>
       </section>
 
