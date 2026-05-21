@@ -259,7 +259,7 @@ export function Statistics({ user, navigate, onSignup }) {
           <div className="flex-1">
             <div className="font-bold text-ink-900 dark:text-slate-100">지금 보고 계신 것은 전체 데이터의 일부입니다</div>
             <div className="text-sm text-ink-500 dark:text-slate-400 mt-1">
-              본인 키·체중·약만 입력하면 한국 사용 패턴 코호트의 전체 평균 곡선·약제 비교·지역별 가격·부작용 발생률을 모두 보여드려요.
+              본인 키·체중·약만 입력하면 실사용자 익명 데이터의 전체 평균 곡선·약제 비교·지역별 가격·부작용 발생률을 모두 보여드려요.
             </div>
           </div>
           <button onClick={handleSignup} className="btn-primary !py-2 !px-3 text-sm flex-shrink-0">

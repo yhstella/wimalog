@@ -236,7 +236,7 @@ export function CohortLive({ navigate, onSignup, user = null }) {
       <div className="mt-3 rounded-xl bg-brand-50/50 dark:bg-brand-900/15 px-3 py-2.5 border border-brand-200/40 dark:border-brand-800/30">
         <div className="flex items-start gap-2">
           <p className="text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
-            <b>본인 데이터를 추가할수록 예측이 정밀해져요.</b>
+            <b>본인 데이터를 추가할수록 AI 예측이 정밀해져요.</b>
             <span className="text-ink-500 dark:text-slate-400">
               {' '}
               {user

@@ -381,7 +381,7 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
         <p className="mt-2 text-slate-300 text-sm leading-relaxed">
           {user
             ? '대시보드에서 본인 진척도 + 비슷한 사용자 비교를 확인하세요.'
-            : <>본인 키·체중·약 입력하면 한국 사용 패턴 코호트의 주차별 감량 곡선이 바로 나옵니다.</>}
+            : <>실사용자 익명 데이터 기반 — 본인 키·체중·약 입력하면 주차별 감량 곡선이 바로 나옵니다.</>}
         </p>
         <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">

@@ -22,6 +22,7 @@ import { EmptyDashboard } from './EmptyDashboard.jsx';
 import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
 import { MilestoneCard } from './MilestoneCard.jsx';
 import { CostInsightCard } from './CostInsightCard.jsx';
+import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { InitialSetup } from './InitialSetup.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
@@ -43,10 +44,21 @@ export function Dashboard({ user, navigate }) {
     ? personalSummaryForCourse(user, logs, current)
     : personalSummary(user, logs), [user, logs, current]);
 
-  // 비교 코호트
-  const similar   = useMemo(() => similarFilter(user, current), [user, current]);
-  const cohortN   = useMemo(() => cohortSize(similar), [similar]);
-  const cohortCurve = useMemo(() => avgLossCurve(similar), [similar]);
+  // 비교 코호트 — localStorage 시드 우선, 비어있으면 snapshot fallback
+  const similar    = useMemo(() => similarFilter(user, current), [user, current]);
+  const localN     = useMemo(() => cohortSize(similar), [similar]);
+  const localCurve = useMemo(() => avgLossCurve(similar), [similar]);
+  // snapshot fallback — 약별 곡선 (medication 기반)
+  const snapCurve = useMemo(() => {
+    if (!current?.medication) return null;
+    const rows = snapshotAvgLossCurve(current.medication, [4, 8, 12, 16, 24, 36, 48]);
+    if (!rows || !rows.length) return null;
+    return rows.map(r => ({ week: r.week, avg: r.avg / 100, n: r.n, median: r.median != null ? r.median / 100 : null }));
+  }, [current]);
+  // cohortCurve: localStorage 시드 우선, 비어있으면 snapshot
+  const cohortCurve = (localCurve && localCurve.some(c => c.n > 0)) ? localCurve : (snapCurve || localCurve);
+  // cohortN: snapshot 사용 시 가장 큰 주차의 n 사용
+  const cohortN = localN > 0 ? localN : (snapCurve ? Math.max(...snapCurve.map(c => c.n || 0)) : 0);
 
   // 본인 코호트 기반 rebound 예상 (약 사용 중일 때만 노출)
   // similar 필터가 너무 좁으면 표본 부족 → 약제만 매칭하는 fallback 사용

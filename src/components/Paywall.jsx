@@ -73,13 +73,13 @@ export function PremiumBadge({ size = 'sm' }) {
 }
 
 /* ============================================================
-   Free Badge — 베타 기간 무료, 추후 일부 기능 유료 가능성 시사
+   Free Badge — 현재 무료, 추후 일부 기능 유료 가능성 시사
 ============================================================ */
 export function FreeBadge({ size = 'sm' }) {
   return (
     <span className={`inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold
                       ${size === 'sm' ? 'text-[10px] px-2 py-0.5' : 'text-xs px-2.5 py-1'}`}>
-      🆓 Free 베타
+      🆓 Free
     </span>
   );
 }
@@ -91,13 +91,13 @@ export function FuturePricingHint({ inline = false }) {
   if (inline) {
     return (
       <span className="text-[10px] text-ink-500 dark:text-slate-500">
-        🆓 Free 베타 · 추후 일부 기능은 유료화 검토 중
+        🆓 현재 무료 · 추후 일부 기능은 유료화 검토 중
       </span>
     );
   }
   return (
     <div className="rounded-lg bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200/40 dark:border-emerald-800/30 px-3 py-2 text-xs text-emerald-900 dark:text-emerald-100 leading-relaxed">
-      🆓 <b>Free 베타 기간</b> — 현재 모든 기능 무료. 추후 진료용 PDF·AI 리포트·약가 가성비 분석 등 일부 기능은 유료화 검토 중입니다.
+      🆓 <b>현재 모든 기능 무료</b> — 추후 진료용 PDF·AI 리포트·약가 가성비 분석 등 일부 기능은 유료화 검토 중입니다.
     </div>
   );
 }
@@ -222,7 +222,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
         <div className="sticky top-0 bg-white border-b border-ink-100 px-5 py-3 flex justify-between items-center">
           <div>
             <div className="font-bold text-ink-900 dark:text-slate-100">🔮 내 감량 곡선 보기</div>
-            <div className="text-xs text-ink-500">키·체중만 알려주면 한국 사용 패턴 코호트로 즉시 예측</div>
+            <div className="text-xs text-ink-500">키·체중만 알려주면 실사용자 데이터로 즉시 AI 예측</div>
           </div>
           <button onClick={onClose} className="btn-ghost !p-2">✕</button>
         </div>

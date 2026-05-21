@@ -225,10 +225,10 @@ export function Profile({ user, navigate, onLogout, refresh }) {
         </button>
       </div>
 
-      {/* 추천인 시스템 — 본인 코드 + 다른 사람 초대 (Free 베타) */}
+      {/* 추천인 시스템 — 본인 코드 + 다른 사람 초대 */}
       <ReferralCard user={user} />
 
-      {/* 알림 설정 — 베타 placeholder */}
+      {/* 알림 설정 — placeholder */}
       <NotificationSettings user={user} />
 
       {/* 데이터 관리 */}
@@ -278,7 +278,7 @@ function ReadRow({ k, v }) {
   );
 }
 
-// 추천인 카드 — 본인 코드 + 친구 초대 (베타 placeholder)
+// 추천인 카드 — 본인 코드 + 친구 초대 (placeholder)
 function ReferralCard({ user }) {
   const [copied, setCopied] = React.useState(false);
   // 사용자 ID 기반 짧은 추천 코드 생성 (해시 단순화)
@@ -305,7 +305,7 @@ function ReferralCard({ user }) {
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="section-title !mb-0">친구·동료 초대</h2>
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
-              Free 베타
+              Free
             </span>
           </div>
           <p className="section-subtitle">

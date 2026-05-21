@@ -195,7 +195,7 @@ export function GuidePage({ guideId, navigate, onSignup, user }) {
         <p className="text-base font-semibold leading-relaxed">{guide.cta}</p>
         {!user && (
           <p className="mt-2 text-brand-50 text-xs">
-            한국 사용 패턴 코호트 기반
+            실사용자 익명 데이터 기반 AI 예측
           </p>
         )}
         <button onClick={handleSignup}

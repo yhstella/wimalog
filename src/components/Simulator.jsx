@@ -195,6 +195,9 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       <div className="flex items-center gap-2 mb-1 flex-wrap">
         <span className="text-xl">🔮</span>
         <div className="font-bold text-lg">내가 쓰면 어떻게 될까?</div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur text-[10px] font-bold uppercase tracking-wider">
+          AI 예측
+        </span>
         {supaRefreshing && (
           <span title="입력값에 맞춰 최신 데이터 가져오는 중"
                 className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/15 backdrop-blur text-[10px]">
@@ -205,8 +208,8 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       </div>
       <div className="text-xs text-brand-50 mb-3 opacity-90 leading-relaxed">
         {compact
-          ? '한국 사용 패턴 코호트에서 본인 조건과 비슷한 결과를 즉시 예측'
-          : '한국 사용 패턴 코호트(임상 reference + 시뮬레이션 + 익명 가입자 누적)에서 본인 조건과 비슷한 사용자를 찾아 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.'}
+          ? '실사용자 익명 데이터로 본인과 비슷한 결과를 즉시 예측'
+          : '실사용자 익명 데이터 기반 AI 예측 — 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.'}
       </div>
 
       {/* 정확도 게이지 — 입력한 정보 수에 따라 0~100% */}
@@ -493,7 +496,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       )}
       <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">
         <p className="text-[11px] leading-relaxed">
-          <b>입력이 자세할수록 예측이 정확해져요.</b>
+          <b>입력이 자세할수록 AI 예측이 정확해져요.</b>
           {user
             ? <> 체중 추이·운동·식단·부작용·동반질환을 더 입력하면 본인 조건에 맞춤화됩니다.</>
             : <> 가입 후 체중 추이·운동·식단·부작용·동반질환까지 추가하면 본인 조건에 맞춤화됩니다.</>

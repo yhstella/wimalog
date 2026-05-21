@@ -37,14 +37,14 @@ export function Landing({ navigate, onSignup, user }) {
       <section className="text-center pt-2 sm:pt-6">
         <div className="inline-flex items-center gap-1.5 chip-brand mb-4">
           <span>🇰🇷</span>
-          <span>한국 GLP-1 리얼데이터 · 베타</span>
+          <span>한국 GLP-1 리얼데이터</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-ink-900 dark:text-slate-100 leading-[1.15] tracking-tight">
           위고비·마운자로,<br />
           <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은<br className="sm:hidden" /> 얼마나 빠졌을까?
         </h1>
         <p className="mt-4 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
-          본인 키·체중·약을 입력하면 비슷한 사용자의 1년 감량 곡선이 바로 나와요.
+          실사용자 익명 데이터 기반 AI 예측 — 키·체중·약을 입력하면 비슷한 사용자의 1년 감량 곡선이 바로 나와요.
         </p>
       </section>
 
@@ -67,7 +67,7 @@ export function Landing({ navigate, onSignup, user }) {
                   방금 입력한 <span className="tabular-nums">{prefill.height}cm · {prefill.startWeight}kg</span> 조건의 상세 예측을 볼까요?
                 </div>
                 <div className="text-xs text-amber-800 dark:text-amber-200/80 mt-1 leading-relaxed">
-                  가입하면 <b>나와 비슷한 사용자</b> 코호트의 주차별 감량·부작용·중단 후 회복 곡선이 실시간으로 정밀화됩니다.
+                  가입하면 <b>나와 비슷한 실사용자</b>의 주차별 감량·부작용·중단 후 회복 곡선이 실시간으로 정밀화됩니다.
                 </div>
                 <button onClick={handleSignup}
                         className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 text-sm font-bold transition shadow-sm">
@@ -230,7 +230,7 @@ export function Landing({ navigate, onSignup, user }) {
         <p className="mt-2 text-slate-300 text-xs leading-relaxed">
           {user
             ? '대시보드에서 본인 데이터 + 비슷한 사용자 평균을 확인하세요'
-            : <>가입하면 <b className="text-white">나와 같은 BMI·약·빈도</b> 사용자의 주차별 곡선 + 부작용 시점 + 중단 후 회복률 실시간 확인</>}
+            : <>실사용자 익명 데이터 기반 — 가입하면 <b className="text-white">나와 같은 BMI·약·빈도</b> 사용자의 주차별 곡선 + 부작용 시점 + 중단 후 회복률 실시간 확인</>}
         </p>
         <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold hover:bg-brand-600 transition">
