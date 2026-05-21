@@ -6,7 +6,7 @@ import { MED_BY_ID } from '../lib/constants.js';
 // - 좌클릭/드래그: 선 그리기 (여러 날짜 한 번에 입력)
 //   드래그 끝나면 모든 점을 weight_logs로 저장 + 다이얼은 마지막 점으로 sync
 // - 다이얼에서 받은 currentWeight: today 위치에 큰 marker로 표시
-// - 우클릭 + 드래그: 약 처방 추가 (mousedown에서 시작, mouseup에서 방향 판정)
+// - 우클릭 + 드래그: 투약 기록 추가 (mousedown에서 시작, mouseup에서 방향 판정)
 //   위로 = 용량 증량, 아래로 = 감량, 정지 = 같은 용량
 // - 활성 약 코스 있어야 우클릭 dose 가능.
 // currentDateMs: 부모가 클릭한 raw ms를 그대로 받음 (round 안 함) — marker 위치 정확 동기화
@@ -214,7 +214,7 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     const active = allCourses.filter(c => !c.endDate);
     const course = active[0] || allCourses[allCourses.length - 1];  // active 없어도 가장 최근 코스 사용
     if (!course) {
-      alert('약을 먼저 등록해야 그래프에서 처방을 추가할 수 있어요. (메뉴 → 약)');
+      alert('약을 먼저 등록해야 그래프에서 투약을 추가할 수 있어요. (메뉴 → 약)');
       return;
     }
     const med = MED_BY_ID[course.medication];
@@ -276,29 +276,43 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     <div className={`rounded-xl border-2 overflow-hidden transition-colors ${touchMode === 'dose'
         ? 'border-orange-300 dark:border-orange-800/50 bg-orange-50/30 dark:bg-orange-900/10'
         : 'border-ink-200 dark:border-slate-700 bg-ink-100/20 dark:bg-slate-800/20'}`}>
-      {/* 모바일용 모드 토글 + 안내 */}
-      <div className="px-2 py-1.5 border-b border-ink-100 dark:border-slate-800 flex flex-wrap gap-2 items-center justify-between">
-        <div className="flex gap-1">
+      {/* 조작법 큰 안내 — 사용자가 한 눈에 이해 */}
+      <div className="px-3 py-2.5 bg-gradient-to-r from-brand-50/60 to-orange-50/60 dark:from-brand-900/15 dark:to-orange-900/15 border-b border-ink-100 dark:border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] sm:text-xs">
+          <div className="flex items-start gap-2">
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-brand-500 text-white text-[10px] font-bold flex-shrink-0">L</span>
+            <div className="leading-snug">
+              <div className="font-bold text-brand-800 dark:text-brand-200">⚖️ 왼쪽 클릭 + 드래그</div>
+              <div className="text-ink-600 dark:text-slate-400">체중 추이 그리기</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500 text-white text-[10px] font-bold flex-shrink-0">R</span>
+            <div className="leading-snug">
+              <div className="font-bold text-orange-800 dark:text-orange-200">💉 오른쪽 클릭 + 드래그</div>
+              <div className="text-ink-600 dark:text-slate-400">
+                위↑ <b className="text-emerald-600 dark:text-emerald-400">증량</b> · 아래↓ <b className="text-rose-600 dark:text-rose-400">감량</b> 투약
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* 모바일용 모드 토글 (작게, 화면 우측) */}
+        <div className="sm:hidden mt-2 flex gap-1 justify-end">
+          <span className="text-[10px] text-ink-500 dark:text-slate-500 self-center mr-1">모바일:</span>
           <button type="button" onClick={() => setTouchMode('weight')}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${touchMode === 'weight'
+                  className={`px-2 py-1 rounded-md text-[10px] font-semibold transition ${touchMode === 'weight'
                     ? 'bg-brand-500 text-white'
                     : 'bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300'}`}>
-            ⚖️ 체중
+            체중
           </button>
           <button type="button" onClick={() => setTouchMode('dose')}
                   disabled={!activeCourses.length}
-                  title={!activeCourses.length ? '활성 약 필요' : ''}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${touchMode === 'dose'
+                  className={`px-2 py-1 rounded-md text-[10px] font-semibold transition disabled:opacity-40 ${touchMode === 'dose'
                     ? 'bg-orange-500 text-white'
                     : 'bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300'}`}>
-            💊 처방
+            투약
           </button>
         </div>
-        <span className="text-[10px] text-ink-500 dark:text-slate-400 flex-1 text-right">
-          {touchMode === 'weight'
-            ? <>드래그 = 선 그리기</>
-            : <>드래그 위↑ <b className="text-emerald-600">증량</b> · 아래↓ <b className="text-rose-600">감량</b></>}
-        </span>
       </div>
       <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`}
            className="w-full block cursor-crosshair touch-none select-none"
@@ -395,9 +409,8 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
       </svg>
       <div className="px-2 py-1 border-t border-ink-100 dark:border-slate-800 flex gap-3 flex-wrap text-[10px] text-ink-500 dark:text-slate-500">
         <span><span className="inline-block w-2 h-2 rounded-full bg-slate-400 mr-1"></span>기존 체중</span>
-        <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>처방</span>
+        <span><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-1"></span>투약</span>
         <span><span className="inline-block w-2 h-2 rounded-full bg-brand-500 mr-1"></span>입력 중</span>
-        <span className="ml-auto hidden sm:inline opacity-70">데스크탑: 좌클릭/우클릭으로 모드 자동 선택</span>
       </div>
       {activeCourses[0] && (
         <div className="px-2 py-1 border-t border-ink-100 dark:border-slate-800 text-[10px] text-ink-500 dark:text-slate-400">
