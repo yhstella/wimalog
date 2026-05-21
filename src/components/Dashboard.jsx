@@ -18,6 +18,7 @@ import { NotificationBanner } from './NotificationBanner.jsx';
 import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
+import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
 import { InitialSetup } from './InitialSetup.jsx';
 import { MotivationBanner } from './MotivationBanner.jsx';
 
@@ -453,7 +454,10 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 최근 부작용 + 안전 */}
+      {/* 부작용 인사이트 — 본인 vs 코호트 비교 + 관리 팁 */}
+      <SideEffectInsightWidget user={user} navigate={navigate} />
+
+      {/* fallback: 인사이트가 없지만 최근 부작용 chip만 노출 */}
       {recentSideEffects.length > 0 && (
         <div className="card">
           <h2 className="section-title">최근 4주 보고한 증상</h2>
