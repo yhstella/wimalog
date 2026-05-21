@@ -123,7 +123,12 @@ export function Statistics({ user, navigate, onSignup }) {
   const localPrice = useMemo(() => priceStats(cleanFilter), [cleanFilter]);
   const priceData  = supaPrice || localPrice;
   const exData     = useMemo(() => exerciseStats(cleanFilter), [cleanFilter]);
-  const exDist     = useMemo(() => exerciseDistribution(cleanFilter), [cleanFilter]);
+  // 코호트 너무 좁으면 (n<10) 자동으로 wide filter — '0분 100%' 같은 왜곡 방지
+  const exDist = useMemo(() => {
+    const tight = exerciseDistribution(cleanFilter);
+    if (tight.n >= 10) return tight;
+    return { ...exerciseDistribution({}), _widened: true };
+  }, [cleanFilter]);
   const localRebound = useMemo(() => reboundCurve(cleanFilter), [cleanFilter]);
   // Supabase rebound는 avgGainPct/avgRegainRatio shape — 기존 localRebound shape에 매핑
   const reboundData = supaRebound

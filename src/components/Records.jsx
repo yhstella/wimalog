@@ -927,7 +927,14 @@ function DietTab({ user, version, refresh }) {
 
         <div>
           <div className="label">메뉴 — 4단계 클릭으로 선택</div>
-          <DietHierarchyPicker value={description} onChange={setDescription} />
+          <DietHierarchyPicker value={description}
+                               onChange={(menu, nutri) => {
+                                 setDescription(menu);
+                                 if (nutri) {
+                                   setProteinG(String(nutri.protein));
+                                   setEstCalories(String(nutri.kcal));
+                                 }
+                               }} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

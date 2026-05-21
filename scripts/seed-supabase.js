@@ -84,9 +84,10 @@ const REGION_PROFILE = [
   { region:'부산',        weight:0.08, mult:0.95 },
   { region:'대구',        weight:0.05, mult:0.95 },
   { region:'인천',        weight:0.05, mult:1.00 },
-  { region:'대전',        weight:0.03, mult:0.95 },
-  { region:'광주',        weight:0.02, mult:0.95 },
-  { region:'온라인',      weight:0.01, mult:0.85 },
+  { region:'대전',        weight:0.04, mult:0.95 },
+  { region:'광주',        weight:0.03, mult:0.95 },
+  // 한국은 GLP-1 비만치료제 온라인 판매 불법 → 온라인 region 제거. 대신 '해외 직구' 소량 추가 (합법 개인 직구)
+  { region:'해외 직구',   weight:0.01, mult:0.90 },
 ];
 
 const EXERCISE_PATTERN = [

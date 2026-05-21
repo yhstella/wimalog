@@ -8,7 +8,7 @@ const KEYS = {
   diets: 'gl_diets',           // 식단 기록
   health: 'gl_health',         // 건강 지표 (인바디·혈액검사·혈압·음주 등)
   session: 'gl_session',
-  seeded: 'gl_seeded_v12',  // v12: GLP-1 임상시험(STEP/SURMOUNT/SCALE) 기반 health_metrics 시드 추가 (인바디·혈액·혈압·수면·음주) — 사용자 입력값 코호트 비교 활성화
+  seeded: 'gl_seeded_v13',  // v13: 시드 운동/dose 데이터 정합성 (0분/null 운동 제거, '온라인' region 제거)
   migrated: 'gl_migrated_v2',
 };
 

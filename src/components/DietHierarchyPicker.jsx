@@ -1,26 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { DIET_HIERARCHY } from '../lib/dietHierarchy.js';
+import { DIET_HIERARCHY, PORTION_OPTIONS, nutritionForMenu } from '../lib/dietHierarchy.js';
 
-// 식단 4단계 계층 선택기 — 카테고리 → 종류 → 메뉴
-// 사용자가 모든 단계를 클릭으로 끝낼 수 있게 (자유 입력은 백업)
+// 식단 4단계 계층 선택기 — 카테고리 → 종류 → 메뉴 → 양
+// onChange({ menu, portion, protein, kcal, categoryId })로 부모에 영양 정보 전달
 export function DietHierarchyPicker({ value = '', onChange }) {
   const [step, setStep] = useState(value ? 'done' : 'category');
   const [categoryId, setCategoryId] = useState(null);
   const [subId, setSubId] = useState(null);
+  const [pickedMenu, setPickedMenu] = useState(value);
+  const [portion, setPortion] = useState('normal');
   const [freeInput, setFreeInput] = useState(value);
   const [showFree, setShowFree] = useState(false);
 
-  // 부모가 value를 ''로 reset하면 picker도 카테고리부터 다시 시작 (예: 식단 저장 후)
-  // 이게 없으면 step='done' stale 상태로 UI가 사라짐 — '하나 입력하면 그 다음 입력 불가' 버그
+  // 부모가 value를 ''로 reset하면 picker도 카테고리부터 다시 시작
   useEffect(() => {
     if (!value) {
       setStep('category');
       setCategoryId(null);
       setSubId(null);
+      setPickedMenu('');
+      setPortion('normal');
       setShowFree(false);
       setFreeInput('');
     }
   }, [value]);
+
+  // 양 변경 시 부모에 nutrition 다시 전달
+  const emit = (menu, port) => {
+    const nutri = nutritionForMenu(menu, port, categoryId);
+    // 단순 string 호환 + nutrition 포함 객체 전달
+    onChange?.(menu, { menu, portion: port, ...nutri, categoryId });
+  };
 
   const category = categoryId ? DIET_HIERARCHY[categoryId] : null;
   const sub = category && subId ? category.subcategories[subId] : null;
@@ -30,19 +40,28 @@ export function DietHierarchyPicker({ value = '', onChange }) {
     setCategoryId(null);
     setSubId(null);
     setShowFree(false);
-    onChange?.('');
+    setPickedMenu('');
+    setPortion('normal');
+    onChange?.('', null);
   };
 
   const pickMenu = (menu) => {
-    onChange?.(menu);
+    setPickedMenu(menu);
     setStep('done');
+    emit(menu, portion);
+  };
+
+  const changePortion = (p) => {
+    setPortion(p);
+    if (pickedMenu) emit(pickedMenu, p);
   };
 
   const submitFree = () => {
     if (!freeInput.trim()) return;
-    onChange?.(freeInput.trim());
+    setPickedMenu(freeInput.trim());
     setStep('done');
     setShowFree(false);
+    emit(freeInput.trim(), portion);
   };
 
   // 색상 매핑
@@ -60,17 +79,41 @@ export function DietHierarchyPicker({ value = '', onChange }) {
     return map[color] || '';
   };
 
-  // 완료 상태 — 선택된 메뉴 표시 + 변경 버튼
+  // 완료 상태 — 선택된 메뉴 + 양 선택 + 변경 버튼
   if (step === 'done' && value) {
+    const nutri = nutritionForMenu(value, portion, categoryId);
     return (
-      <div className="rounded-xl border-2 border-brand-300 dark:border-brand-700 bg-brand-50/60 dark:bg-brand-900/15 p-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="text-xl flex-shrink-0">✓</span>
-          <span className="font-semibold text-ink-900 dark:text-slate-100 truncate">{value}</span>
+      <div className="space-y-2">
+        <div className="rounded-xl border-2 border-brand-300 dark:border-brand-700 bg-brand-50/60 dark:bg-brand-900/15 p-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-xl flex-shrink-0">✓</span>
+            <span className="font-semibold text-ink-900 dark:text-slate-100 truncate">{value}</span>
+          </div>
+          <button onClick={reset} className="text-xs text-brand-700 dark:text-brand-400 underline flex-shrink-0">
+            변경
+          </button>
         </div>
-        <button onClick={reset} className="text-xs text-brand-700 dark:text-brand-400 underline flex-shrink-0">
-          변경
-        </button>
+        {/* 양 선택 — 약간/적당히/많이 */}
+        <div>
+          <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 mb-1.5">먹은 양</div>
+          <div className="grid grid-cols-3 gap-1.5">
+            {PORTION_OPTIONS.map(p => (
+              <button key={p.id} type="button" onClick={() => changePortion(p.id)}
+                      className={`py-2 rounded-lg text-sm font-medium border-2 transition
+                                  ${portion === p.id
+                                    ? 'bg-brand-500 text-white border-brand-500'
+                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-200 dark:border-slate-700 hover:border-brand-400'}`}>
+                <span className="mr-1">{p.icon}</span>{p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 자동 계산된 영양 정보 미리보기 */}
+        <div className="rounded-lg bg-ink-100/60 dark:bg-slate-800/60 px-3 py-1.5 text-xs text-ink-700 dark:text-slate-300 flex gap-4 justify-center">
+          <span>단백질 <b className="text-brand-700 dark:text-brand-400 tabular-nums">{nutri.protein}g</b></span>
+          <span>·</span>
+          <span>칼로리 <b className="text-brand-700 dark:text-brand-400 tabular-nums">{nutri.kcal} kcal</b></span>
+        </div>
       </div>
     );
   }
