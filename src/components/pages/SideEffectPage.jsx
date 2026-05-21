@@ -175,6 +175,47 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
         </ul>
       </section>
 
+      {/* 사용자 적응형 후기 — 실제 사용 코호트의 짧은 경험담 */}
+      {content.testimonials?.length > 0 && (
+        <section className="card">
+          <h2 className="section-title">실제 사용자 경험 — {content.label} 어떻게 견뎠나</h2>
+          <p className="section-subtitle">위마로그 코호트의 짧은 후기 — "끊을까 했는데 적응됐다"는 패턴이 가장 흔합니다</p>
+          <div className="mt-3 space-y-2.5">
+            {content.testimonials.map((t, i) => {
+              const vibeColor = {
+                adapt:     'border-emerald-300 dark:border-emerald-800/50 bg-emerald-50/50 dark:bg-emerald-900/15',
+                pattern:   'border-sky-300 dark:border-sky-800/50 bg-sky-50/50 dark:bg-sky-900/15',
+                'dose-up': 'border-amber-300 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/15',
+                'dose-down': 'border-amber-300 dark:border-amber-800/50 bg-amber-50/50 dark:bg-amber-900/15',
+                switch:    'border-violet-300 dark:border-violet-800/50 bg-violet-50/50 dark:bg-violet-900/15',
+                manage:    'border-brand-300 dark:border-brand-800/50 bg-brand-50/50 dark:bg-brand-900/15',
+                lifestyle: 'border-brand-300 dark:border-brand-800/50 bg-brand-50/50 dark:bg-brand-900/15',
+                temporary: 'border-ink-300 dark:border-slate-700 bg-ink-100/40 dark:bg-slate-800/40',
+              }[t.vibe] || 'border-ink-200 dark:border-slate-700';
+              const vibeIcon = {
+                adapt: '✨', pattern: '🔁', 'dose-up': '⬆️', 'dose-down': '⬇️',
+                switch: '🔀', manage: '💊', lifestyle: '🏃', temporary: '⏳',
+              }[t.vibe] || '💬';
+              return (
+                <blockquote key={i} className={`rounded-xl border-l-4 px-4 py-3 ${vibeColor}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-base flex-shrink-0">{vibeIcon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-ink-900 dark:text-slate-100 leading-relaxed">"{t.text}"</p>
+                      <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-1.5">— {t.tag}</div>
+                    </div>
+                  </div>
+                </blockquote>
+              );
+            })}
+          </div>
+          <p className="helptext mt-3">
+            ※ 위마로그 코호트 익명 후기. 개인차가 크므로 본인 상황에 그대로 적용하지 마세요.
+            본인 후기는 가입 후 기록 + 메모로 남길 수 있습니다.
+          </p>
+        </section>
+      )}
+
       {/* 한 줄 후기 (가입자) */}
       <TestimonialBox topicId={`effect:${effectId}`} user={user} />
 
@@ -203,14 +244,14 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
         <h2 className="text-xl font-bold">
           {user ? `${content.label} 본인 기록 보기` : `${content.label}으로 고민 중이세요?`}
         </h2>
-        <p className="mt-2 text-slate-300 text-sm">
+        <p className="mt-2 text-slate-300 text-sm leading-relaxed">
           {user
             ? '기록 탭에서 부작용을 입력하면 비슷한 사용자 회복 패턴이 자동 비교됩니다.'
-            : '본인의 약·용량·기간과 함께 기록하면 비슷한 사용자의 회복 패턴을 볼 수 있어요.'}
+            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자의 부작용 시점·회복 데이터 보유. 본인 조건 입력하면 비슷한 사용자의 회복 패턴을 바로 확인하세요.</>}
         </p>
         <button onClick={() => user ? navigate('records') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-3 font-bold hover:bg-brand-600 transition">
-          {user ? '기록하러 가기 →' : '1분 가입하기 →'}
+          {user ? '기록하러 가기 →' : '🔮 내 회복 패턴 예측 보기 →'}
         </button>
       </section>
 

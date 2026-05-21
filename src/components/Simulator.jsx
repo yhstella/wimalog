@@ -262,7 +262,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
               </div>
               <button onClick={onSignup}
                       className="mt-2 inline-flex items-center gap-1 rounded-lg bg-white text-brand-700 px-3 py-1.5 text-xs font-bold hover:bg-brand-50 transition">
-                ✨ 1분 가입하고 정확도 올리기 →
+                🔮 정밀 예측 보기 →
               </button>
             </div>
           </div>
@@ -471,7 +471,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
       {onSignup && (
         <button onClick={onSignup}
                 className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white text-brand-700 px-5 py-3 font-bold hover:bg-brand-50 transition">
-          {user ? '내 대시보드 보기 →' : '내 데이터로 더 정확하게 보기 →'}
+          {user ? '내 대시보드 보기 →' : '🔮 내 예상 체중 곡선 자세히 보기 →'}
         </button>
       )}
       <div className="mt-3 rounded-xl bg-white/10 backdrop-blur px-3 py-2.5">

@@ -44,8 +44,8 @@ export function Landing({ navigate, onSignup, user }) {
           <span className="text-brand-600 dark:text-brand-400">나와 비슷한 사람</span>은 얼마나 빠졌을까?
         </h1>
         <p className="mt-3 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-          단순 기록 앱이 아닌 <b className="text-ink-900 dark:text-slate-100">한국 사용자 익명 코호트 비교 플랫폼</b>.
-          마른 비만·지방간·격주 사용 등 한국 실사용 맥락 반영 — 가입 없이 즉시 시뮬레이션부터.
+          이미 <b className="text-ink-900 dark:text-slate-100">8,600명+ 한국 사용자</b> 익명 데이터를 보유한 <b className="text-ink-900 dark:text-slate-100">리얼월드 코호트 플랫폼</b>.
+          가입하면 나와 비슷한 사용자의 주차별 감량·부작용·중단 후 회복 곡선까지 실시간 확인.
         </p>
       </section>
 
@@ -65,15 +65,14 @@ export function Landing({ navigate, onSignup, user }) {
               <div className="text-2xl flex-shrink-0">✨</div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-bold text-amber-900 dark:text-amber-100 leading-snug">
-                  방금 입력한 <span className="tabular-nums">{prefill.height}cm · {prefill.startWeight}kg</span> 결과를 저장할까요?
+                  방금 입력한 <span className="tabular-nums">{prefill.height}cm · {prefill.startWeight}kg</span> 조건의 상세 예측을 볼까요?
                 </div>
                 <div className="text-xs text-amber-800 dark:text-amber-200/80 mt-1 leading-relaxed">
-                  1분 가입하면 매주 진척도 그래프 · 비슷한 사용자 비교 · AI 예측이 시작돼요.
-                  방금 입력값이 자동으로 채워집니다.
+                  이미 <b>8,600명+</b> 한국 사용자 실제 데이터가 쌓여있어요. 가입하면 <b>나와 비슷한 사용자</b>의 주차별 감량·부작용·중단 후 회복 곡선을 실시간으로 확인합니다.
                 </div>
                 <button onClick={handleSignup}
                         className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-5 py-2.5 text-sm font-bold transition shadow-sm">
-                  ✨ 1분 가입하고 내 데이터 시작 →
+                  🔮 내 예상 감량 자세히 보기 →
                 </button>
               </div>
             </div>
@@ -227,16 +226,16 @@ export function Landing({ navigate, onSignup, user }) {
       {/* 하단 CTA — 로그인 상태 따라 분기 */}
       <section className="rounded-2xl bg-gradient-to-br from-ink-900 to-slate-700 dark:from-slate-800 dark:to-slate-900 text-white p-6 text-center">
         <h2 className="text-xl font-extrabold">
-          {user ? `${user.nickname || '나'}님 환영합니다 👋` : '내 데이터로 더 정확한 비교'}
+          {user ? `${user.nickname || '나'}님 환영합니다 👋` : '내 예상 체중 곡선 자세히 보기'}
         </h2>
-        <p className="mt-2 text-slate-300 text-xs">
+        <p className="mt-2 text-slate-300 text-xs leading-relaxed">
           {user
             ? '대시보드에서 본인 데이터 + 비슷한 사용자 평균을 확인하세요'
-            : '나와 같은 약·BMI·성별 사용자 평균 · 약 중단 후 회복률 · 지역별 가격'}
+            : <>이미 <b className="text-white">8,600명+</b> 한국 사용자 데이터 보유 — 가입하면 <b className="text-white">나와 같은 BMI·약·빈도</b> 사용자의 주차별 곡선 + 부작용 시점 + 중단 후 회복률 실시간 확인</>}
         </p>
         <button onClick={() => user ? navigate('dashboard') : handleSignup()}
                 className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-bold hover:bg-brand-600 transition">
-          {user ? '내 대시보드 →' : '1분 가입 →'}
+          {user ? '내 대시보드 →' : '🔮 내 예상 체중 보기 →'}
         </button>
       </section>
 

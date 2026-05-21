@@ -102,7 +102,7 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
               </div>
             ) : (
               <button onClick={() => setShowSignup(true)} className="btn-primary !py-2 !px-3 text-sm">
-                가입하기
+                내 예상 보기
               </button>
             )}
           </div>
@@ -158,10 +158,10 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
       {/* 모바일 floating 가입 CTA — 비가입자만, nav 위로 떠 있음 */}
       {!user && (
         <button onClick={() => setShowSignup(true)}
-                aria-label="1분 가입하기"
+                aria-label="내 예상 감량 보기"
                 className="sm:hidden fixed right-4 z-40 inline-flex items-center gap-1.5 rounded-full bg-brand-500 hover:bg-brand-600 active:scale-95 text-white font-bold px-4 py-3 shadow-cardHover transition text-sm"
                 style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
-          ✨ <span>1분 가입</span>
+          🔮 <span>내 예상 보기</span>
         </button>
       )}
 

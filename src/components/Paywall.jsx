@@ -35,7 +35,7 @@ export function LockedOverlay({
           </div>
           {onUnlock && (
             <button onClick={onUnlock} className="btn-primary mt-3 !py-2 !px-4 text-sm">
-              {isPremium ? '얼리액세스 신청' : '1분 가입하고 전체 보기 →'}
+              {isPremium ? '얼리액세스 신청' : '🔮 내 예상 결과 보기 →'}
             </button>
           )}
         </div>
@@ -185,8 +185,8 @@ export function QuickSignupModal({ onClose, onComplete }) {
       <div className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-ink-100 px-5 py-3 flex justify-between items-center">
           <div>
-            <div className="font-bold text-ink-900">1분 가입</div>
-            <div className="text-xs text-ink-500">키와 체중만 알려주세요</div>
+            <div className="font-bold text-ink-900">🔮 내 예상 결과 보기</div>
+            <div className="text-xs text-ink-500">키·체중만 알려주면 8,600명+ 데이터로 즉시 예측</div>
           </div>
           <button onClick={onClose} className="btn-ghost !p-2">✕</button>
         </div>
