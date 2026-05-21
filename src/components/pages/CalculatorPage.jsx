@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { bmi, bmiCategory, priceStats } from '../../lib/stats.js';
 import { DRUG_CONTENT } from '../../lib/content.js';
 import { fetchPriceStats } from '../../lib/supabaseStats.js';
+import { snapshotAvgLossCurve } from '../../lib/snapshot.js';
 import { supabaseConfigured } from '../../lib/supabaseClient.js';
 import { DialInput } from '../DialInput.jsx';
 
@@ -17,6 +18,7 @@ function CostCalculator({ navigate }) {
   const [med, setMed] = useState('wegovy');
   const [months, setMonths] = useState(6);
   const [freq, setFreq] = useState('weekly');
+  const [startWeight, setStartWeight] = useState(78);
   const drug = DRUG_CONTENT[med];
 
   // Supabase + localStorage 시드에서 실제 가격 통계
@@ -119,6 +121,79 @@ function CostCalculator({ navigate }) {
           </div>
         )}
       </div>
+
+      {/* 비용 대비 효과 지표 — 1kg당 비용 / 유지 비용 / 중단 후 재증가율 */}
+      {total > 0 && (() => {
+        // 약별 코호트 평균 감량률 (months 시점)
+        const targetWeek = months * 4; // 1개월 ≈ 4주
+        const closestWeeks = [4, 8, 12, 16, 24, 36, 48];
+        const matchWeek = closestWeeks.reduce((best, w) =>
+          Math.abs(w - targetWeek) < Math.abs(best - targetWeek) ? w : best, 12);
+        const curve = snapshotAvgLossCurve(med, [matchWeek]);
+        const lossPct = curve?.[0]?.avg;
+        const freqFactor = freq === 'biweekly' ? 0.6 : freq === 'occasional' ? 0.4 : freq === 'intro' ? 0.85 : 1.0;
+        const expectedLossPct = lossPct ? lossPct * freqFactor : null;
+        const expectedLossKg = expectedLossPct ? startWeight * expectedLossPct / 100 : null;
+        const costPerKg = expectedLossKg && expectedLossKg > 0 ? Math.round(total / expectedLossKg) : null;
+
+        // 중단 후 6개월 재증가율 (운동 미지속 평균 ~35%)
+        const regainPct = 0.35;
+        const expectedRegainKg = expectedLossKg ? expectedLossKg * regainPct : null;
+
+        // 6개월 추가 유지 비용 (저용량 격주 패턴)
+        const maintain6mCost = boxPrice ? Math.round(boxPrice * 0.6 * 6 * 0.5) : null; // 격주 + 한 단계 낮은 용량 ~60%
+
+        return (
+          <div className="card space-y-3">
+            <h3 className="font-bold text-ink-900 dark:text-slate-100">📊 비용 대비 효과</h3>
+            <p className="text-xs text-ink-500 dark:text-slate-400 -mt-1">
+              본인 시작 체중 {startWeight}kg 기준 · {drug.label} 코호트 평균 -{expectedLossPct?.toFixed(1) ?? '?'}% ({matchWeek}주차)
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {/* 1kg당 비용 */}
+              <div className="rounded-xl bg-brand-50/60 dark:bg-brand-900/15 border border-brand-200/40 dark:border-brand-800/30 p-3">
+                <div className="text-[10px] text-ink-500 dark:text-slate-400 uppercase tracking-wide">1kg 감량당 비용</div>
+                <div className="text-2xl font-extrabold text-brand-700 dark:text-brand-400 tabular-nums mt-1">
+                  {costPerKg ? `${(costPerKg / 10000).toFixed(1)}만원` : '—'}
+                </div>
+                <div className="text-[10px] text-ink-500 mt-1">
+                  {expectedLossKg ? `예상 −${expectedLossKg.toFixed(1)}kg` : ''}
+                </div>
+              </div>
+              {/* 중단 후 6개월 재증가 추정 */}
+              <div className="rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200/40 dark:border-amber-800/30 p-3">
+                <div className="text-[10px] text-ink-500 dark:text-slate-400 uppercase tracking-wide">중단 후 6개월 재증가</div>
+                <div className="text-2xl font-extrabold text-amber-700 dark:text-amber-400 tabular-nums mt-1">
+                  {expectedRegainKg ? `+${expectedRegainKg.toFixed(1)}kg` : '—'}
+                </div>
+                <div className="text-[10px] text-ink-500 mt-1">감량분의 35% (운동 지속자는 −20%)</div>
+              </div>
+              {/* 유지 비용 (저용량 격주) */}
+              <div className="rounded-xl bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200/40 dark:border-emerald-800/30 p-3">
+                <div className="text-[10px] text-ink-500 dark:text-slate-400 uppercase tracking-wide">유지 6개월 비용</div>
+                <div className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400 tabular-nums mt-1">
+                  {maintain6mCost ? `${(maintain6mCost / 10000).toFixed(0)}만원` : '—'}
+                </div>
+                <div className="text-[10px] text-ink-500 mt-1">저용량 격주 패턴 (의사 상의)</div>
+              </div>
+            </div>
+            <p className="text-[10px] text-ink-500 dark:text-slate-500 leading-relaxed">
+              ※ 시작 체중 슬라이더로 본인 조건에 맞춰보세요. 실제 결과는 개인차가 큽니다.
+            </p>
+            <div>
+              <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-1">시작 체중 (kg)</div>
+              <input type="range" min={45} max={150} step={0.5}
+                     value={startWeight} onChange={e => setStartWeight(+e.target.value)}
+                     className="w-full h-2 bg-ink-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer accent-brand-500" />
+              <div className="flex justify-between text-[10px] text-ink-500 mt-1">
+                <span>45</span>
+                <b className="tabular-nums text-ink-900 dark:text-slate-100">{startWeight.toFixed(1)}kg</b>
+                <span>150</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 지역별 상위 5개 가격 — 누구나 볼 수 있게 */}
       {priceData?.byRegion?.length > 0 && (
