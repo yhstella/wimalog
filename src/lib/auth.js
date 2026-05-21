@@ -52,7 +52,7 @@ export function syncOAuthUser(session) {
   const userId = `oauth-${id}`;
   let user = Storage.getUser(userId);
   if (!user) {
-    // 신규 가입 — 부분 정보만 채우고, 키/체중 등은 onboarding 유도
+    // 신규 가입 — 부분 정보만 채우고, 키/체중 등은 InitialSetup이 받음
     user = {
       id: userId,
       seed: false,
@@ -67,18 +67,14 @@ export function syncOAuthUser(session) {
       targetWeight: null,
       conditions: {},
       purpose: 'weight',
-      visitPurpose: 'using',  // OAuth 신규 가입은 사용 중으로 기본 가정 — InitialSetup 우발적 재노출 방지
       concerns: [],
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
       createdAt: new Date().toISOString(),
-      profileIncomplete: true, // height/weight 미입력 표시
+      profileIncomplete: true,
     };
     Storage.upsertUser(user);
-  } else if (!user.visitPurpose) {
-    // 기존 OAuth 사용자에 visitPurpose 없으면 default 부여 (재로그인 시 InitialSetup 우발 노출 방지)
-    user = { ...user, visitPurpose: 'using' };
-    Storage.upsertUser(user);
   }
+  // 기존 user는 그대로 — visitPurpose 강제 부여 안 함 (사용자 의도 보존)
   Storage.setSession(userId);
   return user;
 }

@@ -145,12 +145,10 @@ export function Dashboard({ user, navigate }) {
   const liveUser = useMemo(() => Storage.getUser(user.id), [user.id, version]) || user;
   // OAuth 가입자는 profileIncomplete=true (height/startWeight 없음)
   const needsProfile = liveUser.profileIncomplete || !liveUser.height || !liveUser.startWeight;
-  // 신규 가입자 — 모든 신호 부재 시에만 InitialSetup (한 가지라도 있으면 정상 dashboard).
-  // 이전 버그: OR 조건이라 OAuth 가입 후 데이터 입력했어도 재로그인 시 우발적 재노출.
-  const hasAnyData = logs.length > 0
-    || !!liveUser.startWeight
-    || (Storage.getDosesByUser(user.id)?.length || 0) > 0;
-  const needsInitialSetup = !liveUser.visitPurpose && !hasAnyData;
+  // 신규 가입자에게는 InitialSetup 노출, 기존 가입자(데이터 한 번이라도 있음)는 패스.
+  // startWeight가 핵심 신호 — InitialSetup 통과 시 저장되므로 한 번이라도 통과한 사용자는 노출 안 됨.
+  // logs 없어도 startWeight 있으면 패스 (기존 OAuth user 케이스).
+  const needsInitialSetup = !liveUser.startWeight && logs.length === 0;
   if (needsInitialSetup) {
     return <InitialSetup user={liveUser} onDone={refresh} />;
   }

@@ -79,12 +79,14 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
   }, [user, refreshKey]);
 
   // Y축 scale — currentWeight를 deps에서 제거해서 입력해도 흔들리지 않음.
-  // 최소 ±6kg 보장 → 빈/작은 데이터에서도 충분한 입력 공간 확보, 첫 입력과 후속 입력 동일 scale.
+  // 최소 ±6kg 보장 → 빈/작은 데이터에서도 충분한 입력 공간 확보.
+  // anchor 우선순위: startWeight → 최신 log → currentWeight → 70 (절대 fallback)
+  // startWeight 없어도 logs 있으면 logs 평균 기반으로 안정 scale.
   const { yMin, yMax, yStep } = useMemo(() => {
     const ys = existingLogs.map(l => l.weight);
-    // startWeight를 anchor로 항상 포함 — 첫 mount 시 currentWeight 없어도 안정 scale
-    const anchor = user?.startWeight ?? (currentWeight ? +currentWeight : 70);
-    if (anchor) ys.push(anchor);
+    const latestLog = existingLogs[existingLogs.length - 1]?.weight;
+    const anchor = user?.startWeight ?? latestLog ?? (currentWeight ? +currentWeight : 70);
+    if (anchor && !ys.includes(anchor)) ys.push(anchor);
     if (!ys.length) return { yMin: anchor - 6, yMax: anchor + 6, yStep: 2 };
     const min = Math.min(...ys), max = Math.max(...ys);
     const center = (min + max) / 2;
