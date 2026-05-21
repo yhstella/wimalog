@@ -237,7 +237,7 @@ export function Statistics({ user, navigate, onSignup }) {
   return (
     <div className="space-y-6">
       {/* AI 예측 정확도 카드 — 상단, 값 입력 시 실시간 반응 */}
-      <AccuracyCard user={user} refresh={() => { /* user prop은 외부 캐시 — 내부 version으로 강제 재계산 */ }} />
+      <AccuracyCard user={user} navigate={navigate} />
 
       <div className="flex justify-between flex-wrap gap-2 items-end">
         <div>

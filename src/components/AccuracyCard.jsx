@@ -1,41 +1,44 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Storage } from '../lib/storage.js';
 import { calculateAccuracy, accuracyBreakdown } from '../lib/accuracy.js';
 
-// Statistics 페이지 상단 AI 정확도 카드
-// - 현재 정확도 큰 숫자 + 색상 (rose < 60 / amber < 80 / emerald >= 80)
-// - 입력 안 된 항목 클릭 가능 → 실시간 +N% 시각화
-// - 본인 정보 입력은 user 객체에 즉시 반영 (Storage.upsertUser)
-export function AccuracyCard({ user, refresh }) {
-  // 추가 입력 (Statistics 페이지 안에서 즉시 입력 가능)
+// Statistics 페이지 상단 AI 정확도 카드 — 정밀 세분화 버전
+// Static (47): 키·체중·약·빈도·가입·성별·나이대·동반질환 — 한 번 입력
+// Dynamic (53): 체중·운동·식단·부작용·검사·투약 — 누적 단계별 가산
+export function AccuracyCard({ user, navigate }) {
   const [version, setVersion] = useState(0);
-  const [exerciseLevel, setExerciseLevel] = useState(user?.exerciseLevel || null);
 
-  // user 객체에서 직접 읽기 (다른 페이지에서 입력해도 반영)
-  const cond = user?.conditions || {};
-  const hasFattyLiver = !!cond.fattyLiver;
-  const hasDiabetes = !!cond.diabetes || !!cond.prediabetes;
+  // simulator props는 hero/대시보드에서 가져오지 않음 — 본인 user 기반만 (Statistics 페이지 컨텍스트)
+  // 사용 약·빈도는 활성 코스에서 추론
+  const simulator = useMemo(() => {
+    if (!user) return {};
+    const courses = Storage.getMedCoursesByUser(user.id);
+    const active = courses.find(c => !c.endDate) || courses[courses.length - 1];
+    return {
+      height: user.height,
+      startWeight: user.startWeight,
+      medication: active?.medication,
+      frequency: active?.frequency || 'weekly',
+    };
+  }, [user, version]);
 
-  // 정확도 계산 — user 변경 + version 변경 시 재계산
-  const accuracy = useMemo(
-    () => calculateAccuracy({ user, exerciseLevel, hasFattyLiver, hasDiabetes }),
-    [user, exerciseLevel, hasFattyLiver, hasDiabetes, version],
+  const { score, filled, dynamicProgress } = useMemo(
+    () => calculateAccuracy({ user, simulator }),
+    [user, simulator, version],
   );
-  const breakdown = useMemo(
-    () => accuracyBreakdown({ user, exerciseLevel, hasFattyLiver, hasDiabetes }),
-    [user, exerciseLevel, hasFattyLiver, hasDiabetes, version],
+  const { staticItems, dynamicItems } = useMemo(
+    () => accuracyBreakdown({ user, simulator }),
+    [user, simulator, version],
   );
 
-  const missingItems = breakdown.filter(b => !b.filled);
-  const totalGainable = missingItems.reduce((s, b) => s + b.weight, 0);
+  const totalGainable = [...staticItems, ...dynamicItems]
+    .reduce((s, b) => s + (b.filled ? 0 : (b.weight - (b.gained || 0))), 0);
 
-  // 입력 핸들러 — user.conditions / gender / ageGroup 즉시 업데이트
+  // 입력 핸들러
   const updateUser = (partial) => {
     if (!user) return;
-    const updates = { ...user, ...partial };
-    Storage.upsertUser(updates);
-    setVersion(v => v + 1);  // 즉시 재계산 (user prop은 stale일 수 있음)
-    refresh?.();
+    Storage.upsertUser({ ...user, ...partial });
+    setVersion(v => v + 1);
   };
   const toggleCondition = (key) => {
     if (!user) return;
@@ -43,34 +46,38 @@ export function AccuracyCard({ user, refresh }) {
     updateUser({ conditions: newCond });
   };
 
-  // 색상
-  const tone = accuracy >= 80 ? 'emerald' : accuracy >= 60 ? 'amber' : 'rose';
+  // 색상 tone
+  const tone = score >= 80 ? 'emerald' : score >= 60 ? 'amber' : 'rose';
   const toneClasses = {
-    emerald: 'from-emerald-50 to-white dark:from-emerald-900/15 dark:to-slate-900 border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400',
-    amber:   'from-amber-50 to-white dark:from-amber-900/15 dark:to-slate-900 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-400',
-    rose:    'from-rose-50 to-white dark:from-rose-900/15 dark:to-slate-900 border-rose-200 dark:border-rose-800/40 text-rose-700 dark:text-rose-400',
+    emerald: 'from-emerald-50 to-white dark:from-emerald-900/15 dark:to-slate-900 border-emerald-200 dark:border-emerald-800/40',
+    amber:   'from-amber-50 to-white dark:from-amber-900/15 dark:to-slate-900 border-amber-200 dark:border-amber-800/40',
+    rose:    'from-rose-50 to-white dark:from-rose-900/15 dark:to-slate-900 border-rose-200 dark:border-rose-800/40',
+  };
+  const numberColor = {
+    emerald: 'text-emerald-700 dark:text-emerald-400',
+    amber:   'text-amber-700 dark:text-amber-400',
+    rose:    'text-rose-700 dark:text-rose-400',
   };
 
   return (
     <section className={`rounded-2xl border-2 bg-gradient-to-br ${toneClasses[tone]} p-5 sm:p-6`}>
+      {/* 헤더 */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
-          <div className="text-xs font-bold uppercase tracking-wider opacity-80">🎯 AI 예측 정확도</div>
+          <div className="text-xs font-bold uppercase tracking-wider text-ink-500 dark:text-slate-400">🎯 AI 예측 정확도</div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className={`text-5xl sm:text-6xl font-extrabold tabular-nums tracking-tight`}>
-              {accuracy}<span className="text-2xl">%</span>
+            <span className={`text-5xl sm:text-6xl font-extrabold tabular-nums tracking-tight ${numberColor[tone]}`}>
+              {score}<span className="text-2xl">%</span>
             </span>
             {!user && (
-              <span className="text-xs text-ink-500 dark:text-slate-400">
-                · 비가입자 기본
-              </span>
+              <span className="text-xs text-ink-500 dark:text-slate-400">· 비가입자 기본</span>
             )}
           </div>
           <p className="text-sm text-ink-600 dark:text-slate-300 mt-2 leading-relaxed">
-            {accuracy < 60 && '기본 코호트 평균 수준 — 추가 입력으로 본인 조건에 가까워집니다.'}
-            {accuracy >= 60 && accuracy < 80 && '본인 조건 매칭 중 — 운동·동반질환·체중 추이로 더 정밀하게.'}
-            {accuracy >= 80 && accuracy < 95 && '높은 정확도 — 체중 기록을 더 누적하면 본인 trend 반영됩니다.'}
-            {accuracy >= 95 && '거의 모든 정보 입력 완료 — 본인 데이터 추이로 정밀 예측.'}
+            {score < 50 && '기본 코호트 평균 — 본인 정보 입력 시 빠르게 정밀화됩니다.'}
+            {score >= 50 && score < 75 && '본인 조건 일부 반영 중 — 운동·식단·검사 누적이 가장 효과적입니다.'}
+            {score >= 75 && score < 90 && '높은 정확도 — 매주 체중 기록을 누적하면 추세까지 반영.'}
+            {score >= 90 && '거의 모든 데이터 입력 완료 — 본인 trend로 정밀 예측.'}
           </p>
         </div>
       </div>
@@ -79,125 +86,178 @@ export function AccuracyCard({ user, refresh }) {
       <div className="mt-4 h-3 rounded-full bg-white/60 dark:bg-slate-800/60 overflow-hidden">
         <div className={`h-full rounded-full transition-all duration-500
                         ${tone === 'emerald' ? 'bg-emerald-500' : tone === 'amber' ? 'bg-amber-500' : 'bg-rose-500'}`}
-             style={{ width: `${accuracy}%` }} />
+             style={{ width: `${score}%` }} />
       </div>
 
-      {/* 누락 항목 — 클릭으로 즉시 +N% */}
-      {user && missingItems.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
-          <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-            <div className="text-xs font-semibold text-ink-700 dark:text-slate-300">
-              아래 입력 시 정확도가 즉시 올라갑니다
-            </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 dark:bg-slate-800/80 text-ink-700 dark:text-slate-300">
-              +{totalGainable}% 가능
-            </span>
-          </div>
-          <div className="space-y-2.5">
-            {/* 성별 */}
-            {breakdown.find(b => b.key === 'gender' && !b.filled) && (
-              <AccRow label="성별" gain={ACCURACY_WEIGHTS_HELP('gender')}>
-                <div className="flex gap-1.5">
-                  {[{id:'F',label:'여성'},{id:'M',label:'남성'}].map(o => (
-                    <button key={o.id} onClick={() => updateUser({ gender: o.id })}
-                            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition">
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </AccRow>
+      {/* === Static 항목 — 기본 정보 (47%) === */}
+      <div className="mt-5 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
+        <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+          <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📋 기본 정보 <span className="text-ink-500 font-normal">(최대 47%)</span></div>
+          <span className="text-[10px] tabular-nums text-ink-500 dark:text-slate-500">
+            {staticItems.filter(b => b.filled).reduce((s, b) => s + b.weight, 0)} / 47
+          </span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {staticItems.map(item => (
+            <StaticChip key={item.key} item={item}
+                        onClickInput={() => {
+                          if (item.key === 'gender' || item.key === 'ageGroup') return; // 그리드 아래 input
+                          if (item.key === 'fattyLiver') toggleCondition('fattyLiver');
+                          if (item.key === 'diabetes') toggleCondition('diabetes');
+                          if (item.key === 'thyroid') toggleCondition('thyroid');
+                          if ((item.key === 'height' || item.key === 'startWeight' || item.key === 'medication') && navigate) {
+                            navigate(item.key === 'medication' ? 'meds' : 'profile');
+                          }
+                        }} />
+          ))}
+        </div>
+
+        {/* 가입자 — 성별·나이대 빠른 입력 */}
+        {user && (!filled.gender || !filled.ageGroup) && (
+          <div className="mt-3 space-y-2">
+            {!filled.gender && (
+              <QuickInputRow label="성별" gain={5}>
+                {[{id:'F',label:'여성'},{id:'M',label:'남성'}].map(o => (
+                  <button key={o.id} onClick={() => updateUser({ gender: o.id })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition">
+                    {o.label}
+                  </button>
+                ))}
+              </QuickInputRow>
             )}
-            {/* 나이대 */}
-            {breakdown.find(b => b.key === 'ageGroup' && !b.filled) && (
-              <AccRow label="나이대" gain={ACCURACY_WEIGHTS_HELP('ageGroup')}>
+            {!filled.ageGroup && (
+              <QuickInputRow label="나이대" gain={5}>
                 <div className="grid grid-cols-5 gap-1">
                   {[{id:'20s',label:'20대'},{id:'30s',label:'30대'},{id:'40s',label:'40대'},{id:'50s',label:'50대'},{id:'60s+',label:'60+'}].map(o => (
                     <button key={o.id} onClick={() => updateUser({ ageGroup: o.id })}
-                            className="px-1 py-1.5 rounded-lg text-[11px] font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:border-brand-400 transition">
+                            className="px-1 py-1.5 rounded-lg text-[11px] font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-brand-400 transition">
                       {o.label}
                     </button>
                   ))}
                 </div>
-              </AccRow>
+              </QuickInputRow>
             )}
-            {/* 운동량 */}
-            {breakdown.find(b => b.key === 'exerciseLevel' && !b.filled) && (
-              <AccRow label="평소 운동량" gain={ACCURACY_WEIGHTS_HELP('exerciseLevel')}>
-                <div className="flex gap-1.5">
-                  {[
-                    { id: 'low',  label: '거의 안 함' },
-                    { id: 'mid',  label: '주 1-2회' },
-                    { id: 'high', label: '주 3회+' },
-                  ].map(o => (
-                    <button key={o.id} onClick={() => { setExerciseLevel(o.id); updateUser({ exerciseLevel: o.id }); }}
-                            className="px-2 py-1.5 rounded-lg text-[11px] font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:border-brand-400 transition flex-1">
-                      {o.label}
-                    </button>
-                  ))}
-                </div>
-              </AccRow>
-            )}
-            {/* 동반질환 */}
-            {(breakdown.find(b => b.key === 'fattyLiver' && !b.filled) || breakdown.find(b => b.key === 'diabetes' && !b.filled)) && (
-              <AccRow label="동반질환" gain={ACCURACY_WEIGHTS_HELP('fattyLiver') + ACCURACY_WEIGHTS_HELP('diabetes')}>
-                <div className="flex gap-1.5 flex-wrap">
-                  {!cond.fattyLiver && (
-                    <button onClick={() => toggleCondition('fattyLiver')}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:border-brand-400 transition">
-                      🫀 지방간 있음
-                    </button>
-                  )}
-                  {!cond.diabetes && !cond.prediabetes && (
-                    <button onClick={() => toggleCondition('diabetes')}
-                            className="px-3 py-1.5 rounded-lg text-[11px] font-medium border border-ink-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 hover:border-brand-400 transition">
-                      🩸 당뇨/전당뇨
-                    </button>
-                  )}
-                </div>
-              </AccRow>
-            )}
-            {/* 체중 누적 — 액션 안내 */}
-            {breakdown.find(b => b.key === 'logsAccumulated' && !b.filled) && (
-              <AccRow label="체중 4회+ 기록 누적" gain={ACCURACY_WEIGHTS_HELP('logsAccumulated')} info>
-                <span className="text-[11px] text-ink-500 dark:text-slate-500">
-                  기록 탭에서 매주 1회씩 체중을 입력하면 자동으로 +8%
-                </span>
-              </AccRow>
-            )}
+          </div>
+        )}
+      </div>
+
+      {/* === Dynamic — 누적 데이터 (53%) === */}
+      {user && (
+        <div className="mt-5 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
+          <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
+            <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📊 누적 데이터 <span className="text-ink-500 font-normal">(최대 53%)</span></div>
+            <span className="text-[10px] tabular-nums text-ink-500 dark:text-slate-500">
+              {dynamicItems.reduce((s, b) => s + (b.gained || 0), 0)} / 53
+            </span>
+          </div>
+          <div className="space-y-2">
+            {dynamicItems.map(item => (
+              <DynamicRow key={item.key} item={item} navigate={navigate} />
+            ))}
           </div>
         </div>
       )}
 
+      {/* 비가입자 안내 */}
       {!user && (
-        <div className="mt-4 pt-4 border-t border-ink-200/40 dark:border-slate-700/40 text-xs text-ink-600 dark:text-slate-400">
-          가입하면 성별·나이대·운동·동반질환·본인 체중 추이까지 반영되어 정확도가 <b>최대 100%</b>까지 올라갑니다.
+        <div className="mt-4 pt-4 border-t border-ink-200/40 dark:border-slate-700/40 text-xs text-ink-600 dark:text-slate-400 leading-relaxed">
+          <b>가입하면</b> 성별·나이대·동반질환·운동·식단·체중 추이·검사·투약 누적까지 반영되어
+          정확도가 <b className="text-brand-600 dark:text-brand-400">최대 100%</b>까지 올라갑니다.
         </div>
       )}
     </section>
   );
 }
 
-// 가중치 lookup (UI 표시용)
-function ACCURACY_WEIGHTS_HELP(key) {
-  const w = {
-    base: 40, signedIn: 10, gender: 8, ageGroup: 8, exerciseLevel: 14,
-    fattyLiver: 6, diabetes: 6, logsAccumulated: 8,
-  };
-  return w[key] || 0;
+// Static chip — 채워졌는지 + 가중치
+function StaticChip({ item, onClickInput }) {
+  const isClickable = !item.filled && (
+    item.key === 'fattyLiver' || item.key === 'diabetes' || item.key === 'thyroid'
+    || item.key === 'height' || item.key === 'startWeight' || item.key === 'medication'
+  );
+  return (
+    <button
+      type="button"
+      onClick={isClickable ? onClickInput : undefined}
+      disabled={!isClickable}
+      className={`flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition
+                  ${item.filled
+                    ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300'
+                    : isClickable
+                      ? 'bg-white dark:bg-slate-800 border-ink-300 dark:border-slate-700 text-ink-600 dark:text-slate-400 hover:border-brand-400 cursor-pointer'
+                      : 'bg-white/60 dark:bg-slate-800/60 border-ink-200 dark:border-slate-700 text-ink-400 dark:text-slate-500'}`}>
+      <span className="flex items-center gap-1 truncate">
+        <span className="text-[10px]">{item.filled ? '✓' : '○'}</span>
+        <span className="truncate">{item.label}</span>
+      </span>
+      <span className={`tabular-nums text-[10px] font-bold flex-shrink-0
+                        ${item.filled ? 'text-emerald-700 dark:text-emerald-400' : 'text-ink-500'}`}>
+        +{item.weight}
+      </span>
+    </button>
+  );
 }
 
-function AccRow({ label, gain, children, info }) {
+// Dynamic row — 누적 기반, tier 표시
+function DynamicRow({ item, navigate }) {
+  const filledPct = (item.gained / item.weight) * 100;
+  const remaining = item.weight - item.gained;
+  // 다음 tier 안내
+  const nextTier = item.tiers.find(t => t.count > item.count);
+  const recordPaths = {
+    weightLogs:    'records',
+    exercises30d:  'records',
+    diets30d:      'records',
+    sideEffects30d:'records',
+    healthMetrics: 'records',
+    doses:         'records',
+  };
   return (
-    <div className="flex items-center justify-between gap-3 flex-wrap">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className="text-xs text-ink-700 dark:text-slate-300 font-medium whitespace-nowrap">{label}</span>
-        <span className={`text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full
-                          ${info ? 'bg-ink-100 dark:bg-slate-800 text-ink-500 dark:text-slate-400'
-                                 : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'}`}>
-          {info ? '+' : '+'}{gain}%
+    <div className="rounded-lg bg-white/80 dark:bg-slate-800/60 border border-ink-200 dark:border-slate-700 px-3 py-2.5">
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-1.5">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-ink-900 dark:text-slate-100">
+          <span>{item.gained >= item.weight ? '✓' : '○'}</span>
+          <span>{item.label}</span>
+          <span className="text-[10px] text-ink-500 dark:text-slate-500 tabular-nums">
+            {item.count}건
+          </span>
+        </div>
+        <span className={`text-[10px] font-bold tabular-nums
+                          ${item.gained >= item.weight ? 'text-emerald-700 dark:text-emerald-400' : 'text-ink-500 dark:text-slate-400'}`}>
+          +{item.gained}/{item.weight}
         </span>
       </div>
-      <div className="flex-shrink-0">{children}</div>
+      {/* progress bar */}
+      <div className="h-1.5 bg-ink-100 dark:bg-slate-900 rounded-full overflow-hidden mb-1.5">
+        <div className="h-full rounded-full bg-brand-500 transition-all duration-300"
+             style={{ width: `${Math.min(100, filledPct)}%` }} />
+      </div>
+      {/* 다음 단계 안내 + 빠른 진입 */}
+      {nextTier && (
+        <div className="flex justify-between items-center text-[10px] gap-2">
+          <span className="text-ink-500 dark:text-slate-500">
+            {nextTier.hint} (+{nextTier.addPct}%)까지 <b className="tabular-nums">{nextTier.count - item.count}</b>건 남음
+          </span>
+          <button onClick={() => navigate?.(recordPaths[item.key])}
+                  className="text-brand-700 dark:text-brand-400 hover:underline text-[10px] font-semibold">
+            기록 →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QuickInputRow({ label, gain, children }) {
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap rounded-lg bg-white/70 dark:bg-slate-800/60 border border-ink-200 dark:border-slate-700 px-3 py-2">
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-ink-700 dark:text-slate-300 font-medium">{label}</span>
+        <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+          +{gain}%
+        </span>
+      </div>
+      <div>{children}</div>
     </div>
   );
 }
