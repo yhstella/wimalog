@@ -145,10 +145,14 @@ export function Dashboard({ user, navigate }) {
   const liveUser = useMemo(() => Storage.getUser(user.id), [user.id, version]) || user;
   // OAuth 가입자는 profileIncomplete=true (height/startWeight 없음)
   const needsProfile = liveUser.profileIncomplete || !liveUser.height || !liveUser.startWeight;
-  // 신규 가입자에게는 InitialSetup 노출, 기존 가입자(데이터 한 번이라도 있음)는 패스.
-  // startWeight가 핵심 신호 — InitialSetup 통과 시 저장되므로 한 번이라도 통과한 사용자는 노출 안 됨.
-  // logs 없어도 startWeight 있으면 패스 (기존 OAuth user 케이스).
-  const needsInitialSetup = !liveUser.startWeight && logs.length === 0;
+  // 명시적 플래그 기반 — initialSetupComplete=true면 안 보임, false/null이면 보임.
+  // - OAuth 신규 가입: syncOAuthUser가 false 부여 → 노출 ✓
+  // - InitialSetup 통과: true로 업데이트 → 안 노출 ✓
+  // - QuickSignup 가입: true 부여 (키·체중·목적 받았으므로) → 안 노출 ✓
+  // - 옛 user (플래그 없음): startWeight·logs 있으면 통과 간주 (legacy fallback)
+  const needsInitialSetup =
+    liveUser.initialSetupComplete === false ||
+    (liveUser.initialSetupComplete == null && !liveUser.startWeight && logs.length === 0);
   if (needsInitialSetup) {
     return <InitialSetup user={liveUser} onDone={refresh} />;
   }

@@ -16,8 +16,8 @@ export function InitialSetup({ user, onDone }) {
 
   const start = () => {
     if (!canStart) return;
-    // user.visitPurpose + startWeight 업데이트
-    const updates = { ...user, visitPurpose: purpose };
+    // user.visitPurpose + startWeight 업데이트 + initialSetupComplete=true
+    const updates = { ...user, visitPurpose: purpose, initialSetupComplete: true };
     if (!user.startWeight) updates.startWeight = w;
     if (!user.targetWeight) updates.targetWeight = +(w * 0.85).toFixed(1);
     Storage.upsertUser(updates);

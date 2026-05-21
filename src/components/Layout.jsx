@@ -4,6 +4,7 @@ import { getTheme, setTheme as setStoredTheme } from '../lib/theme.js';
 import { SearchTrigger } from './SearchModal.jsx';
 import { QuickSignupModal } from './Paywall.jsx';
 import { Storage } from '../lib/storage.js';
+import { signOut as supaSignOut } from '../lib/auth.js';
 
 const NAV_AUTHED = [
   { id: 'dashboard',  label: '홈',     icon: '🏠' },
@@ -89,16 +90,23 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                   </span>
                 </button>
                 <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
-                {/* 테스트용 탈퇴 — confirm 2회 + 본인 닉네임 입력 확인으로 우발 클릭 방지 */}
+                {/* 테스트용 탈퇴 — confirm 한 번 + 모든 localStorage 데이터 강제 정리 + 페이지 리로드 */}
                 <button onClick={() => {
-                          if (!confirm(`정말 탈퇴하시겠습니까?\n\n${user.nickname || '본인'}님의 모든 데이터가 영구 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.`)) return;
-                          const conf = prompt(`확인을 위해 닉네임 "${user.nickname || '나'}"을 정확히 입력해 주세요:`);
-                          if (conf !== (user.nickname || '나')) {
-                            alert('닉네임이 일치하지 않아 탈퇴가 취소되었습니다.');
-                            return;
+                          if (!confirm(`${user.nickname || '본인'}님의 모든 데이터를 영구 삭제합니다.\n이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?`)) return;
+                          try {
+                            Storage.deleteUser(user.id);
+                            // 추가 안전망 — 같은 id로 잔재 user 남아있을 가능성 일소
+                            Storage.setUsers(Storage.getUsers().filter(u => u.id !== user.id));
+                            Storage.setSession(null);
+                          } catch (e) {
+                            console.error('[delete]', e);
                           }
-                          Storage.deleteUser(user.id);
-                          onLogout();
+                          // 탈퇴 후 강제 페이지 리로드 — React state·캐시·세션 모두 clean slate
+                          // 그래야 다음 OAuth 재가입 시 InitialSetup 정확히 노출
+                          (async () => {
+                            try { await supaSignOut(); } catch {}
+                            window.location.replace('/');
+                          })();
                         }}
                         title="탈퇴 (테스트용)"
                         className="text-[11px] font-semibold px-2 py-1 rounded-md bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition hidden sm:inline-flex">

@@ -189,6 +189,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
       authProvider,
       createdAt: new Date().toISOString(),
+      initialSetupComplete: true,  // QuickSignup은 키·체중·목적 모두 받았으므로 setup 완료 간주
     };
     Storage.upsertUser(user);
     Storage.addLog({

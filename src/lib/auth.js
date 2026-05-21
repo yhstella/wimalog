@@ -71,10 +71,11 @@ export function syncOAuthUser(session) {
       consents: { privacy: true, sensitiveData: true, anonymizedShare: true },
       createdAt: new Date().toISOString(),
       profileIncomplete: true,
+      initialSetupComplete: false,  // ⭐ InitialSetup 통과 여부 명시적 플래그
     };
     Storage.upsertUser(user);
   }
-  // 기존 user는 그대로 — visitPurpose 강제 부여 안 함 (사용자 의도 보존)
+  // 기존 user는 그대로 — visitPurpose / initialSetupComplete 강제 부여 안 함
   Storage.setSession(userId);
   return user;
 }
