@@ -72,3 +72,43 @@ export function snapshotTopRecentMedications() {
   if (!rows) return null;
   return rows.map(r => ({ id: r.medication, count: r.start_count }));
 }
+
+// 약국 디렉토리 요약 (PharmacyDirectoryPage 초기 노출용)
+export function snapshotPharmacySummary() {
+  const rows = SNAPSHOT?.pharmacySummary;
+  if (!rows?.[0]) return null;
+  const r = rows[0];
+  return {
+    totalReports: Number(r.total_reports) || 0,
+    totalRegions: Number(r.total_regions) || 0,
+    totalPharmacies: Number(r.total_pharmacies) || 0,
+    recent30: Number(r.recent_30d) || 0,
+  };
+}
+
+// 약국별 지역 — supabasePharmacy.fetchPharmaciesByRegion과 동일 shape
+export function snapshotPharmaciesByRegion(filter = {}) {
+  const rows = SNAPSHOT?.pharmaciesByRegion;
+  if (!rows?.length) return null;
+  const filtered = filter.medication
+    ? rows.filter(r => r.medication === filter.medication)   // 단, 이 RPC는 약 정보 X
+    : rows;
+  const byRegion = new Map();
+  for (const r of filtered) {
+    const key = r.region_id || r.region;
+    if (!byRegion.has(key)) {
+      byRegion.set(key, { region: r.region, regionId: r.region_id || key, reportCount: 0, pharmacies: [] });
+    }
+    const reg = byRegion.get(key);
+    reg.reportCount += Number(r.report_count) || 0;
+    reg.pharmacies.push({
+      name: r.pharmacy_name,
+      reportCount: Number(r.report_count) || 0,
+      lastReportAt: r.last_report_at ? r.last_report_at.slice(0, 10) : null,
+      medsHandled: [],
+      avgPrice: r.avg_price != null ? Math.round(Number(r.avg_price)) : null,
+      medianPrice: r.median_price != null ? Math.round(Number(r.median_price)) : null,
+    });
+  }
+  return [...byRegion.values()];
+}

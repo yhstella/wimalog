@@ -56,12 +56,16 @@ const [
   globalCurve,
   topMedsRecent,
   exerciseStats,
+  pharmacySummary,
+  pharmaciesByRegion,
   ...perMedResults
 ] = await Promise.all([
   rpc('platform_scale'),
   rpc('avg_loss_curve', { med: null, gender_f: null, age_grp: null, bmi_min: null, bmi_max: null, weeks_arr: COMMON_WEEKS }),
   rpc('top_recent_medications', { days: 30 }),
   rpc('exercise_stats', { days: 30 }),
+  rpc('pharmacy_summary'),
+  rpc('pharmacies_by_region', { med: null }),
   ...MEDS.flatMap(med => [
     rpc('avg_loss_curve', { med, gender_f: null, age_grp: null, bmi_min: null, bmi_max: null, weeks_arr: COMMON_WEEKS }),
     rpc('side_effect_rates', { med }),
@@ -91,6 +95,8 @@ const snapshot = {
   globalCurve,
   topMedsRecent,
   exerciseStats,
+  pharmacySummary,
+  pharmaciesByRegion,
   byMed,
 };
 

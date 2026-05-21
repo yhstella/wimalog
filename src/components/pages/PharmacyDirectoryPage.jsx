@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { MEDS, MED_BY_ID, PEN_INFO, REFERENCE_PRICE_4W } from '../../lib/constants.js';
 import { pharmaciesByRegion, regionDetail, pharmacyDirectorySummary } from '../../lib/pharmacyStats.js';
-import { seedPharmacyReports } from '../../lib/pharmacySeed.js';
+import { fetchPharmaciesByRegion, fetchRegionDetail, fetchPharmacySummary, submitPharmacyReport } from '../../lib/supabasePharmacy.js';
+import { snapshotPharmacySummary, snapshotPharmaciesByRegion } from '../../lib/snapshot.js';
+import { PHARMACY_CLUSTERS, seedPharmacyReports } from '../../lib/pharmacySeed.js';
 import { Storage, uid } from '../../lib/storage.js';
+import { supabaseConfigured } from '../../lib/supabaseClient.js';
 import { useToast } from '../Toast.jsx';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 
@@ -17,16 +20,46 @@ export function PharmacyDirectoryPage({ navigate, user, regionId }) {
   const [filter, setFilter] = useState({ medication: null });
   const [showReportModal, setShowReportModal] = useState(false);
   const [version, setVersion] = useState(0);
+  // Supabase 데이터 (있으면 우선) — null이면 localStorage 시드 fallback
+  const [supaSummary, setSupaSummary] = useState(null);
+  const [supaRegions, setSupaRegions] = useState(null);
+  const [supaDetail, setSupaDetail] = useState(null);
+  const [supaRefreshing, setSupaRefreshing] = useState(false);
 
-  // 첫 진입 시 시드 보장
+  // 첫 진입 시 localStorage 시드 보장 (fallback)
   useEffect(() => {
     try { seedPharmacyReports(); } catch (e) { console.warn('[pharmacy seed]', e); }
     setVersion(v => v + 1);
   }, []);
 
-  const summary = useMemo(() => pharmacyDirectorySummary(), [version]);
-  const regions = useMemo(() => pharmaciesByRegion(filter), [filter, version]);
-  const detail  = useMemo(() => regionId ? regionDetail(regionId, filter) : null, [regionId, filter, version]);
+  // Supabase 새 데이터 fetch — idle 시점에 (첫 paint 안 방해)
+  useEffect(() => {
+    if (!supabaseConfigured) return;
+    setSupaRefreshing(true);
+    const ric = window.requestIdleCallback || ((cb) => setTimeout(cb, 200));
+    ric(() => {
+      fetchPharmacySummary().then(s => { if (s) setSupaSummary(s); });
+      fetchPharmaciesByRegion(filter).then(r => { if (r?.length) setSupaRegions(r); }).finally(() => setSupaRefreshing(false));
+      if (regionId) {
+        // regionId → region label 변환
+        const cluster = PHARMACY_CLUSTERS.find(c => c.id === regionId);
+        if (cluster) fetchRegionDetail(cluster.region).then(d => { if (d) setSupaDetail(d); });
+      }
+    });
+  }, [filter, regionId, version]);
+
+  const localSummary = useMemo(() => pharmacyDirectorySummary(), [version]);
+  const localRegions = useMemo(() => pharmaciesByRegion(filter), [filter, version]);
+  const localDetail  = useMemo(() => regionId ? regionDetail(regionId, filter) : null, [regionId, filter, version]);
+
+  // 빌드 타임 스냅샷 (즉시 노출)
+  const snapSummary = useMemo(() => snapshotPharmacySummary(), []);
+  const snapRegions = useMemo(() => snapshotPharmaciesByRegion(filter), [filter]);
+
+  // 우선순위: Supabase fresh > snapshot > localStorage 시드
+  const summary = supaSummary || snapSummary || localSummary;
+  const regions = supaRegions || snapRegions || localRegions;
+  const detail  = supaDetail  || localDetail;
 
   // 단일 지역 보기 모드
   if (regionId) {
@@ -37,6 +70,12 @@ export function PharmacyDirectoryPage({ navigate, user, regionId }) {
                 className="text-sm text-brand-700 dark:text-brand-400 hover:underline">
           ← 전체 지역 보기
         </button>
+        {supaRefreshing && (
+          <div className="text-xs text-ink-500 flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 border-2 border-brand-400 border-t-transparent rounded-full animate-spin" />
+            최신 데이터 가져오는 중…
+          </div>
+        )}
         {detail ? (
           <RegionDetailView detail={detail} filter={filter} onFilterChange={setFilter} navigate={navigate} />
         ) : (
@@ -334,8 +373,9 @@ export function PharmacyReportModal({ onClose, onComplete, defaultRegion = null,
 
   const canSubmit = form.region && form.pharmacyName.trim() && form.medication && form.dose && +form.pricePer4W >= 10000 && +form.pricePer4W <= 5000000;
 
-  const submit = () => {
+  const submit = async () => {
     if (!canSubmit) return;
+    // localStorage에 즉시 반영 (낙관적 업데이트)
     Storage.addPharmacyReport({
       id: uid('phr'),
       region: form.region,
@@ -349,7 +389,23 @@ export function PharmacyReportModal({ onClose, onComplete, defaultRegion = null,
       notes: form.notes.trim() || '',
       seed: false,
     });
-    toast?.show?.({ kind: 'success', msg: '제보 감사합니다! 디렉토리에 반영됐어요.' });
+    // Supabase 글로벌 디렉토리에도 push (실패해도 localStorage엔 남음)
+    const result = await submitPharmacyReport({
+      region: form.region,
+      regionId: null,   // 컴포넌트가 region label로 매칭하므로 null OK
+      pharmacyName: form.pharmacyName.trim(),
+      medication: form.medication,
+      dose: form.dose,
+      pricePer4W: +form.pricePer4W,
+      purchaseDate: form.purchaseDate,
+      notes: form.notes.trim() || '',
+      submittedBy: user?.id || null,
+    });
+    if (result.ok) {
+      toast?.show?.({ kind: 'success', msg: '제보 감사합니다! 디렉토리에 반영됐어요.' });
+    } else {
+      toast?.show?.({ kind: 'success', msg: '제보 감사합니다! (네트워크 오프라인 — 본인 브라우저에 저장됨)' });
+    }
     onComplete?.();
   };
 
