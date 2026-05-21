@@ -4,6 +4,7 @@ import { Storage } from '../lib/storage.js';
 import { MEDS, MED_BY_ID } from '../lib/constants.js';
 import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
+import { ProjectionChart } from './ProjectionChart.jsx';
 
 // 슬라이더 + 즉시 예측 결과 위젯
 // P1(처음 접속), P4(주변 못 물어보는 사람)을 위한 핵심 위젯
@@ -149,6 +150,15 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           현재 BMI <b className="tabular-nums">{myBmi.toFixed(1)}</b> · {bmiCategory(myBmi)}
         </div>
       )}
+
+      {/* 예측 곡선 그래프 — 사용 + 중단 후 회복 */}
+      <div className="mt-4 rounded-xl bg-white dark:bg-slate-900 text-ink-900 dark:text-slate-100 p-3">
+        <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-2 text-center">
+          📈 예측 체중 곡선 — 사용 + 중단 시점 시뮬레이션
+        </div>
+        <ProjectionChart startWeight={+startWeight} height={+height}
+                         medication={medication} frequency={frequency} compact />
+      </div>
 
       {/* 3시점 감량 결과 — 빈도/BMI 보정된 한국 실사용 추정치 */}
       <div className="mt-4">
