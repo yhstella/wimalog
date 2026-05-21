@@ -69,10 +69,24 @@ function metaFor(pathname) {
   }
   if (pathname.startsWith('/guide/')) {
     const id = pathname.slice('/guide/'.length).split('/')[0];
-    // 가이드는 컨텐츠 양이 많아 정확한 타이틀 없으면 generic
+    const GUIDE_META = {
+      'before-use': { title: '위고비·마운자로 시작 전 — 적응증·예산·준비', desc: 'BMI·동반질환·예산·생활 패턴을 점검하고 의사와 상의할 준비를 합니다.' },
+      'first-month': { title: '위고비 첫 한 달 가이드 — 주차별 시작·적응·증량', desc: '주차별 시작·적응·증량·부작용 대처 — 한국 GLP-1 사용자 실제 패턴 반영.' },
+      'after-stop': { title: '위고비 중단 후 요요 방지 전략', desc: '평균 6개월에 감량분의 30-50% 회복. 운동 지속 그룹은 회복률 절반.' },
+      'usage-patterns': { title: '한국 GLP-1 실사용 패턴 — 격주·간헐·저용량', desc: '매주 풀 dose가 부담일 때 한국에서 흔히 쓰이는 격주·간헐·저용량 패턴.' },
+      'fatty-liver': { title: '지방간 + GLP-1 — 간수치·내장지방 개선', desc: '지방간 동반 비만에서 GLP-1이 간수치·내장지방에 미치는 효과 가이드.' },
+      'sarcopenia': { title: '마른 비만·근감소 + GLP-1 — 근손실 방지', desc: 'BMI 정상이어도 근손실 우려 시 단백질·근력운동 동반 전략.' },
+      'alcohol': { title: 'GLP-1과 음주·알코올 사용장애', desc: 'GLP-1이 알코올 갈망도 줄이는 효과 (2025 임상). 비만 + 음주 동반 시 전략.' },
+      'long-term-use': { title: '위고비·마운자로 장기 사용 — 1년 이후', desc: '6개월~1년 시점 결정 기준, 장기 안전성, 유지 vs 중단 선택 가이드.' },
+      'when-to-stop': { title: '위고비·마운자로 언제 끊을까 — 중단 시점 결정', desc: '목표 도달, 부작용, 비용 부담 — 중단 결정의 4가지 시나리오와 단계별 전략.' },
+      'maintenance-dose': { title: '위고비 유지 용량 전략 — 저용량·격주로 효과 유지', desc: '목표 도달 후 비용·부작용을 줄이며 체중 유지하는 저용량/격주 전략.' },
+      'side-effect-timeline': { title: '위고비·마운자로 부작용 시점별 변화 — 언제 사라지나', desc: '주차별 부작용 발생·완화 패턴. 오심·구토·변비·설사 각각의 정점·호전 시점.' },
+    };
+    const meta = GUIDE_META[id];
+    if (meta) return { title: `${meta.title} — ${SITE}`, description: meta.desc };
     return {
-      title: `${SITE} 가이드 · ${id} — 한국 GLP-1 사용자 맥락`,
-      description: `${id} 관련 한국 사용자 맥락 가이드 — 마른 비만·지방간·격주 사용·중단 후 요요 등 한국 실사용 패턴을 다룹니다.`,
+      title: `${SITE} 가이드 — 한국 GLP-1 사용자 맥락`,
+      description: '한국 GLP-1(위고비·마운자로·삭센다) 사용 맥락 가이드 — 격주·지방간·근감소·중단 후 등.',
     };
   }
   if (pathname.startsWith('/calc/')) {

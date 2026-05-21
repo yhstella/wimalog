@@ -165,6 +165,18 @@ export function Landing({ navigate, onSignup, user }) {
           <PersonaCardLink icon="📅" title="첫 한 달 가이드"
                             desc="주차별 시작·적응·증량 결정"
                             onClick={() => navigate('guide/first-month')} />
+          <PersonaCardLink icon="⏳" title="언제 끊을까"
+                            desc="목표 도달·부작용·비용 시나리오"
+                            onClick={() => navigate('guide/when-to-stop')} />
+          <PersonaCardLink icon="💉" title="유지 용량 전략"
+                            desc="저용량·격주로 효과 유지하는 법"
+                            onClick={() => navigate('guide/maintenance-dose')} />
+          <PersonaCardLink icon="📊" title="장기 사용 (1년+)"
+                            desc="6개월·1년 시점 평가 + 안전성"
+                            onClick={() => navigate('guide/long-term-use')} />
+          <PersonaCardLink icon="🗓️" title="부작용 시점별 변화"
+                            desc="주차별 발생·완화 패턴"
+                            onClick={() => navigate('guide/side-effect-timeline')} />
         </div>
       </section>
       )}
