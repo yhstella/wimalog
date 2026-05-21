@@ -16,6 +16,7 @@ import { MedicalDisclaimer } from './SafetyBanner.jsx';
 import { LockedOverlay, LockHint, PremiumBadge, FreeBadge, FuturePricingHint, QuickSignupModal } from './Paywall.jsx';
 import { can } from '../lib/access.js';
 import { StopProjector } from './StopProjector.jsx';
+import { AccuracyCard } from './AccuracyCard.jsx';
 
 const BMI_RANGES = [
   { id: 'all',   label: '전체',  range: null },
@@ -235,6 +236,9 @@ export function Statistics({ user, navigate, onSignup }) {
 
   return (
     <div className="space-y-6">
+      {/* AI 예측 정확도 카드 — 상단, 값 입력 시 실시간 반응 */}
+      <AccuracyCard user={user} refresh={() => { /* user prop은 외부 캐시 — 내부 version으로 강제 재계산 */ }} />
+
       <div className="flex justify-between flex-wrap gap-2 items-end">
         <div>
           <h1 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">통계</h1>
