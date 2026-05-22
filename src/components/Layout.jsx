@@ -142,8 +142,9 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
               🆓 Free
             </span>
           </div>
-          <p className="text-[10px] text-ink-300 dark:text-slate-600">
-            © 2026 위마로그 · 개인정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다.
+          <p className="text-[10px] text-ink-300 dark:text-slate-600 leading-relaxed">
+            © 2026 위마로그 · 대학병원 진료 경력의 의료진과 헬스케어 엔지니어가 설계·운영.
+            개인정보는 본인 브라우저, 익명 통계는 안전한 서버에 저장됩니다.
             추후 일부 기능 유료화 검토 중.
           </p>
         </div>

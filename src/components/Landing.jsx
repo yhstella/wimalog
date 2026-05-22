@@ -4,6 +4,7 @@ import { QuickSignupModal } from './Paywall.jsx';
 import { Simulator } from './Simulator.jsx';
 import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
+import { SafetyChecklist } from './SafetyChecklist.jsx';
 
 const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
 
@@ -55,6 +56,13 @@ export function Landing({ navigate, onSignup, user }) {
       <section className="max-w-2xl mx-auto" id="simulator-anchor">
         <Simulator onSignup={handleSignup} user={user} />
       </section>
+
+      {/* 안전성 자가 체크 — 비가입자 + 약 시작 고민자 (사용 중·약 등록 사용자에겐 노이즈) */}
+      {(!user || user.visitPurpose === 'planning' || user.visitPurpose === 'curious') && (
+        <section className="max-w-2xl mx-auto">
+          <SafetyChecklist />
+        </section>
+      )}
 
       {/* 신규 사용자용 강한 후속 CTA — 입력값 echo + 가입 유도 */}
       {!user && prefill && (

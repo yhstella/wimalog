@@ -199,21 +199,9 @@ export function Dashboard({ user, navigate }) {
         return <MilestoneCard user={liveUser} navigate={navigate} />;
       })()}
 
-      {/* visitPurpose 분기 — 입력 단계에 따라 맞춤 안내 (PurposeCard 내부에서 적절 노출 판단) */}
-      <PurposeCard user={liveUser} navigate={navigate} />
-
-      {/* 2순위: 키·성별·나이대 안내 (분기 본 후 보강 유도) — 작게 */}
-      {needsProfile && (
-        <div className="rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40 px-3 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="text-xs text-amber-900 dark:text-amber-200">
-            <b>키·성별·나이대</b> 추가 입력 → BMI 자동 계산 + 비슷한 코호트 매칭 정밀도 ↑
-          </div>
-          <button onClick={() => navigate('profile')}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white transition">
-            30초 추가 →
-          </button>
-        </div>
-      )}
+      {/* visitPurpose 분기 — 사용 중이 아닌 사용자에게만 (사용 중은 CoachReport가 더 강함) */}
+      {liveUser.visitPurpose !== 'using' && <PurposeCard user={liveUser} navigate={navigate} />}
+      {/* needsProfile 안내 제거 — AccuracyCard(통계)에서 즉시 입력 가능 */}
 
       {/* 데이터 0인 신규 가입자 — '지금 시작하면 좋은 것' 3개 액션 */}
       {logs.length === 0 && courses.length === 0 && (
@@ -321,18 +309,8 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 목표 예측 */}
-      <GoalWidget user={user} navigate={navigate} />
-
-      {/* 이번 주 활동 — 활동 있을 때만 (신규 사용자에겐 빈 0 카드 노이즈) */}
-      {(thisWeek.doseCount + thisWeek.exMinutes + thisWeek.mealCount > 0 || doses.length > 0) && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <MiniTile icon="💊" label="이번 주 투약" value={`${thisWeek.doseCount}회`} onClick={() => navigate('records')} />
-          <MiniTile icon="🏃" label="이번 주 운동" value={`${thisWeek.exMinutes}분`} sub={`${thisWeek.exSessions}회`} onClick={() => navigate('records')} />
-          <MiniTile icon="🍽️" label="이번 주 식단" value={`${thisWeek.mealCount}건`} onClick={() => navigate('records')} />
-          <MiniTile icon="💰" label="누적 약 비용" value={`${(doses.reduce((s, d) => s + (d.price || 0), 0)).toLocaleString()}원`} onClick={() => navigate('meds')} />
-        </div>
-      )}
+      {/* GoalWidget 제거 — Summary 보조 카드 '목표까지'와 중복 */}
+      {/* MiniTile 4 제거 — CoachReport의 이번 주 stat 3과 중복 */}
 
       {/* 체중 차트 */}
       <div className="card">
@@ -397,41 +375,8 @@ export function Dashboard({ user, navigate }) {
         )}
       </div>
 
-      {/* 약 중단 후 예상 (rebound) — 약 사용 중일 때 핵심 */}
-      {rebound && rebound.some(r => r.avgRegainRatio != null) && (
-        <div className="card border border-amber-200 dark:border-amber-800/40 bg-gradient-to-br from-amber-50/60 to-white dark:from-amber-900/10 dark:to-slate-900">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">⚠️</div>
-            <div className="flex-1">
-              <h2 className="section-title">"약을 끊으면 어떻게 될까?"</h2>
-              <p className="section-subtitle mt-0.5">
-                비슷한 코호트가 약 중단 후 평균적으로 다시 찐 비율
-              </p>
-            </div>
-            <button onClick={() => navigate('stats')} className="btn-ghost text-xs flex-shrink-0">자세히 →</button>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            {rebound.map(r => (
-              <div key={r.week} className="rounded-xl bg-white dark:bg-slate-800 p-3 text-center">
-                <div className="text-xs text-ink-500 dark:text-slate-400">중단 후 {r.week}주</div>
-                <div className="text-2xl font-extrabold tabular-nums text-amber-700 dark:text-amber-400 mt-1">
-                  {r.avgRegainRatio != null ? `${Math.round(r.avgRegainRatio * 100)}%` : '—'}
-                </div>
-                <div className="text-[10px] text-ink-500 dark:text-slate-500">감량분 회복</div>
-              </div>
-            ))}
-          </div>
-          {reboundEx && reboundEx.active.n >= 2 && reboundEx.inactive.n >= 2 && reboundEx.active.avgRegainPct != null && reboundEx.inactive.avgRegainPct != null && (
-            <div className="text-xs text-ink-700 dark:text-slate-300 mt-3 text-center">
-              💪 같은 코호트 중 <b>운동 지속</b> 그룹은 회복률이{' '}
-              <b className="text-brand-700 dark:text-brand-400">
-                {Math.max(0, Math.round(reboundEx.inactive.avgRegainPct - reboundEx.active.avgRegainPct))}%p
-              </b>{' '}낮습니다.
-              <br />→ 지금부터 운동 습관을 만들면 요요를 크게 줄일 수 있어요.
-            </div>
-          )}
-        </div>
-      )}
+      {/* Rebound 카드 제거 — Statistics 페이지의 StopProjector + CoachReport 정체 panel로 대체.
+          Dashboard에 중복 노출하면 노이즈 증가. visitPurpose='stopped' 사용자는 PurposeCard가 안내. */}
 
       {/* 다이어트만 사용자 전용 안내 */}
       {isDietOnly && (
@@ -491,19 +436,7 @@ export function Dashboard({ user, navigate }) {
       {/* 누적 약값 분석 (1달+) */}
       <CostInsightCard user={user} navigate={navigate} />
 
-      {/* fallback: 인사이트가 없지만 최근 부작용 chip만 노출 */}
-      {recentSideEffects.length > 0 && (
-        <div className="card">
-          <h2 className="section-title">최근 4주 보고한 증상</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {recentSideEffects.map(s => <span key={s.id} className="chip">{s.label}</span>)}
-          </div>
-          <p className="helptext">
-            증상이 심하거나 장기간 지속되면 의료진과 상의해 주세요.
-            <button onClick={() => navigate('info')} className="text-brand-600 dark:text-brand-400 underline ml-1">안전 정보 보기</button>
-          </p>
-        </div>
-      )}
+      {/* 부작용 chip fallback 제거 — SideEffectInsightWidget로 대체 (위에 이미 있음) */}
     </div>
   );
 }

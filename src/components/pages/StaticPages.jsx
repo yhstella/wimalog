@@ -13,6 +13,32 @@ export function AboutPage() {
         </p>
       </header>
 
+      {/* 운영주체 — 의료진 중심 개발 (신뢰 시그널) */}
+      <section className="rounded-2xl bg-white dark:bg-slate-900 border-2 border-brand-200 dark:border-brand-800/40 p-5">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="text-2xl">🩺</div>
+          <div>
+            <h2 className="text-lg font-bold text-ink-900 dark:text-slate-100">의료진이 만든 GLP-1 플랫폼</h2>
+            <p className="text-sm text-ink-500 dark:text-slate-400 mt-0.5">
+              한국 GLP-1 사용자의 실사용 맥락을 직접 진료해온 의료진이 설계·운영합니다.
+            </p>
+          </div>
+        </div>
+        <ul className="space-y-2 text-sm text-ink-700 dark:text-slate-300 leading-relaxed">
+          <li className="flex gap-2">
+            <span className="text-brand-500 flex-shrink-0 mt-0.5">●</span>
+            <span><b>대학병원 진료 경력의 내과 의료진</b>이 컨텐츠·안전 가이드를 설계 — 부작용 경고 기준, red-flag 증상, 의료 상담 임계점 모두 임상 가이드라인 기반</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand-500 flex-shrink-0 mt-0.5">●</span>
+            <span><b>데이터·헬스케어 엔지니어링 팀</b>이 익명 코호트 분석·시각화·인프라 구축 — STEP-1·SURMOUNT-1 등 핵심 임상 reference를 한국 사용 맥락에 맞춰 보정</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="text-brand-500 flex-shrink-0 mt-0.5">●</span>
+            <span><b>익명·민감정보 보호 원칙</b>으로 시작 — 개인정보보호법상 민감정보 처리에 부합. 약 추천·진단·처방 기능은 의도적으로 제외</span>
+          </li>
+        </ul>
+      </section>
 
       {/* 차별화 요약 — 한국 사용자가 기대하는 가치 */}
       <section className="rounded-2xl bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/20 dark:to-slate-900 border-2 border-brand-200 dark:border-brand-800/40 p-5">
