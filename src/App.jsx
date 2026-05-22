@@ -1,31 +1,45 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import { Storage } from './lib/storage.js';
 import { applyTheme, watchSystemTheme } from './lib/theme.js';
 import { seoFor, setSEO } from './lib/seo.js';
 import { Layout } from './components/Layout.jsx';
+// Landing은 첫 진입 핵심 — 즉시 로드. 나머지 페이지는 lazy chunk로 분리해서 cold-cache JS 부담 ↓
 import { Landing } from './components/Landing.jsx';
-import { Onboarding } from './components/Onboarding.jsx';
-import { Dashboard } from './components/Dashboard.jsx';
-import { Records } from './components/Records.jsx';
-import { MedManager } from './components/MedManager.jsx';
-import { Statistics } from './components/Statistics.jsx';
-import { Profile } from './components/Profile.jsx';
-import { Info } from './components/Info.jsx';
 import { ToastProvider } from './components/Toast.jsx';
-import { DrugInfoPage } from './components/pages/DrugInfoPage.jsx';
-import { SideEffectPage } from './components/pages/SideEffectPage.jsx';
-import { GuidePage } from './components/pages/GuidePage.jsx';
-import { CalculatorPage } from './components/pages/CalculatorPage.jsx';
-import { CompareDrugsPage } from './components/pages/CompareDrugsPage.jsx';
-import { PharmacyDirectoryPage } from './components/pages/PharmacyDirectoryPage.jsx';
-import { ForDoctorsPage } from './components/pages/ForDoctorsPage.jsx';
-import { DoctorReport } from './components/DoctorReport.jsx';
-import { AboutPage, PrivacyPage, TermsPage } from './components/pages/StaticPages.jsx';
 import { recordVisit } from './components/RecentPages.jsx';
 import { ErrorBoundary } from './components/ErrorBoundary.jsx';
 import { InstallPrompt } from './components/InstallPrompt.jsx';
 import { bootstrapAuth, onAuthChange, signOut as supaSignOut } from './lib/auth.js';
 import { startSupabaseSync, backfillUser } from './lib/supabaseSync.js';
+
+// === Lazy-loaded routes — 첫 paint 부담 ↓ ===
+const Onboarding = lazy(() => import('./components/Onboarding.jsx').then(m => ({ default: m.Onboarding })));
+const Dashboard = lazy(() => import('./components/Dashboard.jsx').then(m => ({ default: m.Dashboard })));
+const Records = lazy(() => import('./components/Records.jsx').then(m => ({ default: m.Records })));
+const MedManager = lazy(() => import('./components/MedManager.jsx').then(m => ({ default: m.MedManager })));
+const Statistics = lazy(() => import('./components/Statistics.jsx').then(m => ({ default: m.Statistics })));
+const Profile = lazy(() => import('./components/Profile.jsx').then(m => ({ default: m.Profile })));
+const Info = lazy(() => import('./components/Info.jsx').then(m => ({ default: m.Info })));
+const DrugInfoPage = lazy(() => import('./components/pages/DrugInfoPage.jsx').then(m => ({ default: m.DrugInfoPage })));
+const SideEffectPage = lazy(() => import('./components/pages/SideEffectPage.jsx').then(m => ({ default: m.SideEffectPage })));
+const GuidePage = lazy(() => import('./components/pages/GuidePage.jsx').then(m => ({ default: m.GuidePage })));
+const CalculatorPage = lazy(() => import('./components/pages/CalculatorPage.jsx').then(m => ({ default: m.CalculatorPage })));
+const CompareDrugsPage = lazy(() => import('./components/pages/CompareDrugsPage.jsx').then(m => ({ default: m.CompareDrugsPage })));
+const PharmacyDirectoryPage = lazy(() => import('./components/pages/PharmacyDirectoryPage.jsx').then(m => ({ default: m.PharmacyDirectoryPage })));
+const ForDoctorsPage = lazy(() => import('./components/pages/ForDoctorsPage.jsx').then(m => ({ default: m.ForDoctorsPage })));
+const DoctorReport = lazy(() => import('./components/DoctorReport.jsx').then(m => ({ default: m.DoctorReport })));
+const AboutPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.AboutPage })));
+const PrivacyPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.TermsPage })));
+
+// Lazy 로딩 동안 fallback — 짧은 로딩 indicator
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <div className="inline-block w-6 h-6 border-3 border-brand-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 // path 우선 + hash 호환 — SEO 봇은 path로 접근, 기존 사용자 hash URL도 동작
 function readRoute() {
@@ -183,7 +197,10 @@ export default function App() {
       <Layout route={effectiveRoute} navigate={navigate} user={user} onLogout={logout} onSignup={onSignupGo}>
         {/* ErrorBoundary key=route — 라우트 변경 시 boundary state 리셋 */}
         <ErrorBoundary key={effectiveRoute}>
-          {effectiveRoute === 'landing'    && <Landing navigate={navigate} onSignup={onSignupGo} user={user} />}
+          {/* Landing은 첫 paint 핵심 — Suspense 밖. 나머지 lazy 라우트는 Suspense 안. */}
+          {effectiveRoute === 'landing' && <Landing navigate={navigate} onSignup={onSignupGo} user={user} />}
+          {effectiveRoute !== 'landing' && (
+          <Suspense fallback={<PageLoading />}>
           {effectiveRoute === 'onboarding' && <Onboarding navigate={navigate} onComplete={onSignupGo} />}
           {effectiveRoute === 'dashboard'  && user && <Dashboard user={user} navigate={navigate} />}
           {effectiveRoute === 'records'    && user && <Records user={user} navigate={navigate} />}
@@ -211,6 +228,8 @@ export default function App() {
           {effectId && <SideEffectPage effectId={effectId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {guideId  && <GuidePage guideId={guideId} navigate={navigate} user={user} onSignup={onSignupStay} />}
           {calcKind && <CalculatorPage kind={calcKind} navigate={navigate} user={user} />}
+          </Suspense>
+          )}
         </ErrorBoundary>
       </Layout>
       <InstallPrompt />

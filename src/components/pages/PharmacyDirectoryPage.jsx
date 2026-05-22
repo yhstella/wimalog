@@ -129,11 +129,20 @@ export function PharmacyDirectoryPage({ navigate, user, regionId }) {
         ))}
       </section>
 
-      {/* 안내 */}
+      {/* 안내 + 다음 액션 다리 (의원 검색은 외부 지도 link로) */}
       <section className="rounded-2xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200/60 dark:border-amber-800/30 p-4 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
         <b>⚠ 처방은 의원에서, 약 구매는 약국에서.</b><br />
-        한국 의료법상 위마로그는 의원·의사 추천은 할 수 없습니다. 다만 약국 가격은 공개 정보이므로 사용자 제보로 디렉토리를 만듭니다.
-        가격은 약국별 ±30%까지 차이날 수 있으므로 방문 전 전화 확인을 권합니다.
+        한국 의료법상 위마로그는 의원·의사 추천을 할 수 없습니다. 약국 가격은 공개 정보이므로 사용자 제보로 디렉토리를 만들고, 의원은 외부 지도에서 검색해 주세요.
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a href="https://map.kakao.com/?q=%EB%B9%84%EB%A7%8C%20%ED%81%B4%EB%A6%AC%EB%8B%89" target="_blank" rel="noopener noreferrer"
+             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-yellow-200 hover:bg-yellow-300 dark:bg-yellow-800/40 dark:hover:bg-yellow-700/60 text-ink-900 dark:text-yellow-50 font-semibold text-[11px] transition">
+            💬 카카오맵에서 내 근처 비만 클리닉 찾기 →
+          </a>
+          <a href="https://map.naver.com/v5/search/%EB%B9%84%EB%A7%8C%ED%81%B4%EB%A6%AC%EB%8B%89" target="_blank" rel="noopener noreferrer"
+             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-200 hover:bg-emerald-300 dark:bg-emerald-800/40 dark:hover:bg-emerald-700/60 text-ink-900 dark:text-emerald-50 font-semibold text-[11px] transition">
+            🟢 네이버 지도 →
+          </a>
+        </div>
       </section>
 
       <MedicalDisclaimer />
@@ -251,12 +260,39 @@ function RegionCard({ region, navigate, medFilter }) {
 }
 
 function RegionDetailView({ detail, filter, onFilterChange, navigate }) {
+  // 외부 지도·검색 URL — 의료법: 의원 직접 추천 X, 사용자 검색 도구 제공 OK
+  const regionKeyword = detail.region;
+  const kakaoMapUrl = `https://map.kakao.com/?q=${encodeURIComponent(regionKeyword + ' 비만 클리닉')}`;
+  const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(regionKeyword + ' 비만 클리닉')}`;
+  const kakaoMapPharmUrl = `https://map.kakao.com/?q=${encodeURIComponent(regionKeyword + ' 약국')}`;
   return (
     <div className="space-y-5">
       <section className="card">
         <h2 className="text-2xl font-extrabold text-ink-900 dark:text-slate-100">{detail.region} 약국 가격</h2>
         <div className="text-xs text-ink-500 dark:text-slate-500 mt-1">
           {detail.pharmacies.length}개 약국 · 총 {detail.totalReports}건 제보
+        </div>
+
+        {/* 다음 액션 다리 — 사용자 검색 link (의원 추천 X) */}
+        <div className="mt-4 pt-3 border-t border-ink-100 dark:border-slate-800">
+          <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-2">📍 이 지역에서 찾기 (외부 지도)</div>
+          <div className="flex flex-wrap gap-2">
+            <a href={kakaoMapUrl} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-ink-800 dark:text-yellow-100 text-xs font-semibold transition">
+              💬 카카오맵: 비만 클리닉
+            </a>
+            <a href={naverMapUrl} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-ink-800 dark:text-emerald-100 text-xs font-semibold transition">
+              🟢 네이버 지도: 비만 클리닉
+            </a>
+            <a href={kakaoMapPharmUrl} target="_blank" rel="noopener noreferrer"
+               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink-100 hover:bg-ink-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-ink-800 dark:text-slate-100 text-xs font-semibold transition">
+              🏪 카카오맵: 약국
+            </a>
+          </div>
+          <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2 leading-relaxed">
+            ※ 위마로그는 의원·약국을 직접 추천하지 않습니다. 외부 지도 검색 결과를 활용해 본인이 비교 선택하세요.
+          </p>
         </div>
       </section>
 
@@ -302,15 +338,21 @@ function RegionDetailView({ detail, filter, onFilterChange, navigate }) {
 }
 
 function PharmacyCard({ pharmacy, navigate }) {
+  // 약국명을 카카오맵 검색어로 사용 — 사용자가 실제 약국 위치·전화 확인 가능
+  const kakaoMapPharmUrl = `https://map.kakao.com/?q=${encodeURIComponent(pharmacy.name)}`;
   return (
     <div className="card">
       <div className="flex justify-between items-start gap-3 flex-wrap">
-        <div>
+        <div className="min-w-0">
           <div className="font-bold text-ink-900 dark:text-slate-100">{pharmacy.name}</div>
           <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-0.5">
             {pharmacy.reportCount}건 제보 · 최근 {pharmacy.lastReportAt}
           </div>
         </div>
+        <a href={kakaoMapPharmUrl} target="_blank" rel="noopener noreferrer"
+           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-yellow-100 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 text-ink-800 dark:text-yellow-100 text-[11px] font-semibold transition whitespace-nowrap">
+          💬 카카오맵
+        </a>
       </div>
       {pharmacy.offerings.length > 0 ? (
         <div className="mt-3 pt-3 border-t border-ink-100 dark:border-slate-800">

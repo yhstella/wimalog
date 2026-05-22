@@ -77,44 +77,50 @@ export function AboutPage() {
       </section>
 
       <section className="card">
-        <h2 className="section-title">🆚 해외 GLP-1 앱과의 차이</h2>
-        <div className="mt-2 overflow-x-auto -mx-2">
-          <table className="w-full text-sm">
+        <h2 className="section-title">🆚 다른 도구와 어떻게 다른가</h2>
+        <p className="section-subtitle mt-1">한국 GLP-1 사용자가 흔히 쓰는 4가지 대안 비교</p>
+        <div className="mt-3 overflow-x-auto -mx-2">
+          <table className="w-full text-sm min-w-[680px]">
             <thead>
-              <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-100 dark:border-slate-800">
-                <th className="py-2 px-2 font-medium">측면</th>
-                <th className="py-2 px-2 font-medium">해외 앱 (Glapp·Shotsy·Mounjaro Tracker 등)</th>
-                <th className="py-2 px-2 font-medium">위마로그</th>
+              <tr className="text-left text-ink-500 dark:text-slate-400 border-b border-ink-200 dark:border-slate-700">
+                <th className="py-2 px-2 font-medium sticky left-0 bg-white dark:bg-slate-900 z-10">측면</th>
+                <th className="py-2 px-2 font-medium">네이버 카페·블로그</th>
+                <th className="py-2 px-2 font-medium">MyFitnessPal·Noom</th>
+                <th className="py-2 px-2 font-medium">해외 GLP-1 앱<br /><span className="text-[10px] font-normal">(Glapp·Shotsy)</span></th>
+                <th className="py-2 px-2 font-medium bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-400">위마로그</th>
               </tr>
             </thead>
             <tbody className="text-ink-700 dark:text-slate-300">
-              <tr className="border-b border-ink-100 dark:border-slate-800">
-                <td className="py-1.5 px-2 font-semibold">언어·문화</td>
-                <td className="py-1.5 px-2">영어, 미국 처방·식단</td>
-                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">한국어, 국내 처방·회식·반주 문화 반영</td>
-              </tr>
-              <tr className="border-b border-ink-100 dark:border-slate-800">
-                <td className="py-1.5 px-2 font-semibold">중심 가치</td>
-                <td className="py-1.5 px-2">개인 dose·체중 tracker</td>
-                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">"비슷한 사람" 익명 코호트 비교</td>
-              </tr>
-              <tr className="border-b border-ink-100 dark:border-slate-800">
-                <td className="py-1.5 px-2 font-semibold">한국 특수 사례</td>
-                <td className="py-1.5 px-2">없음</td>
-                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">마른 비만·지방간·알코올·격주 사용 가이드</td>
-              </tr>
-              <tr className="border-b border-ink-100 dark:border-slate-800">
-                <td className="py-1.5 px-2 font-semibold">의학적 안전성</td>
-                <td className="py-1.5 px-2">사용자 편의 중심</td>
-                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">의료진 상담 기준·진료 리포트·red flag</td>
-              </tr>
-              <tr className="border-b border-ink-100 dark:border-slate-800">
-                <td className="py-1.5 px-2 font-semibold">콘텐츠 형식</td>
-                <td className="py-1.5 px-2">앱 다운로드 필요</td>
-                <td className="py-1.5 px-2 text-brand-700 dark:text-brand-400 font-semibold">웹 — 설치 없이 즉시, 검색 진입 가능</td>
-              </tr>
+              <Row label="언어·문화"
+                   cells={['한국어', '한국어(MFP) / 일부 한국어(Noom)', '영어', '한국어 + 국내 처방·회식 맥락']} ours={3} />
+              <Row label="중심 가치"
+                   cells={['개인 후기·질문', '식단·칼로리 트래커', '개인 dose 트래커', '실사용자 익명 코호트 비교 + AI 예측']} ours={3} />
+              <Row label="GLP-1 특화"
+                   cells={['일부 있음 (산만)', '없음 (일반 다이어트)', '있음 (영문)', '✓ 5개 약 깊이 + 한국 가격·격주 패턴']} ours={3} />
+              <Row label="비슷한 사람 비교"
+                   cells={['후기 일부 검색', '없음', '없음', '✓ BMI·약·빈도 매칭 익명 코호트']} ours={3} />
+              <Row label="중단 후 회복 예측"
+                   cells={['후기 단편', '없음', '없음', '✓ 본인 맞춤 곡선 + 운동 영향 시각화']} ours={3} />
+              <Row label="진료용 PDF"
+                   cells={['없음', '없음', '일부 (영문)', '✓ 12주 한국어 + 카톡용 텍스트 카피']} ours={3} />
+              <Row label="약국 가격 비교"
+                   cells={['댓글에 산만', '없음', '없음', '✓ 지역·약국별 4주분 디렉토리']} ours={3} />
+              <Row label="의학적 안전 가이드"
+                   cells={['검증 어려움', '일반 다이어트', '사용자 편의 중심', '✓ 의료진 설계 · 금기 자가 체크']} ours={3} />
+              <Row label="광고·낚시·중복"
+                   cells={['많음', '구독 광고 강함', '구독 광고', '없음 (현재 무료)']} ours={3} />
+              <Row label="설치"
+                   cells={['앱 또는 웹', '앱 필수', '앱 필수', '웹 — 검색 즉시 진입, PWA 설치 가능']} ours={3} />
             </tbody>
           </table>
+        </div>
+
+        {/* 위마로그가 못 하는 것 — 정직 */}
+        <div className="mt-4 rounded-xl bg-ink-100/50 dark:bg-slate-800/50 p-3 text-xs leading-relaxed text-ink-700 dark:text-slate-300">
+          <b>위마로그가 못 하는 것:</b>{' '}
+          영양 정보 식품 DB 규모 (MFP가 강함), 헬스 코칭 사람 응답 (Noom), 일대일 멘토링 (카페 친목).
+          위마로그는 <b className="text-brand-700 dark:text-brand-400">"GLP-1 결정·기록·진료 동반자"</b>로 좁게 가는 도구입니다.
+          다이어트 식단 트래커는 MFP, 사람 응답은 카페, 의료 종합관리는 위마로그 — 함께 쓰는 게 효율적입니다.
         </div>
       </section>
 
@@ -151,6 +157,23 @@ export function AboutPage() {
       <ShareButtons title="위마로그 — 위고비·마운자로 한국 사용자 리얼데이터" text="위고비·마운자로 사용자 익명 비교 데이터" />
       <MedicalDisclaimer />
     </div>
+  );
+}
+
+// 비교 표 행 — 우리(ours) 컬럼 강조
+function Row({ label, cells, ours }) {
+  return (
+    <tr className="border-b border-ink-100 dark:border-slate-800">
+      <td className="py-2 px-2 font-semibold sticky left-0 bg-white dark:bg-slate-900 z-10">{label}</td>
+      {cells.map((c, i) => (
+        <td key={i} className={`py-2 px-2 align-top text-xs leading-snug
+                                ${i === ours
+                                  ? 'bg-brand-50/60 dark:bg-brand-900/15 text-brand-700 dark:text-brand-400 font-semibold'
+                                  : ''}`}>
+          {c}
+        </td>
+      ))}
+    </tr>
   );
 }
 

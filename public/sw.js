@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v22';  // bumped 2026-05-23: About 운영주체 포장 + 안전성 체크 + Dashboard 위젯 7개
+const VERSION = 'v23';  // bumped 2026-05-23: 코드 분할 (177KB) + 카카오맵 funnel + 경쟁 비교
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
