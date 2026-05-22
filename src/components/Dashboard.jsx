@@ -22,6 +22,7 @@ import { EmptyDashboard } from './EmptyDashboard.jsx';
 import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
 import { MilestoneCard } from './MilestoneCard.jsx';
 import { CostInsightCard } from './CostInsightCard.jsx';
+import { CoachReport } from './CoachReport.jsx';
 import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { InitialSetup } from './InitialSetup.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
@@ -184,10 +185,21 @@ export function Dashboard({ user, navigate }) {
         </div>
       </div>
 
-      {/* 마일스톤 카드 — 가입 후 경과 시점별 보상 메시지 */}
-      <MilestoneCard user={liveUser} navigate={navigate} />
+      {/* 🎯 코치 리포트 — 최상단 hero. logs >= 2 + active course면 노출.
+          신규(logs < 2) 또는 약 없음이면 MilestoneCard·PurposeCard로 자연 대체. */}
+      <CoachReport user={liveUser} navigate={navigate} />
 
-      {/* 1순위: visitPurpose 분기 — 입력한 단계에 따라 맞춤 첫 경험 */}
+      {/* 마일스톤 카드 — 가입 후 경과 시점별 보상 (신규~2주 사용자 중심) */}
+      {(() => {
+        const ageDays = liveUser?.createdAt
+          ? Math.floor((Date.now() - new Date(liveUser.createdAt).getTime()) / 86400000)
+          : 0;
+        // 코치 리포트가 의미있게 작동하는 시점 (14일 이상 + logs 2+)에는 마일스톤 숨김 (중복 방지)
+        if (ageDays > 14 && logs.length >= 2) return null;
+        return <MilestoneCard user={liveUser} navigate={navigate} />;
+      })()}
+
+      {/* visitPurpose 분기 — 입력 단계에 따라 맞춤 안내 (PurposeCard 내부에서 적절 노출 판단) */}
       <PurposeCard user={liveUser} navigate={navigate} />
 
       {/* 2순위: 키·성별·나이대 안내 (분기 본 후 보강 유도) — 작게 */}

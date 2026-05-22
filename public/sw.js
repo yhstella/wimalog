@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v20';  // bumped 2026-05-22: HOTFIX finalUsage 'number is not iterable' (직전 commit 버그)
+const VERSION = 'v21';  // bumped 2026-05-22: GLP-1 코치 엔진 + 주간 리포트 + 정체기 감지
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
