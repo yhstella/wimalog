@@ -94,10 +94,12 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
   }, [medication, adjust]);
 
   // 우선순위: Supabase fresh > 빌드 타임 snapshot > localStorage 시드 > 임상 reference
-  const finalUsage = (usageLoss && usageLoss.length)
-    || (snapshotUsage && snapshotUsage.length && snapshotUsage)
-    || (localUsage && localUsage.length && localUsage)
-    || clinicalReference;
+  // ⚠ `arr && arr.length`는 number 반환 — 반드시 ternary 또는 명시적 array 반환으로
+  const finalUsage =
+    (usageLoss && usageLoss.length > 0)       ? usageLoss
+    : (snapshotUsage && snapshotUsage.length) ? snapshotUsage
+    : (localUsage && localUsage.length)       ? localUsage
+    :                                            clinicalReference;
 
   // 신뢰구간(CI) 폭 — accuracy 낮을수록 더 넓음 + 시간 지날수록 누적 불확실성 증가
   // accuracy 40 (최소) → 기본 ±30% / accuracy 100 → 기본 ±10%
