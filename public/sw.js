@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v24';  // bumped 2026-05-23: nav 3개 정리 + 약국 실명 + 병원 통칭 + AI 예측 페이지 단순화
+const VERSION = 'v25';  // bumped 2026-05-23: 모바일 탈퇴 버튼 (테스트용)
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

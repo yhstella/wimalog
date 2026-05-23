@@ -29,6 +29,24 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
     setStoredTheme(next);
   };
 
+  // 테스트용 탈퇴 — confirm 한 번 + localStorage 강제 정리 + 페이지 리로드.
+  // 모바일/데스크탑 공용 핸들러. 사용자가 OAuth 가입/탈퇴 반복 테스트 중이라 매끄럽게.
+  const handleDelete = () => {
+    if (!user) return;
+    if (!confirm(`${user.nickname || '본인'}님의 모든 데이터를 영구 삭제합니다.\n이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?`)) return;
+    try {
+      Storage.deleteUser(user.id);
+      Storage.setUsers(Storage.getUsers().filter(u => u.id !== user.id));
+      Storage.setSession(null);
+    } catch (e) {
+      console.error('[delete]', e);
+    }
+    (async () => {
+      try { await supaSignOut(); } catch {}
+      window.location.replace('/');
+    })();
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* 스킵 링크 (a11y) */}
@@ -87,24 +105,7 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                   </span>
                 </button>
                 <button onClick={onLogout} className="btn-ghost text-xs hidden sm:inline-flex">로그아웃</button>
-                {/* 테스트용 탈퇴 — confirm 한 번 + 모든 localStorage 데이터 강제 정리 + 페이지 리로드 */}
-                <button onClick={() => {
-                          if (!confirm(`${user.nickname || '본인'}님의 모든 데이터를 영구 삭제합니다.\n이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?`)) return;
-                          try {
-                            Storage.deleteUser(user.id);
-                            // 추가 안전망 — 같은 id로 잔재 user 남아있을 가능성 일소
-                            Storage.setUsers(Storage.getUsers().filter(u => u.id !== user.id));
-                            Storage.setSession(null);
-                          } catch (e) {
-                            console.error('[delete]', e);
-                          }
-                          // 탈퇴 후 강제 페이지 리로드 — React state·캐시·세션 모두 clean slate
-                          // 그래야 다음 OAuth 재가입 시 InitialSetup 정확히 노출
-                          (async () => {
-                            try { await supaSignOut(); } catch {}
-                            window.location.replace('/');
-                          })();
-                        }}
+                <button onClick={handleDelete}
                         title="탈퇴 (테스트용)"
                         className="text-[11px] font-semibold px-2 py-1 rounded-md bg-rose-100 hover:bg-rose-200 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 transition hidden sm:inline-flex">
                   탈퇴
@@ -164,12 +165,21 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
           </button>
         ))}
         {user && (
-          <button onClick={onLogout}
-                  aria-label="로그아웃"
-                  className="flex-1 min-h-[56px] py-2.5 px-1 text-[10px] font-medium text-ink-500 dark:text-slate-500 flex flex-col items-center gap-0.5">
-            <span className="text-lg leading-none" aria-hidden>↩</span>
-            <span>나가기</span>
-          </button>
+          <>
+            <button onClick={onLogout}
+                    aria-label="로그아웃"
+                    className="flex-1 min-h-[56px] py-2.5 px-1 text-[10px] font-medium text-ink-500 dark:text-slate-500 flex flex-col items-center gap-0.5">
+              <span className="text-lg leading-none" aria-hidden>↩</span>
+              <span>나가기</span>
+            </button>
+            {/* 테스트용 탈퇴 — 모바일에서도 즉시 가입/탈퇴 반복 가능하도록 */}
+            <button onClick={handleDelete}
+                    aria-label="탈퇴 (테스트용)"
+                    className="flex-1 min-h-[56px] py-2.5 px-1 text-[10px] font-medium text-rose-600 dark:text-rose-400 flex flex-col items-center gap-0.5">
+              <span className="text-lg leading-none" aria-hidden>✕</span>
+              <span>탈퇴</span>
+            </button>
+          </>
         )}
       </nav>
 
