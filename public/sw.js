@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v23';  // bumped 2026-05-23: 코드 분할 (177KB) + 카카오맵 funnel + 경쟁 비교
+const VERSION = 'v24';  // bumped 2026-05-23: nav 3개 정리 + 약국 실명 + 병원 통칭 + AI 예측 페이지 단순화
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

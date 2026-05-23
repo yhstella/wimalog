@@ -7,17 +7,14 @@ import { Storage } from '../lib/storage.js';
 import { signOut as supaSignOut } from '../lib/auth.js';
 
 const NAV_AUTHED = [
-  { id: 'dashboard',  label: '홈',     icon: '🏠' },
-  { id: 'records',    label: '기록',   icon: '📝' },
-  { id: 'meds',       label: '약',     icon: '💊' },
-  { id: 'stats',      label: '통계',   icon: '📊' },
-  { id: 'profile',    label: '프로필', icon: '⚙️' },
+  { id: 'drug/wegovy',  label: '약 정보',  icon: '💊' },
+  { id: 'stats',        label: 'AI 예측',  icon: '🎯' },
+  { id: 'info',         label: '안전',     icon: '🛡️' },
 ];
 
 const NAV_GUEST = [
-  { id: 'drug/wegovy',  label: '약 정보',  icon: '💉' },
-  { id: 'pharmacies',   label: '약국 가격', icon: '🏪' },
-  { id: 'stats',        label: '통계',     icon: '📊' },
+  { id: 'drug/wegovy',  label: '약 정보',  icon: '💊' },
+  { id: 'stats',        label: 'AI 예측',  icon: '🎯' },
   { id: 'info',         label: '안전',     icon: '🛡️' },
 ];
 

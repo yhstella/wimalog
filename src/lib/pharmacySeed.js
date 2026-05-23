@@ -4,84 +4,85 @@
 import { Storage } from './storage.js';
 import { REFERENCE_PRICE_4W } from './constants.js';
 
-// 한국에서 GLP-1을 처방·판매하는 클러스터 — 의원·약국이 한 지역에 모여 가격 경쟁이 일어나는 패턴
+// 한국에서 GLP-1을 처방·판매하는 클러스터 — 병원·약국이 한 지역에 모여 가격 경쟁이 일어나는 패턴
 // 대학로·강남·종로 등 핵심 + 지방 광역시
+// 사용자 익명 제보로 약국명이 누적되며, 시드 데이터는 사용자가 자주 언급하는 약국 실명 위주.
 const PHARMACY_CLUSTERS = [
-  // 서울 대학로 — 다이어트 한약·비만 클리닉 밀집. 한국에서 가장 저렴한 편.
+  // 서울 대학로 — 처방 병원 밀집. 한국에서 가장 저렴한 편.
   { id: 'seoul-daehakro', region: '서울 대학로', priceMult: 0.78,
-    landmark: '혜화역·대학로 비만 클리닉 클러스터',
+    landmark: '혜화역·대학로 처방 병원 클러스터',
     pharmacies: [
-      { name: '혜화동 비만클리닉 인근 약국 A', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 14 },
-      { name: '대학로 비만클리닉 인근 약국 B', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 9 },
-      { name: '명륜동 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'ozempic'], rep: 7 },
+      { name: '혜화 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 14 },
+      { name: '대학로 메디팜약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 9 },
+      { name: '명륜 위드팜약국', medsHandled: ['wegovy', 'mounjaro', 'ozempic'], rep: 7 },
     ] },
   { id: 'seoul-gangnam', region: '서울 강남', priceMult: 1.10,
-    landmark: '강남역·역삼동·논현동 비만 클리닉',
+    landmark: '강남역·역삼동·논현동 처방 병원',
     pharmacies: [
-      { name: '강남역 비만클리닉 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 11 },
-      { name: '역삼동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 8 },
-      { name: '논현동 비만클리닉 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
+      { name: '강남역 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic', 'zepbound'], rep: 11 },
+      { name: '역삼 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 8 },
+      { name: '논현 위드팜약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
     ] },
   { id: 'seoul-jongno', region: '서울 종로', priceMult: 0.85,
-    landmark: '광화문·종로3가 의원 밀집',
+    landmark: '광화문·종로3가 병원 밀집',
     pharmacies: [
-      { name: '종로3가 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
-      { name: '광화문 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 5 },
+      { name: '종로3가 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 6 },
+      { name: '광화문 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 5 },
     ] },
   { id: 'seoul-sinchon', region: '서울 신촌', priceMult: 0.95,
     landmark: '신촌·연대 대학가',
     pharmacies: [
-      { name: '신촌역 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '연대 후문 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '신촌 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '연대 후문 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
   { id: 'seoul-songpa', region: '서울 송파', priceMult: 1.05,
     landmark: '잠실역·석촌·문정',
     pharmacies: [
-      { name: '잠실역 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '석촌역 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '잠실 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '석촌 위드팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
   { id: 'gyeonggi-bundang', region: '경기 분당', priceMult: 1.00,
     landmark: '서현·정자·미금',
     pharmacies: [
-      { name: '서현역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic'], rep: 6 },
-      { name: '정자동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '서현 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda', 'ozempic'], rep: 6 },
+      { name: '정자 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
   { id: 'gyeonggi-ilsan', region: '경기 일산', priceMult: 1.00,
     landmark: '주엽·정발산',
     pharmacies: [
-      { name: '주엽역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
+      { name: '주엽 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
     ] },
   { id: 'gyeonggi-suwon', region: '경기 수원', priceMult: 0.98,
     landmark: '수원역·인계동',
     pharmacies: [
-      { name: '수원역 인근 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '수원역 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
   { id: 'busan', region: '부산', priceMult: 0.95,
     landmark: '서면·해운대·동래',
     pharmacies: [
-      { name: '서면역 인근 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
-      { name: '해운대 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
+      { name: '서면 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 5 },
+      { name: '해운대 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 4 },
     ] },
   { id: 'daegu', region: '대구', priceMult: 0.95,
     landmark: '동성로·반월당',
     pharmacies: [
-      { name: '동성로 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
+      { name: '동성로 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 4 },
     ] },
   { id: 'incheon', region: '인천', priceMult: 1.00,
     landmark: '구월동·부평',
     pharmacies: [
-      { name: '구월동 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '구월 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
   { id: 'daejeon', region: '대전', priceMult: 0.95,
     landmark: '둔산동·유성',
     pharmacies: [
-      { name: '둔산동 일반 약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 3 },
+      { name: '둔산 온누리약국', medsHandled: ['wegovy', 'mounjaro', 'saxenda'], rep: 3 },
     ] },
   // 광주
   { id: 'gwangju', region: '광주', priceMult: 0.95,
     landmark: '상무지구·충장로',
     pharmacies: [
-      { name: '상무지구 일반 약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
+      { name: '상무 메디팜약국', medsHandled: ['wegovy', 'mounjaro'], rep: 3 },
     ] },
 ];
 
@@ -102,10 +103,11 @@ function isoDate(daysAgo) {
 }
 
 // 시드: 각 약국마다 rep 횟수만큼 가격 제보 생성
-export function seedPharmacyReports(seed = 20260521) {
+export function seedPharmacyReports(seed = 20260523) {
   const existing = Storage.getPharmacyReports();
-  // 이미 시드된 데이터가 있고 30개 이상이면 skip
-  if (existing.filter(r => r.seed).length >= 30) return;
+  // 신규 약국명 시드 ('온누리약국' 등)가 이미 들어 있으면 skip — 이전 "비만클리닉 인근 약국 A" 시드는 자동 invalidate
+  const hasNewSeed = existing.some(r => r.seed && /온누리약국|메디팜약국|위드팜약국/.test(r.pharmacyName || ''));
+  if (hasNewSeed && existing.filter(r => r.seed).length >= 30) return;
   // 기존 시드 데이터 제거 (재seeding)
   Storage.setPharmacyReports(existing.filter(r => !r.seed));
 
