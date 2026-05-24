@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v26';  // bumped 2026-05-24: AI 예측 정확도 50% 베이스라인
+const VERSION = 'v27';  // bumped 2026-05-24: 정확도 50~90% 범위 (100% 불가능 + Simulator도 동일 transform)
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

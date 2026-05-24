@@ -133,8 +133,9 @@ export function calculateAccuracy({ user, simulator = {} }) {
   }
 
   const rawScore = Math.min(100, score);
-  // 50% 베이스라인 + 가중치의 절반. 입력 없으면 50, 모두 입력 시 100.
-  const displayScore = Math.min(100, 50 + Math.round(rawScore / 2));
+  // 50% 베이스라인(동전 던지기) + 가중치 * 0.4. 입력 없으면 50%, 모두 입력 시 90%.
+  // 100%는 생물학적 예측에서 불가능 — 상한 90%로 솔직하게.
+  const displayScore = 50 + Math.round(rawScore * 0.4);
 
   return {
     score: displayScore,

@@ -44,24 +44,24 @@ export function Simulator({ onSignup, compact = false, user = null }) {
     } catch {}
   }, [height, startWeight, medication, frequency, gender, ageGroup, exerciseLevel, hasFattyLiver, hasDiabetes]);
 
-  // 정확도 게이지 — 입력된 정보 수에 따라 0~100%
-  // base 4 입력은 항상 채워져 있으므로 40% baseline. 가입 + 추가 정보로 + 60%.
+  // 정확도 게이지 — 50% 베이스라인(동전 던지기) + 입력 가중치 * 0.4. 최대 90%.
+  // 100% 정확도는 생물학적 예측에서 불가능 — 표시 상한 90%.
   const accuracy = useMemo(() => {
-    let score = 40; // base: height, startWeight, medication, frequency
-    if (user) score += 10; // 가입 + 본인 체중 추이 가능
-    if (gender) score += 8;
-    if (ageGroup) score += 8;
-    if (exerciseLevel) score += 14;
-    if (hasFattyLiver) score += 6;
-    if (hasDiabetes) score += 6;
-    // 본인 weight log 누적 시 추가 (가입자만)
+    let raw = 40; // base: height, startWeight, medication, frequency
+    if (user) raw += 10;
+    if (gender) raw += 8;
+    if (ageGroup) raw += 8;
+    if (exerciseLevel) raw += 14;
+    if (hasFattyLiver) raw += 6;
+    if (hasDiabetes) raw += 6;
     if (user) {
       try {
         const logs = Storage.getLogsByUser(user.id);
-        if (logs.length >= 4) score += 8;
+        if (logs.length >= 4) raw += 8;
       } catch {}
     }
-    return Math.min(100, score);
+    raw = Math.min(100, raw);
+    return 50 + Math.round(raw * 0.4);
   }, [user, gender, ageGroup, exerciseLevel, hasFattyLiver, hasDiabetes]);
 
   // 추가 입력 → 곡선 보정. 약간 (5-10%) 감량률 조정.
