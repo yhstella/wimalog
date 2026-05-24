@@ -78,6 +78,33 @@ export function AIPredictionPanel({ user }) {
     if (user && n >= 30 && n <= 250) updateUser({ startWeight: n });
   };
 
+  // 입력 초기화 — sessionStorage 시뮬레이터 prefill + 가입자라면 demographic·동반질환도 wipe.
+  // 키·체중·약·빈도는 placeholder 기본값(162/78/wegovy/weekly)으로 돌려 50% 베이스라인 근처로 리셋.
+  const resetInputs = () => {
+    try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
+    setSim({
+      height: user?.height ?? 162,
+      startWeight: user?.startWeight ?? 78,
+      medication: 'wegovy',
+      frequency: 'weekly',
+      gender: null,
+      ageGroup: null,
+      hasFattyLiver: false,
+      hasDiabetes: false,
+    });
+    setOpen(null);
+    if (user) {
+      Storage.upsertUser({
+        ...user,
+        gender: null,
+        ageGroup: null,
+        conditions: {},
+        conditionsChecked: false,
+      });
+      setVersion(v => v + 1);
+    }
+  };
+
   const { score } = useMemo(
     () => calculateAccuracy({ user, simulator: sim }),
     [user, sim, version],
@@ -200,9 +227,15 @@ export function AIPredictionPanel({ user }) {
 
   return (
     <section className={`rounded-2xl border-2 bg-gradient-to-br ${toneClasses[tone]} p-5 sm:p-6`}>
-      {/* 헤더 */}
-      <div className="text-xs font-bold uppercase tracking-wider text-ink-500 dark:text-slate-400">
-        🎯 AI 예측 정확도
+      {/* 헤더 + 입력 초기화 */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-bold uppercase tracking-wider text-ink-500 dark:text-slate-400">
+          🎯 AI 예측 정확도
+        </div>
+        <button onClick={resetInputs}
+                className="text-[11px] font-semibold px-2 py-1 rounded-md bg-white/70 dark:bg-slate-800/70 border border-ink-300 dark:border-slate-700 text-ink-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition">
+          ↺ 입력 초기화
+        </button>
       </div>
 
       {/* 키·체중 입력 — Simulator와 동기화 */}

@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v28';  // bumped 2026-05-24: 좌드래그 release값 fix + 우드래그로 약 선택 + 모바일 그래프 키움
+const VERSION = 'v29';  // bumped 2026-05-24: AI 예측 패널 입력 초기화 버튼
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
