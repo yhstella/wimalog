@@ -18,6 +18,8 @@ const MED_SHORT = {
 
 // 우드래그 누적 증감 — N px마다 1 step
 const DOSE_STEP_PX = 35;
+// 활성 약 없을 때 우드래그로 약 선택 — 좌→위고비, 우→마운자로. 최소 가로 이동.
+const PICK_MED_THRESHOLD_PX = 40;
 
 // inline 체중 그래프 — WeightTab에 항상 표시.
 // - 좌클릭/드래그: 선 그리기 (여러 날짜 한 번에 입력)
@@ -38,9 +40,9 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
   // 모바일용 모드 토글
   const [touchMode, setTouchMode] = useState('weight');
 
-  // 그래프 크기 — 모바일 가독성 위해 키움 (220 → 320)
-  const W = 600, H = 320;
-  const PAD = { top: 20, right: 14, bottom: 32, left: 38 };
+  // 그래프 크기 — 모바일 가독성 위해 키움 (320 → 440). viewBox 비율로 세로↑.
+  const W = 600, H = 440;
+  const PAD = { top: 22, right: 14, bottom: 36, left: 40 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
 
@@ -130,17 +132,24 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
 
     if (isDoseMode) {
       e.preventDefault();
-      const screenY = (e.touches?.[0] || e).clientY;
-      dragRef.current = { mode: 'right', startMs: xToDateMs(p.x), startX: p.x, startY: p.y, screenY };
-      setRightDragInfo({ x: p.x, y: p.y, dy: 0 });
+      const ev = e.touches?.[0] || e;
+      dragRef.current = {
+        mode: 'right',
+        startMs: xToDateMs(p.x),
+        startX: p.x, startY: p.y,
+        screenX: ev.clientX, screenY: ev.clientY,
+      };
+      setRightDragInfo({ x: p.x, y: p.y, dx: 0, dy: 0 });
     } else if (isWeightMode) {
       e.preventDefault();
-      dragRef.current = { mode: 'left' };
       lastMoveRef.current = 0;
       // raw fractional ms — marker 위치 동기화용. round된 date는 저장용.
       const exactMs = startDate.getTime() + ((p.x - PAD.left) / dayWidth) * 86400000;
       const date = new Date(exactMs).toISOString().slice(0, 10);
       const weight = yToWeight(p.y);
+      // lastPoint 별도 추적 — drawingPointsRef는 날짜순 sort라 release 위치 != points[last].
+      // 우→좌 드래그 시 release point가 사라져서 dial이 click START 값으로 잘못 동기화되던 버그 fix.
+      dragRef.current = { mode: 'left', lastPoint: { date, weight, exactMs } };
       drawingPointsRef.current = [{ date, weight }];
       setDrawingPoints([{ date, weight }]);
       onWeightChange?.({ date, weight, exactMs });
@@ -166,12 +175,14 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
         const filtered = drawingPointsRef.current.filter(x => x.date !== date);
         const next = [...filtered, { date, weight }].sort((a, b) => a.date.localeCompare(b.date));
         drawingPointsRef.current = next;
+        dragRef.current.lastPoint = { date, weight, exactMs };
         setDrawingPoints(next);
         onWeightChange?.({ date, weight, exactMs });
       } else if (dragRef.current.mode === 'right') {
-        const screenY = (e.touches?.[0] || e).clientY;
-        const dy = dragRef.current.screenY - screenY;
-        setRightDragInfo({ x: dragRef.current.startX, y: dragRef.current.startY, dy });
+        const ev = e.touches?.[0] || e;
+        const dx = ev.clientX - dragRef.current.screenX;
+        const dy = dragRef.current.screenY - ev.clientY;
+        setRightDragInfo({ x: dragRef.current.startX, y: dragRef.current.startY, dx, dy });
       }
     };
     const onUp = (e) => {
@@ -197,20 +208,30 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
                 createdAt: new Date().toISOString(),
               });
             }
-            const last = points[points.length - 1];
+            // drawingPointsRef는 날짜순 sort — 우→좌 드래그일 때 points[last]가 release가
+            // 아닌 click 시작점이 됨. dragRef.lastPoint(실제 release)를 dial 동기화용으로 사용.
+            const last = drag.lastPoint || points[points.length - 1];
             onWeightChange?.({ date: last.date, weight: last.weight, savedCount: points.length });
           } catch (err) {
             console.error('[WeightChartInline] save failed', err);
           }
         }
       } else if (mode === 'right') {
-        const screenY = (e.changedTouches?.[0] || e.touches?.[0] || e).clientY;
-        const dy = drag.screenY != null ? drag.screenY - screenY : 0;
-        // 누적 step — DOSE_STEP_PX마다 +/- 1
-        const steps = Math.round(dy / DOSE_STEP_PX);
+        const ev = e.changedTouches?.[0] || e.touches?.[0] || e;
+        const dy = drag.screenY != null ? drag.screenY - ev.clientY : 0;
+        const dx = drag.screenX != null ? ev.clientX - drag.screenX : 0;
         setRightDragInfo(null);
         try {
-          addDoseAtDate(new Date(drag.startMs).toISOString().slice(0, 10), steps);
+          // 활성 약 없으면 가로 드래그로 약 선택 — 좌→위고비, 우→마운자로
+          const allCourses = Storage.getMedCoursesByUser(user.id);
+          const hasActive = allCourses.some(c => !c.endDate);
+          const dateStr = new Date(drag.startMs).toISOString().slice(0, 10);
+          if (!hasActive && Math.abs(dx) >= PICK_MED_THRESHOLD_PX && Math.abs(dx) > Math.abs(dy)) {
+            createCourseAndAddDose(dateStr, dx < 0 ? 'wegovy' : 'mounjaro');
+          } else {
+            const steps = Math.round(dy / DOSE_STEP_PX);
+            addDoseAtDate(dateStr, steps);
+          }
         } catch (err) {
           console.error('[WeightChartInline] dose save failed', err);
         }
@@ -239,7 +260,7 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     const active = allCourses.filter(c => !c.endDate);
     const course = active[0] || allCourses[allCourses.length - 1];
     if (!course) {
-      alert('약을 먼저 등록해야 그래프에서 투약을 추가할 수 있어요. (메뉴 → 약)');
+      alert('활성 약이 없어요.\n우클릭 + 가로로 길게 드래그하면 약을 선택할 수 있어요.\n· ← 좌: 위고비\n· → 우: 마운자로');
       return;
     }
     const med = MED_BY_ID[course.medication];
@@ -266,18 +287,76 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     onDoseAdded?.({ date, dose: newDose, medication: med.label.replace(/\s*\(.+\)/, ''), steps });
   };
 
+  // 활성 약 없을 때 그래프에서 약 선택 → 신규 코스 생성 + 첫 dose 추가
+  const createCourseAndAddDose = (date, medId) => {
+    const med = MED_BY_ID[medId];
+    if (!med?.doses?.length) return;
+    const courseId = uid('mc');
+    const firstDose = med.doses[0];
+    Storage.addMedCourse({
+      id: courseId,
+      userId: user.id,
+      seed: false,
+      medication: medId,
+      frequency: med.frequency === '매일' ? 'daily' : 'weekly',
+      startDate: date,
+      endDate: null,
+      initialDose: firstDose,
+      notes: '그래프에서 추가',
+      discontinueReason: null,
+      createdAt: new Date().toISOString(),
+    });
+    Storage.addDose({
+      id: uid('dose'),
+      userId: user.id,
+      courseId,
+      seed: false,
+      date,
+      dose: firstDose,
+      price: null, region: null, pharmacyName: null,
+      notes: '그래프에서 추가',
+      createdAt: new Date().toISOString(),
+    });
+    onDoseAdded?.({
+      date, dose: firstDose,
+      medication: med.label.replace(/\s*\(.+\)/, ''),
+      createdCourse: true,
+    });
+  };
+
   // drag 중 실시간 미리보기 (어떤 약/용량으로 등록될지)
   const dosePreview = useMemo(() => {
     if (!rightDragInfo) return null;
     const allCourses = Storage.getMedCoursesByUser(user?.id);
     const active = allCourses.filter(c => !c.endDate);
     const course = active[0] || allCourses[allCourses.length - 1];
-    if (!course) return { medShort: '약 없음', dose: '', color: '#94A3B8' };
+    const dx = rightDragInfo.dx || 0;
+    const dy = rightDragInfo.dy || 0;
+    // 활성 약이 없을 때 — 가로 드래그 방향으로 약 선택 미리보기
+    if (!course) {
+      if (Math.abs(dx) < PICK_MED_THRESHOLD_PX) {
+        return {
+          medShort: '←위고비 마운자로→',
+          dose: '',
+          color: '#94A3B8',
+          isPick: true,
+          notReady: true,
+        };
+      }
+      const medId = dx < 0 ? 'wegovy' : 'mounjaro';
+      const med = MED_BY_ID[medId];
+      return {
+        medShort: MED_SHORT[medId],
+        dose: `${med.doses[0]} 시작`,
+        color: MED_COLORS[medId],
+        isPick: true,
+      };
+    }
     const med = MED_BY_ID[course.medication];
     if (!med?.doses?.length) return null;
     const lastDose = Storage.getDosesByCourse(course.id).slice(-1)[0];
     const currentIdx = lastDose ? med.doses.indexOf(lastDose.dose) : 0;
-    const steps = Math.round(rightDragInfo.dy / DOSE_STEP_PX);
+    const steps = Math.round(dy / DOSE_STEP_PX);
     const newIdx = Math.max(0, Math.min(med.doses.length - 1, currentIdx + steps));
     return {
       medShort: MED_SHORT[course.medication] || course.medication,
@@ -311,11 +390,16 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     ? 'M ' + drawingPoints.map(p => `${dateMsToX(Date.parse(p.date))} ${weightToY(p.weight)}`).join(' L ')
     : '';
 
-  // 우드래그 시각화 — drag 시작점 (startX) + 현재 dy로 미리보기 박스 위치 (체중 부근 높이)
+  // 우드래그 시각화 — pick 모드일 때는 가로(dx), 일반 dose 모드일 때는 세로(dy) 강조
   const rightArrow = rightDragInfo
-    ? { startX: rightDragInfo.x, startY: rightDragInfo.y,
-        to: { x: rightDragInfo.x, y: rightDragInfo.y - rightDragInfo.dy },
-        steps: Math.round(rightDragInfo.dy / DOSE_STEP_PX) }
+    ? {
+        startX: rightDragInfo.x, startY: rightDragInfo.y,
+        to: dosePreview?.isPick
+          ? { x: rightDragInfo.x + (rightDragInfo.dx || 0), y: rightDragInfo.y }
+          : { x: rightDragInfo.x, y: rightDragInfo.y - (rightDragInfo.dy || 0) },
+        steps: Math.round((rightDragInfo.dy || 0) / DOSE_STEP_PX),
+        isPick: dosePreview?.isPick,
+      }
     : null;
 
   return (
@@ -336,9 +420,15 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
             <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-orange-500 text-white text-[10px] font-bold flex-shrink-0">R</span>
             <div className="leading-snug">
               <div className="font-bold text-orange-800 dark:text-orange-200">💉 오른쪽 클릭 + 드래그</div>
-              <div className="text-ink-600 dark:text-slate-400">
-                위↑ 드래그할수록 <b className="text-emerald-600 dark:text-emerald-400">계속 증량</b> · 아래↓ <b className="text-rose-600 dark:text-rose-400">계속 감량</b>
-              </div>
+              {activeCourses.length > 0 ? (
+                <div className="text-ink-600 dark:text-slate-400">
+                  위↑ <b className="text-emerald-600 dark:text-emerald-400">계속 증량</b> · 아래↓ <b className="text-rose-600 dark:text-rose-400">계속 감량</b>
+                </div>
+              ) : (
+                <div className="text-ink-600 dark:text-slate-400">
+                  가로로 길게 — ← <b className="text-sky-600 dark:text-sky-400">위고비</b> · <b className="text-amber-600 dark:text-amber-400">마운자로</b> →
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -352,8 +442,7 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
             체중
           </button>
           <button type="button" onClick={() => setTouchMode('dose')}
-                  disabled={!activeCourses.length}
-                  className={`px-2 py-1 rounded-md text-[10px] font-semibold transition disabled:opacity-40 ${touchMode === 'dose'
+                  className={`px-2 py-1 rounded-md text-[10px] font-semibold transition ${touchMode === 'dose'
                     ? 'bg-orange-500 text-white'
                     : 'bg-ink-100 dark:bg-slate-800 text-ink-700 dark:text-slate-300'}`}>
             투약
@@ -451,26 +540,30 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
             {/* 시작점 marker */}
             <circle cx={rightArrow.startX} cy={rightArrow.startY} r="4"
                     fill="white" stroke={dosePreview.color} strokeWidth="2" />
-            {/* 약명+용량 박스 — drag 끝점 (체중 부근 높이) */}
+            {/* 약명+용량 박스 — drag 끝점 부근 */}
             {(() => {
               const boxX = rightArrow.to.x;
               const boxY = Math.max(PAD.top + 18, Math.min(H - PAD.bottom - 8, rightArrow.to.y));
-              const stepArrow = rightArrow.steps > 0 ? `↑${rightArrow.steps}` : rightArrow.steps < 0 ? `↓${Math.abs(rightArrow.steps)}` : '';
-              const boxText = `${dosePreview.medShort} ${dosePreview.dose}`;
-              const rightSide = boxX < W - 90;
+              const stepArrow = !rightArrow.isPick && rightArrow.steps > 0 ? `↑${rightArrow.steps}`
+                              : !rightArrow.isPick && rightArrow.steps < 0 ? `↓${Math.abs(rightArrow.steps)}`
+                              : '';
+              const boxText = dosePreview.dose
+                ? `${dosePreview.medShort} ${dosePreview.dose}`
+                : dosePreview.medShort;
+              // pick 모드 안내 박스는 더 넓어야 — '←위고비 마운자로→' 같은 라벨이 12자
+              const boxWidth = rightArrow.isPick ? 150 : 100;
+              const rightSide = boxX < W - (boxWidth + 10);
               return (
                 <g transform={`translate(${boxX}, ${boxY})`}>
-                  {/* 박스 배경 */}
-                  <rect x={rightSide ? 10 : -110} y={-13} width={100} height={26} rx={4}
-                        fill="white" stroke={dosePreview.color} strokeWidth="2" />
-                  {/* 주사기 + 약명 + 용량 */}
-                  <text x={rightSide ? 16 : -104} y={4}
+                  <rect x={rightSide ? 10 : -(boxWidth + 10)} y={-13} width={boxWidth} height={26} rx={4}
+                        fill="white" stroke={dosePreview.color} strokeWidth="2"
+                        strokeDasharray={dosePreview.notReady ? '4 3' : undefined} />
+                  <text x={rightSide ? 16 : -(boxWidth + 4)} y={4}
                         fontSize="11" fontWeight="700" fill={dosePreview.color}>
                     💉 {boxText}
                   </text>
-                  {/* 증감 step 표시 */}
                   {stepArrow && (
-                    <text x={rightSide ? 100 : -18} y={4}
+                    <text x={rightSide ? boxWidth : -18} y={4}
                           textAnchor="end"
                           fontSize="10" fontWeight="800"
                           fill={rightArrow.steps > 0 ? '#10B981' : '#EF4444'}>

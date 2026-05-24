@@ -176,8 +176,9 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
   const continuousPoints = usagePoints;
 
   // ----- SVG 좌표 -----
-  const W = 600, H = compact ? 240 : 300;
-  const PAD = { top: 18, right: 20, bottom: 36, left: 44 };
+  // 모바일 가독성 위해 H 키움 (300 → 400 / compact 240 → 320). viewBox 비율로 모바일에서도 세로↑.
+  const W = 600, H = compact ? 320 : 400;
+  const PAD = { top: 20, right: 22, bottom: 40, left: 46 };
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
   const maxWeek = 104;
