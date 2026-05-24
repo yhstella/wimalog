@@ -78,6 +78,8 @@ const DYNAMIC = {
 const DAYS_30_MS = 30 * 86400000;
 
 // 본체
+// 표시 정확도: 50% 베이스라인(동전 던지기) + 입력 가중치의 절반.
+// 사용자 어떤 정보도 없어도 최소 50% — "AI 예측이 무작위보다 못하다"는 인상 방지.
 export function calculateAccuracy({ user, simulator = {} }) {
   let score = 0;
   const filled = {};
@@ -130,8 +132,13 @@ export function calculateAccuracy({ user, simulator = {} }) {
     }
   }
 
+  const rawScore = Math.min(100, score);
+  // 50% 베이스라인 + 가중치의 절반. 입력 없으면 50, 모두 입력 시 100.
+  const displayScore = Math.min(100, 50 + Math.round(rawScore / 2));
+
   return {
-    score: Math.min(100, score),
+    score: displayScore,
+    rawScore,
     filled,
     dynamicProgress,
   };

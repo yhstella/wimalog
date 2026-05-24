@@ -83,7 +83,8 @@ export function AIPredictionPanel({ user }) {
     [user, sim, version],
   );
 
-  const tone = score >= 80 ? 'emerald' : score >= 60 ? 'amber' : 'rose';
+  // 표시 점수는 50~100 범위 (50% 베이스라인 + 입력 가중치). 임계점도 그 범위에 맞춰 조정.
+  const tone = score >= 85 ? 'emerald' : score >= 70 ? 'amber' : 'rose';
   const toneClasses = {
     emerald: 'from-emerald-50 to-white dark:from-emerald-900/15 dark:to-slate-900 border-emerald-200 dark:border-emerald-800/40',
     amber:   'from-amber-50 to-white dark:from-amber-900/15 dark:to-slate-900 border-amber-200 dark:border-amber-800/40',
@@ -100,10 +101,11 @@ export function AIPredictionPanel({ user }) {
     rose:    'bg-rose-500',
   };
 
-  // 정확도 상승 체크박스 정의 — 각 항목은 STATIC 가중치를 기준
+  // 정확도 상승 체크박스 정의. 표시 정확도가 50% 베이스라인 위에서 raw 가중치의
+  // 절반씩 누적되므로 badge gain은 STATIC 가중치를 반올림한 값.
   const rows = [
     {
-      key: 'medication', label: '사용 약 선택', gain: 5,
+      key: 'medication', label: '사용 약 선택', gain: 3,
       checked: !!sim.medication,
       render: () => (
         <div className="flex flex-wrap gap-1.5">
@@ -120,7 +122,7 @@ export function AIPredictionPanel({ user }) {
       ),
     },
     {
-      key: 'frequency', label: '사용 빈도 선택', gain: 3,
+      key: 'frequency', label: '사용 빈도 선택', gain: 2,
       checked: !!sim.frequency,
       render: () => (
         <div className="flex flex-wrap gap-1.5">
@@ -137,7 +139,7 @@ export function AIPredictionPanel({ user }) {
       ),
     },
     {
-      key: 'gender', label: '성별 알려주기', gain: 3,
+      key: 'gender', label: '성별 알려주기', gain: 2,
       checked: !!sim.gender && sim.gender !== 'X',
       render: () => (
         <div className="flex flex-wrap gap-1.5">
@@ -158,7 +160,7 @@ export function AIPredictionPanel({ user }) {
       ),
     },
     {
-      key: 'ageGroup', label: '나이대 알려주기', gain: 3,
+      key: 'ageGroup', label: '나이대 알려주기', gain: 2,
       checked: !!sim.ageGroup,
       render: () => (
         <div className="grid grid-cols-5 gap-1.5">
@@ -179,7 +181,7 @@ export function AIPredictionPanel({ user }) {
       ),
     },
     {
-      key: 'conditionsChecked', label: '동반질환 확인', gain: 3,
+      key: 'conditionsChecked', label: '동반질환 확인', gain: 2,
       checked: !!user?.conditionsChecked,
       disabled: !user,
       hint: !user ? '가입 후 입력 가능' : null,
@@ -189,7 +191,7 @@ export function AIPredictionPanel({ user }) {
       }} />,
     },
     {
-      key: 'signedIn', label: '가입하기 (본인 추이 누적)', gain: 4,
+      key: 'signedIn', label: '가입하기 (본인 추이 누적)', gain: 2,
       checked: !!user,
       disabled: !!user,
       hint: user ? '완료' : '본인 체중·운동·식단 누적 시 정확도 추가 상승',
