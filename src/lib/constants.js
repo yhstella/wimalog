@@ -75,6 +75,71 @@ export function formatPrice4W(amountKrw) {
   return `${(amountKrw / 10000).toFixed(0)}만원/4주분`;
 }
 
+// 표준 escalation 일정 — 임상 시험 (STEP-1, SURMOUNT-1 등) 기반.
+// 각 step의 weeks는 해당 용량을 유지하는 주차 수. 마지막 step은 유지(maintenance).
+// 가이드용 — 실제 처방은 의사 결정에 따름.
+export const DOSE_SCHEDULES = {
+  wegovy: [
+    { dose: '0.25mg', weeks: 4 },
+    { dose: '0.5mg',  weeks: 4 },
+    { dose: '1.0mg',  weeks: 4 },
+    { dose: '1.7mg',  weeks: 4 },
+    { dose: '2.4mg',  weeks: null, maintenance: true },
+  ],
+  mounjaro: [
+    { dose: '2.5mg',  weeks: 4 },
+    { dose: '5mg',    weeks: 4 },
+    { dose: '7.5mg',  weeks: 4, optional: true },
+    { dose: '10mg',   weeks: 4 },
+    { dose: '12.5mg', weeks: 4, optional: true },
+    { dose: '15mg',   weeks: null, maintenance: true },
+  ],
+  saxenda: [
+    { dose: '0.6mg', weeks: 1 },
+    { dose: '1.2mg', weeks: 1 },
+    { dose: '1.8mg', weeks: 1 },
+    { dose: '2.4mg', weeks: 1 },
+    { dose: '3.0mg', weeks: null, maintenance: true },
+  ],
+  ozempic: [
+    { dose: '0.25mg', weeks: 4 },
+    { dose: '0.5mg',  weeks: 4 },
+    { dose: '1.0mg',  weeks: 4, optional: true },
+    { dose: '2.0mg',  weeks: null, maintenance: true },
+  ],
+  zepbound: [
+    { dose: '2.5mg',  weeks: 4 },
+    { dose: '5mg',    weeks: 4 },
+    { dose: '7.5mg',  weeks: 4, optional: true },
+    { dose: '10mg',   weeks: 4 },
+    { dose: '12.5mg', weeks: 4, optional: true },
+    { dose: '15mg',   weeks: null, maintenance: true },
+  ],
+};
+
+// 코스 시작일·현재 용량 기준 — 다음 권장 용량 + 다음 증량 예정일 계산
+// 반환: { current, currentSinceWeek, next, nextDate, isMaintenance } | null
+export function nextRecommendedStep(medication, startDateISO, currentDose) {
+  const schedule = DOSE_SCHEDULES[medication];
+  if (!schedule) return null;
+  const idx = schedule.findIndex(s => s.dose === currentDose);
+  if (idx === -1) return null;
+  const step = schedule[idx];
+  if (step.maintenance) return { current: step, isMaintenance: true };
+  // 현재 용량 시작 주차 = sum(weeks of all previous steps)
+  const weeksUntilThisStep = schedule.slice(0, idx).reduce((s, x) => s + (x.weeks || 0), 0);
+  const startMs = Date.parse(startDateISO);
+  const stepStartMs = startMs + weeksUntilThisStep * 7 * 86400000;
+  const nextDoseMs  = stepStartMs + (step.weeks || 0) * 7 * 86400000;
+  const next = schedule[idx + 1] || null;
+  return {
+    current: step,
+    next,
+    nextDate: new Date(nextDoseMs).toISOString().slice(0, 10),
+    isMaintenance: false,
+  };
+}
+
 export const GENDERS = [
   { id: 'F', label: '여성' },
   { id: 'M', label: '남성' },
@@ -135,6 +200,7 @@ export const DISCONTINUE_REASONS = [
   { id: 'goal',       label: '목표 도달' },
   { id: 'supply',     label: '공급 부족' },
   { id: 'doctor',     label: '의사 권유' },
+  { id: 'switch',     label: '다른 약으로 변경' },
   { id: 'other',      label: '기타' },
 ];
 

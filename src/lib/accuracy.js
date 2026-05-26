@@ -84,15 +84,18 @@ export function calculateAccuracy({ user, simulator = {} }) {
   let score = 0;
   const filled = {};
 
-  // STATIC
+  // STATIC. simulator(sessionStorage) 우선, 없으면 user 값 — 비가입자가 시뮬레이터에서
+  // 입력한 gender/ageGroup도 정확도에 반영되도록.
   if (simulator.height || user?.height) { score += STATIC.height; filled.height = true; }
   if (simulator.startWeight || user?.startWeight) { score += STATIC.startWeight; filled.startWeight = true; }
   if (simulator.medication) { score += STATIC.medication; filled.medication = true; }
   if (simulator.frequency) { score += STATIC.frequency; filled.frequency = true; }
   if (user) { score += STATIC.signedIn; filled.signedIn = true; }
   if (user?.visitPurpose) { score += STATIC.visitPurpose; filled.visitPurpose = true; }
-  if (user?.gender && user.gender !== 'X') { score += STATIC.gender; filled.gender = true; }
-  if (user?.ageGroup) { score += STATIC.ageGroup; filled.ageGroup = true; }
+  const effectiveGender = user?.gender || simulator.gender;
+  if (effectiveGender && effectiveGender !== 'X') { score += STATIC.gender; filled.gender = true; }
+  const effectiveAge = user?.ageGroup || simulator.ageGroup;
+  if (effectiveAge) { score += STATIC.ageGroup; filled.ageGroup = true; }
   // ⭐ 동반질환 "확인 완료" 플래그 — 있음/없음 둘 다 시그널로 인정
   if (user?.conditionsChecked) { score += STATIC.conditionsChecked; filled.conditionsChecked = true; }
 

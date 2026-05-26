@@ -41,6 +41,13 @@ export function AIPredictionPanel({ user }) {
   const [open, setOpen] = useState(null);
   const [version, setVersion] = useState(0);
 
+  // user prop은 parent가 갱신해주지 않으면 stale — updateUser 후에도 checkbox 상태가 안 바뀌는
+  // 버그 원인. version tick마다 Storage에서 fresh user를 다시 읽어 모든 derived 값이 갱신됨.
+  const liveUser = useMemo(
+    () => user ? (Storage.getUser(user.id) || user) : null,
+    [user, version],
+  );
+
   // 랜딩 Simulator와 sync — sessionStorage 폴링 (Simulator도 같은 키 사용)
   useEffect(() => {
     const id = setInterval(() => {
@@ -61,8 +68,8 @@ export function AIPredictionPanel({ user }) {
 
   const setSimField = (k, v) => setSim(s => ({ ...s, [k]: v }));
   const updateUser = (partial) => {
-    if (!user) return;
-    Storage.upsertUser({ ...user, ...partial });
+    if (!liveUser) return;
+    Storage.upsertUser({ ...liveUser, ...partial });
     setVersion(v => v + 1);
   };
 
@@ -83,8 +90,8 @@ export function AIPredictionPanel({ user }) {
   const resetInputs = () => {
     try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
     setSim({
-      height: user?.height ?? 162,
-      startWeight: user?.startWeight ?? 78,
+      height: liveUser?.height ?? 162,
+      startWeight: liveUser?.startWeight ?? 78,
       medication: 'wegovy',
       frequency: 'weekly',
       gender: null,
@@ -93,9 +100,9 @@ export function AIPredictionPanel({ user }) {
       hasDiabetes: false,
     });
     setOpen(null);
-    if (user) {
+    if (liveUser) {
       Storage.upsertUser({
-        ...user,
+        ...liveUser,
         gender: null,
         ageGroup: null,
         conditions: {},
@@ -106,8 +113,8 @@ export function AIPredictionPanel({ user }) {
   };
 
   const { score } = useMemo(
-    () => calculateAccuracy({ user, simulator: sim }),
-    [user, sim, version],
+    () => calculateAccuracy({ user: liveUser, simulator: sim }),
+    [liveUser, sim],
   );
 
   // 표시 점수는 50~90 범위 (50% 베이스라인 + 입력 가중치 * 0.4). 임계점도 그 범위 기준.
@@ -208,19 +215,19 @@ export function AIPredictionPanel({ user }) {
     },
     {
       key: 'conditionsChecked', label: '동반질환 확인', gain: 1,
-      checked: !!user?.conditionsChecked,
-      disabled: !user,
-      hint: !user ? '가입 후 입력 가능' : null,
-      render: () => <ConditionsPicker user={user} onComplete={(cond) => {
+      checked: !!liveUser?.conditionsChecked,
+      disabled: !liveUser,
+      hint: !liveUser ? '가입 후 입력 가능' : null,
+      render: () => <ConditionsPicker user={liveUser} onComplete={(cond) => {
         updateUser({ conditions: cond, conditionsChecked: true });
         setOpen(null);
       }} />,
     },
     {
       key: 'signedIn', label: '가입하기 (본인 추이 누적)', gain: 2,
-      checked: !!user,
-      disabled: !!user,
-      hint: user ? '완료' : '본인 체중·운동·식단 누적 시 정확도 추가 상승',
+      checked: !!liveUser,
+      disabled: !!liveUser,
+      hint: liveUser ? '완료' : '본인 체중·운동·식단 누적 시 정확도 추가 상승',
       render: () => null,
     },
   ];

@@ -2,6 +2,10 @@ import React, { useMemo } from 'react';
 import { inputDepth } from '../lib/stats.js';
 import { Storage } from '../lib/storage.js';
 import { MED_BY_ID } from '../lib/constants.js';
+import { calculateAccuracy } from '../lib/accuracy.js';
+
+// 랜딩 Simulator와 동일 sessionStorage 키 — 같은 시뮬레이터 입력값 공유
+const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
 
 // 완료된 각 마일스톤에 본인 데이터 요약 — '입력하면 무엇이 달라졌나' 시각화
 function buildUnlockedSummary(user) {
@@ -76,6 +80,15 @@ const PURPOSE_HINT = {
 export function InputProgressCard({ user, navigate }) {
   const data = useMemo(() => inputDepth(user), [user]);
   const unlocked = useMemo(() => buildUnlockedSummary(user), [user]);
+  // 통합 정확도 — /stats 페이지의 AIPredictionPanel과 동일 수치 사용
+  const accuracy = useMemo(() => {
+    let sim = {};
+    try {
+      const raw = sessionStorage.getItem(SIM_PREFILL_KEY);
+      if (raw) sim = JSON.parse(raw) || {};
+    } catch {}
+    return calculateAccuracy({ user, simulator: sim }).score;
+  }, [user]);
   if (!user) return null;
 
   const completed = data.milestones.filter(m => m.done >= m.need);
@@ -91,8 +104,8 @@ export function InputProgressCard({ user, navigate }) {
       <div className="flex justify-between items-start gap-3 mb-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🤖</span>
-            <h2 className="font-bold text-ink-900 dark:text-slate-100">AI 예측 정밀도</h2>
+            <span className="text-xl">🎯</span>
+            <h2 className="font-bold text-ink-900 dark:text-slate-100">AI 예측 정확도</h2>
           </div>
           <p className="text-xs text-ink-500 dark:text-slate-400 mt-1 leading-relaxed">
             {allDone
@@ -100,33 +113,31 @@ export function InputProgressCard({ user, navigate }) {
               : purposeHint}
           </p>
         </div>
-        <div className="text-right flex-shrink-0">
-          <div className="text-3xl font-extrabold tabular-nums text-brand-600 dark:text-brand-400">
-            {data.score}<span className="text-base">%</span>
+        <button onClick={() => navigate?.('stats')} className="text-right flex-shrink-0 group">
+          <div className="text-3xl font-extrabold tabular-nums text-brand-600 dark:text-brand-400 group-hover:text-brand-700">
+            {accuracy}<span className="text-base">%</span>
           </div>
-          <div className="text-[10px] text-ink-500 dark:text-slate-500">
-            {completed.length}/{data.milestones.length} 잠금 해제
+          <div className="text-[10px] text-ink-500 dark:text-slate-500 group-hover:underline">
+            AI 예측 페이지 →
           </div>
-        </div>
+        </button>
       </div>
 
-      {/* 진행 바 */}
+      {/* 진행 바 — 통합 정확도 50~90 범위 기준 */}
       <div className="h-2 bg-ink-100 dark:bg-slate-800 rounded-full overflow-hidden mb-3">
         <div className="h-full bg-gradient-to-r from-brand-400 to-brand-600 transition-all"
-             style={{ width: `${data.score}%` }} />
+             style={{ width: `${accuracy}%` }} />
       </div>
 
       {/* 다음 잠금 해제 — visitPurpose 우선순위로 정렬된 3개 */}
       {nextThree.length > 0 && (
         <div className="space-y-2">
           <div className="text-xs font-semibold text-ink-500 dark:text-slate-400 uppercase tracking-wider">
-            다음 단계 — 정밀도 +{nextThree.reduce((s, m) => s + m.boost, 0)}% 가능
+            다음 입력 단계
           </div>
           {nextThree.map(m => {
             const left = Math.max(0, m.need - m.done);
             const pct = Math.min(100, (m.done / m.need) * 100);
-            // 이 마일스톤이 줄 정밀도 증가량 (남은 부분만 반영)
-            const potentialBoost = Math.round(m.boost * (1 - m.done / m.need));
             return (
               <button key={m.key}
                       onClick={() => navigate?.('records')}
@@ -137,9 +148,6 @@ export function InputProgressCard({ user, navigate }) {
                     <div className="flex justify-between items-baseline gap-2 flex-wrap">
                       <span className="font-semibold text-sm text-ink-900 dark:text-slate-100">
                         {m.label} <span className="text-brand-700 dark:text-brand-400">{left}회 더</span>
-                      </span>
-                      <span className="text-[10px] font-bold tabular-nums flex-shrink-0 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                        +{potentialBoost}% 정밀도
                       </span>
                     </div>
                     <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">

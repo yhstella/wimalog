@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Storage, uid } from '../lib/storage.js';
 import { DialInput } from './DialInput.jsx';
-import { MEDS, MED_BY_ID, DISCONTINUE_REASONS, REGION_SUGGESTIONS } from '../lib/constants.js';
+import { MEDS, MED_BY_ID, DISCONTINUE_REASONS, REGION_SUGGESTIONS, DOSE_SCHEDULES, nextRecommendedStep } from '../lib/constants.js';
+import { QuickDateInput } from './QuickDateInput.jsx';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -80,6 +81,7 @@ function CourseCard({ course, user, refresh, collapsed: initiallyCollapsed = fal
   const [expanded, setExpanded] = useState(!initiallyCollapsed);
   const [showDoseForm, setShowDoseForm] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showSwitch, setShowSwitch] = useState(false);
 
   const weeks = Math.floor(
     ((course.endDate ? new Date(course.endDate) : new Date()) - new Date(course.startDate))
@@ -134,23 +136,34 @@ function CourseCard({ course, user, refresh, collapsed: initiallyCollapsed = fal
             <button onClick={() => setShowDoseForm(s => !s)} className="btn-primary !py-2 !px-3 text-sm">
               {showDoseForm ? '취소' : '+ 처방 기록 추가'}
             </button>
+            {!course.endDate && (
+              <button onClick={() => setShowSwitch(s => !s)} className="btn-secondary !py-2 !px-3 text-sm">
+                {showSwitch ? '닫기' : '↔ 약물 변경'}
+              </button>
+            )}
             <button onClick={() => setShowEdit(s => !s)} className="btn-secondary !py-2 !px-3 text-sm">
               {showEdit ? '닫기' : '편집'}
             </button>
-            {!course.endDate && (
-              <button onClick={() => setShowEdit(true)} className="btn-secondary !py-2 !px-3 text-sm">
-                중단 표시
-              </button>
-            )}
           </div>
 
           {showDoseForm && (
             <NewDoseForm course={course} user={user} onSaved={() => { setShowDoseForm(false); localRefresh(); }} />
           )}
 
+          {showSwitch && (
+            <SwitchMedForm course={course} user={user}
+                           onCancel={() => setShowSwitch(false)}
+                           onSaved={() => { setShowSwitch(false); localRefresh(); }} />
+          )}
+
           {showEdit && (
             <CourseEditForm course={course} onSaved={() => { setShowEdit(false); localRefresh(); }}
                             onDelete={() => { setShowEdit(false); localRefresh(); }} />
+          )}
+
+          {/* 추천 투약 일정 — 활성 코스만 */}
+          {!course.endDate && (
+            <RecommendedScheduleCard course={course} lastDose={lastDose} />
           )}
 
           {/* 투약 기록 표 */}
@@ -205,6 +218,176 @@ const FREQ_OPTIONS = [
   { id: 'occasional', label: '가끔',     desc: '월 1-2회 사용' },
   { id: 'intro',      label: '저용량 유지', desc: '시작 용량 그대로' },
 ];
+
+// 약물 변경 — 기존 코스를 변경일에 종료 + 새 약 코스를 같은 날 시작.
+// "두 단계를 한 폼에 묶기" — 사용자가 일일이 종료→신규 등록을 안 해도 됨.
+function SwitchMedForm({ course, user, onCancel, onSaved }) {
+  const currentMed = MED_BY_ID[course.medication];
+  const currentLabel = currentMed?.label.replace(/\s*\(.+\)/, '') || course.medication;
+  const otherMedOptions = MEDS.filter(m => m.id !== course.medication && m.id !== 'other');
+  const defaultNewMed = course.medication === 'wegovy' ? 'mounjaro' : 'wegovy';
+  const [newMedId, setNewMedId] = useState(defaultNewMed);
+  const [switchDate, setSwitchDate] = useState(todayISO());
+  const newMed = MED_BY_ID[newMedId];
+  const [newDose, setNewDose] = useState(newMed?.doses[0] || '');
+  const [notes, setNotes] = useState('');
+
+  // newMedId 바뀌면 newDose 첫 용량으로 reset
+  const onNewMedChange = (id) => {
+    setNewMedId(id);
+    const m = MED_BY_ID[id];
+    setNewDose(m?.doses[0] || '');
+  };
+
+  const save = () => {
+    if (!newDose) return;
+    // 1) 기존 코스 변경일에 종료
+    Storage.updateMedCourse(course.id, {
+      endDate: switchDate,
+      discontinueReason: 'switch',
+    });
+    // 2) 새 코스 시작
+    const newCourseId = uid('mc');
+    Storage.addMedCourse({
+      id: newCourseId,
+      userId: user.id,
+      seed: false,
+      medication: newMedId,
+      frequency: newMed?.frequency === '매일' ? 'daily' : 'weekly',
+      startDate: switchDate,
+      endDate: null,
+      initialDose: newDose,
+      notes: notes.trim() || `${currentLabel}에서 변경`,
+      discontinueReason: null,
+      createdAt: new Date().toISOString(),
+    });
+    // 3) 새 코스 시작일에 첫 dose 자동 추가
+    Storage.addDose({
+      id: uid('dose'),
+      userId: user.id,
+      courseId: newCourseId,
+      seed: false,
+      date: switchDate,
+      dose: newDose,
+      price: null, region: null, pharmacyName: null,
+      notes: '약물 변경 시 시작',
+      createdAt: new Date().toISOString(),
+    });
+    onSaved();
+  };
+
+  return (
+    <div className="space-y-3 p-3 rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200 dark:border-amber-800/40">
+      <div className="text-xs text-amber-900 dark:text-amber-100 leading-relaxed">
+        ↔ <b>{currentLabel}</b>에서 다른 약으로 변경. 기존 코스는 변경일에 종료되고, 새 약 코스가 같은 날 시작됩니다.
+      </div>
+      <div>
+        <div className="label">변경할 약</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {otherMedOptions.map(m => (
+            <button key={m.id} type="button" onClick={() => onNewMedChange(m.id)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium border transition
+                                ${newMedId === m.id
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-400'}`}>
+              {m.label.replace(/\s*\(.+\)/, '')}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="label">변경일</div>
+        <QuickDateInput value={switchDate} max={todayISO()} onChange={setSwitchDate} />
+      </div>
+      <div>
+        <div className="label">시작 용량</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {newMed?.doses.map(d => (
+            <button key={d} type="button" onClick={() => setNewDose(d)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition
+                                ${newDose === d
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white text-ink-700 border-ink-300'}`}>{d}</button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div className="label">메모 (선택)</div>
+        <input type="text" className="input" maxLength={60}
+               value={notes} onChange={e => setNotes(e.target.value)}
+               placeholder={`예: 부작용으로 ${currentLabel}에서 변경`} />
+      </div>
+      <div className="flex justify-end gap-2 pt-1">
+        <button onClick={onCancel} className="btn-secondary !py-2 text-sm">취소</button>
+        <button onClick={save} disabled={!newDose} className="btn-primary !py-2 text-sm">
+          ↔ 변경 적용
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 추천 투약 일정 — 약별 표준 escalation 기반 다음 단계 안내
+function RecommendedScheduleCard({ course, lastDose }) {
+  const schedule = DOSE_SCHEDULES[course.medication];
+  if (!schedule) return null;
+  const currentDose = lastDose?.dose || course.initialDose;
+  const rec = nextRecommendedStep(course.medication, course.startDate, currentDose);
+  if (!rec) return null;
+
+  // 다음 증량까지 남은 일수
+  let daysLeft = null;
+  if (rec.nextDate) {
+    const ms = Date.parse(rec.nextDate) - Date.now();
+    daysLeft = Math.ceil(ms / 86400000);
+  }
+
+  return (
+    <div className="rounded-xl bg-sky-50/60 dark:bg-sky-900/15 border border-sky-200 dark:border-sky-800/40 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="text-xs font-bold text-sky-800 dark:text-sky-200">📅 추천 투약 일정 (임상 표준)</div>
+        <div className="text-[10px] text-ink-500 dark:text-slate-500">의사 권유에 따라 다를 수 있음</div>
+      </div>
+      {rec.isMaintenance ? (
+        <div className="text-sm text-ink-900 dark:text-slate-100">
+          현재 <b>{rec.current.dose}</b> 유지 단계 — 더 이상 증량 권장 없음
+        </div>
+      ) : (
+        <div className="text-sm text-ink-900 dark:text-slate-100 leading-relaxed">
+          현재 <b>{rec.current.dose}</b> ({rec.current.weeks}주 유지) →
+          {rec.next ? (
+            <> 다음: <b className="text-brand-700 dark:text-brand-400">{rec.next.dose}</b> · 권장 증량일 <b className="tabular-nums">{rec.nextDate}</b>
+              {daysLeft != null && (
+                <span className={`ml-1 text-xs ${daysLeft <= 0 ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-ink-500'}`}>
+                  ({daysLeft <= 0 ? '지금 증량 가능' : `D-${daysLeft}`})
+                </span>
+              )}
+            </>
+          ) : ' 유지 단계 진입'}
+        </div>
+      )}
+      {/* 전체 일정 미리보기 */}
+      <div className="flex flex-wrap gap-1 pt-1">
+        {schedule.map((s, i) => {
+          const isCurrent = s.dose === currentDose;
+          const isPassed = schedule.findIndex(x => x.dose === currentDose) > i;
+          return (
+            <span key={i}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold tabular-nums border
+                              ${isCurrent ? 'bg-brand-500 text-white border-brand-500'
+                                : isPassed ? 'bg-ink-100 dark:bg-slate-800 text-ink-500 dark:text-slate-500 border-ink-200 dark:border-slate-700 line-through'
+                                : 'bg-white dark:bg-slate-900 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700'}`}>
+              {s.dose}{s.optional ? '*' : ''}{s.maintenance ? ' (유지)' : ''}
+            </span>
+          );
+        })}
+      </div>
+      {schedule.some(s => s.optional) && (
+        <div className="text-[10px] text-ink-500 dark:text-slate-500">* 선택적 단계 — 의사 판단</div>
+      )}
+    </div>
+  );
+}
 
 function NewCourseForm({ user, onCancel, onSaved }) {
   const [med, setMed] = useState('wegovy');
@@ -274,28 +457,19 @@ function NewCourseForm({ user, onCancel, onSaved }) {
 
       {/* 사용 기간 — 시작일 + 진행 중/종료 토글 */}
       <div>
-        <div className="label">사용 기간</div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">시작일</div>
-            <input type="date" className="input" max={todayISO()}
-                   value={startDate} onChange={e => setStartDate(e.target.value)} />
-          </div>
-          <div>
-            <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">종료일</div>
-            {stillUsing ? (
-              <div className="input bg-ink-100 dark:bg-slate-800 text-ink-500 dark:text-slate-400 flex items-center">진행 중</div>
-            ) : (
-              <input type="date" className="input" max={todayISO()} min={startDate}
-                     value={endDate} onChange={e => setEndDate(e.target.value)} />
-            )}
-          </div>
-        </div>
-        <label className="flex items-center gap-2 mt-2 text-sm cursor-pointer">
+        <div className="label">시작일</div>
+        <QuickDateInput value={startDate} max={todayISO()} onChange={setStartDate} />
+        <label className="flex items-center gap-2 mt-3 text-sm cursor-pointer">
           <input type="checkbox" className="w-4 h-4 accent-brand-500"
                  checked={stillUsing} onChange={e => setStillUsing(e.target.checked)} />
           <span>현재도 사용 중 (종료 안 함)</span>
         </label>
+        {!stillUsing && (
+          <div className="mt-2">
+            <div className="text-xs text-ink-500 dark:text-slate-400 mb-1">종료일</div>
+            <QuickDateInput value={endDate} max={todayISO()} onChange={setEndDate} />
+          </div>
+        )}
       </div>
 
       <div>
@@ -354,23 +528,20 @@ function NewDoseForm({ course, user, onSaved }) {
       <div className="rounded-lg bg-brand-50 dark:bg-brand-900/15 px-3 py-2 text-[11px] text-brand-800 dark:text-brand-200 leading-relaxed">
         💡 <b>1회 처방 = 4주치 박스(1팩)</b>. 매주 사용 시 한 박스가 4주 분량입니다. 가격은 박스 단위로 입력해 주세요.
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="label">처방일</div>
-          <input type="date" className="input" max={todayISO()}
-                 value={date} onChange={e => setDate(e.target.value)} />
-        </div>
-        <div>
-          <div className="label">용량</div>
-          <div className="flex gap-1.5 flex-wrap">
-            {med?.doses.map(d => (
-              <button key={d} type="button" onClick={() => setDose(d)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition
-                                  ${dose === d
-                                    ? 'bg-brand-500 text-white border-brand-500'
-                                    : 'bg-white text-ink-700 border-ink-300'}`}>{d}</button>
-            ))}
-          </div>
+      <div>
+        <div className="label">처방일</div>
+        <QuickDateInput value={date} max={todayISO()} onChange={setDate} />
+      </div>
+      <div>
+        <div className="label">용량</div>
+        <div className="flex gap-1.5 flex-wrap">
+          {med?.doses.map(d => (
+            <button key={d} type="button" onClick={() => setDose(d)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition
+                                ${dose === d
+                                  ? 'bg-brand-500 text-white border-brand-500'
+                                  : 'bg-white text-ink-700 border-ink-300'}`}>{d}</button>
+          ))}
         </div>
       </div>
 
@@ -448,15 +619,11 @@ function CourseEditForm({ course, onSaved, onDelete }) {
         <input type="text" className="input" maxLength={50}
                value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <div className="label">종료일 (중단 시)</div>
-          <input type="date" className="input" max={todayISO()}
-                 value={endDate} onChange={e => setEndDate(e.target.value)} />
-          <p className="helptext">비우면 '진행 중'</p>
-        </div>
+      <div>
+        <div className="label">종료일 (중단 시 — 비우면 진행 중)</div>
+        <QuickDateInput value={endDate} max={todayISO()} onChange={setEndDate} />
         {endDate && (
-          <div>
+          <div className="mt-3">
             <div className="label">중단 이유</div>
             <select className="input" value={discontinueReason}
                     onChange={e => setDiscontinueReason(e.target.value)}>

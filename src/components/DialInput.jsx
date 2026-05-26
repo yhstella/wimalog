@@ -21,7 +21,13 @@ export function DialInput({
   // tick 사이 픽셀 폭 (값 1단위당)
   const PX_PER_STEP = 8;
 
-  const clamp = (v) => Math.max(min, Math.min(max, Math.round(v / step) * step));
+  // float 정밀도 fix — 1053 * 0.1 = 105.30000000000001 이슈. step의 decimal places로 toFixed.
+  const stepStr = String(step);
+  const decimals = stepStr.includes('.') ? stepStr.split('.')[1].length : 0;
+  const clamp = (v) => {
+    const rounded = Math.round(v / step) * step;
+    return +Math.max(min, Math.min(max, rounded)).toFixed(decimals);
+  };
 
   // 드래그 시작
   const onPointerDown = (e) => {

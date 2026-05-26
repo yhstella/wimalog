@@ -11,6 +11,7 @@ import { DialInput } from './DialInput.jsx';
 import { WeightCurveInput } from './WeightCurveInput.jsx';
 import { WeightChartInline } from './WeightChartInline.jsx';
 import { HealthMetricsForm } from './HealthMetricsForm.jsx';
+import { QuickDateInput } from './QuickDateInput.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -103,14 +104,16 @@ function WeightTab({ user, version, refresh, navigate }) {
   return (
     <div className="space-y-4">
       <div className="card space-y-3">
-        {/* 날짜 + 저장 한 줄 */}
-        <div className="flex gap-2 items-end">
-          <div className="flex-1">
-            <div className="label">날짜</div>
-            <input type="date" className="input" value={date} max={todayISO()}
-                   onChange={e => { setDate(e.target.value); setExactMs(null); }} />
+        {/* 날짜 + 저장 */}
+        <div>
+          <div className="label">날짜</div>
+          <div className="flex gap-2 items-stretch">
+            <div className="flex-1 min-w-0">
+              <QuickDateInput value={date} max={todayISO()}
+                              onChange={(d) => { setDate(d); setExactMs(null); }} />
+            </div>
+            <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 self-stretch">저장</button>
           </div>
-          <button onClick={submit} disabled={!weight} className="btn-primary !py-2.5 !px-4 h-fit">저장</button>
         </div>
 
         {/* 다이얼 메인 — 체중 입력 핵심 UI */}
