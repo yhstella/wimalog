@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v30';  // bumped 2026-05-26: float fix + 동반질환 ☑ + 정확도 통일 + QuickDate + 약물 변경 + 추천 일정
+const VERSION = 'v31';  // bumped 2026-05-26: 페르소나 P0 6건 — 가격 range, 예시 배지, 결과 hero, 시드 구분, PDF·공유 상단
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

@@ -468,13 +468,20 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
           </g>
         ))}
 
-        {/* 기존 weight_logs */}
-        {existingLogs.map((l, i) => (
-          <circle key={'l'+i}
-                  cx={dateMsToX(Date.parse(l.date))}
-                  cy={weightToY(l.weight)}
-                  r="3" fill="#94A3B8" />
-        ))}
+        {/* 기존 weight_logs — 시드 데이터는 옅은 회색·작게, 본인 입력은 brand 색·크게 (P8) */}
+        {existingLogs.map((l, i) => {
+          const isSeed = !!l.seed;
+          return (
+            <circle key={'l'+i}
+                    cx={dateMsToX(Date.parse(l.date))}
+                    cy={weightToY(l.weight)}
+                    r={isSeed ? 2 : 3.5}
+                    fill={isSeed ? '#CBD5E1' : '#2E9A58'}
+                    opacity={isSeed ? 0.5 : 1}
+                    stroke={isSeed ? undefined : 'white'}
+                    strokeWidth={isSeed ? 0 : 1} />
+          );
+        })}
 
         {/* 기존 doses — 부근 체중 기록 점 가까운 높이에 "주사기 + 용량" 표시 + 약별 color */}
         {existingDoses.map((d, i) => {
@@ -588,9 +595,15 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
         )}
       </svg>
       <div className="px-2 py-1 border-t border-ink-100 dark:border-slate-800 flex gap-3 flex-wrap text-[10px] text-ink-500 dark:text-slate-500 items-center">
+        {/* 본인 기록(brand 색·큼) vs 시드 데이터(옅은 회색·작음) — P8 페르소나 피드백 */}
         <span className="flex items-center gap-1">
-          <span className="inline-block w-2 h-2 rounded-full bg-slate-400"></span>기존 체중
+          <span className="inline-block w-2.5 h-2.5 rounded-full bg-brand-500 border border-white"></span>본인 기록
         </span>
+        {existingLogs.some(l => l.seed) && (
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-300 opacity-50"></span>예시 데이터
+          </span>
+        )}
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full bg-brand-500"></span>입력 중
         </span>

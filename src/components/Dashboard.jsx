@@ -25,6 +25,7 @@ import { CostInsightCard } from './CostInsightCard.jsx';
 import { CoachReport } from './CoachReport.jsx';
 import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { InitialSetup } from './InitialSetup.jsx';
+import { ShareButtons } from './Share.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
@@ -178,10 +179,18 @@ export function Dashboard({ user, navigate }) {
             )}
           </p>
         </div>
-        <div className="flex gap-2 flex-shrink-0">
+        <div className="flex gap-2 flex-shrink-0 flex-wrap">
           <button onClick={() => navigate('records')} className="btn-secondary !py-1.5 !px-3 text-xs">
             상세 기록 →
           </button>
+          {/* 의사용 PDF 리포트 — 상단 노출 (P22 페르소나: "어디 있는지 못 찾음") */}
+          <button onClick={() => navigate('doctor-report')}
+                  title="진료 시 의사에게 보여줄 12주 PDF 리포트"
+                  className="inline-flex items-center gap-1 !py-1.5 !px-3 text-xs rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 font-semibold transition border border-sky-200 dark:border-sky-800/40">
+            📄 진료용 PDF
+          </button>
+          {/* 공유 — 친구 추천 (P15 페르소나) */}
+          <DashboardShareButton user={liveUser} />
         </div>
       </div>
 
@@ -444,6 +453,34 @@ export function Dashboard({ user, navigate }) {
 function shortDate(iso) {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// Dashboard 상단 공유 버튼 — 클릭 시 popover로 ShareButtons 노출 (P15 페르소나)
+function DashboardShareButton({ user }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(o => !o)}
+              className="inline-flex items-center gap-1 !py-1.5 !px-3 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 font-semibold transition border border-emerald-200 dark:border-emerald-800/40">
+        📤 공유
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-40 bg-ink-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn"
+             onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
+          <div className="w-full sm:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl p-4 animate-slideUp">
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-sm font-bold text-ink-900 dark:text-slate-100">위마로그 공유하기</div>
+              <button onClick={() => setOpen(false)} className="btn-ghost !p-1.5 text-base">✕</button>
+            </div>
+            <ShareButtons
+              title="위마로그 — 위고비·마운자로 리얼데이터"
+              text={`${user.nickname || '나'}님이 추천 — 실사용자 익명 데이터 기반 GLP-1 체중 감량 예측`}
+              url="https://wimalog.kr/" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SummaryCard({ label, value, sub, highlight }) {

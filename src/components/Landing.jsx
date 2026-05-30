@@ -47,6 +47,18 @@ export function Landing({ navigate, onSignup, user }) {
         <p className="mt-4 text-sm sm:text-base text-ink-500 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
           실사용자 익명 데이터 기반 AI 예측 — 키·체중·약을 입력하면 비슷한 사용자의 1년 감량 곡선이 바로 나와요.
         </p>
+
+        {/* 가격 range — hero 직하단 큰 글씨로 명시 (비용민감 페르소나 P2·P12·P24) */}
+        <div className="mt-5 inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-ink-100/60 dark:bg-slate-800/60 px-4 py-2.5 text-sm">
+          <span className="text-ink-500 dark:text-slate-400">한국 약국가</span>
+          <span className="font-extrabold text-ink-900 dark:text-slate-100 tabular-nums">월 25~80만원</span>
+          <span className="text-ink-400 dark:text-slate-500">·</span>
+          <span className="font-extrabold text-ink-900 dark:text-slate-100 tabular-nums">연 300~960만원</span>
+          <button onClick={() => navigate('calc/cost')}
+                  className="ml-1 text-[11px] text-brand-700 dark:text-brand-400 font-semibold hover:underline">
+            비용 계산기 →
+          </button>
+        </div>
       </section>
 
       {/* 최근 본 페이지 (재방문자) */}

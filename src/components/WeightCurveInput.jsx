@@ -190,13 +190,20 @@ export function WeightCurveInput({ user, onClose, onSaved }) {
                 </g>
               ))}
 
-              {/* 기존 로그 (회색 점) */}
-              {existingLogs.map((l, i) => (
-                <circle key={i}
-                        cx={dateMsToX(Date.parse(l.date))}
-                        cy={weightToY(l.weight)}
-                        r="3" fill="#94A3B8" />
-              ))}
+              {/* 기존 로그 — 시드는 옅게·작게, 본인 기록은 brand 색·크게 */}
+              {existingLogs.map((l, i) => {
+                const isSeed = !!l.seed;
+                return (
+                  <circle key={i}
+                          cx={dateMsToX(Date.parse(l.date))}
+                          cy={weightToY(l.weight)}
+                          r={isSeed ? 2 : 3.5}
+                          fill={isSeed ? '#CBD5E1' : '#2E9A58'}
+                          opacity={isSeed ? 0.5 : 1}
+                          stroke={isSeed ? undefined : 'white'}
+                          strokeWidth={isSeed ? 0 : 1} />
+                );
+              })}
 
               {/* 그린 path */}
               {path && (

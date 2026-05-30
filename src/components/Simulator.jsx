@@ -26,6 +26,10 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   const [startWeight, setStartWeight] = useState(user?.startWeight || loaded?.startWeight || 78);
   const [medication, setMedication] = useState(loaded?.medication || 'wegovy');
   const [frequency, setFrequency] = useState(loaded?.frequency || 'weekly');
+  // 사용자가 직접 입력했는지 — 가입자 본인 데이터 있거나 sessionStorage prefill 있으면 이미 touched.
+  // 첫 진입자에게는 디폴트 값(162/78)이 "예시"임을 명시하기 위함. P6 페르소나 피드백.
+  const [touched, setTouched] = useState(() => !!user?.height || !!loaded);
+  const markTouched = () => { if (!touched) setTouched(true); };
   // 가입자 추가 입력 — 정확도 향상에 기여
   const [gender, setGender] = useState(user?.gender || loaded?.gender || null);
   const [ageGroup, setAgeGroup] = useState(user?.ageGroup || loaded?.ageGroup || null);
@@ -243,16 +247,25 @@ export function Simulator({ onSignup, compact = false, user = null }) {
         </div>
       </div>
 
+      {/* 예시 데이터 안내 — 사용자가 디폴트 값(162/78)을 본인 데이터로 오해하는 인상 방지 (P6) */}
+      {!touched && (
+        <div className="mb-3 rounded-xl bg-amber-300/20 backdrop-blur border border-amber-200/40 px-3 py-2 text-[11px] leading-relaxed">
+          <span className="font-bold">🔍 예시 데이터</span> — 아래 키·체중을 본인 값으로 조정하면 예측이 갱신돼요.
+        </div>
+      )}
+
       <div className="space-y-3">
         <Slider label="키 (cm)" value={height} min={140} max={200} step={1}
-                onChange={setHeight} fmt={(v) => `${v} cm`} />
+                onChange={(v) => { markTouched(); setHeight(v); }} fmt={(v) => `${v} cm`}
+                dim={!touched} />
         <Slider label="시작 체중 (kg)" value={startWeight} min={45} max={150} step={0.5}
-                onChange={setStartWeight} fmt={(v) => `${v.toFixed(1)} kg`} />
+                onChange={(v) => { markTouched(); setStartWeight(v); }} fmt={(v) => `${v.toFixed(1)} kg`}
+                dim={!touched} />
         <div>
           <div className="text-xs font-semibold mb-1.5 opacity-90">약</div>
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
             {MEDS.filter(m => m.id !== 'other').map(m => (
-              <button key={m.id} type="button" onClick={() => setMedication(m.id)}
+              <button key={m.id} type="button" onClick={() => { markTouched(); setMedication(m.id); }}
                       className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border
                                   ${medication === m.id
                                     ? 'bg-white text-brand-700 border-white'
@@ -266,7 +279,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           <div className="text-xs font-semibold mb-1.5 opacity-90">사용 빈도</div>
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
             {USAGE_FREQUENCIES.map(f => (
-              <button key={f.id} type="button" onClick={() => setFrequency(f.id)}
+              <button key={f.id} type="button" onClick={() => { markTouched(); setFrequency(f.id); }}
                       title={f.desc}
                       className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border
                                   ${frequency === f.id
@@ -398,8 +411,32 @@ export function Simulator({ onSignup, compact = false, user = null }) {
         </div>
       )}
 
+      {/* === 결과 hero — 6개월 후 예상 큰 숫자 (P18 페르소나 피드백) === */}
+      {(() => {
+        const at24 = timeline.series?.find(s => s?.week === 24);
+        if (!at24 || at24.lossKg == null) return null;
+        const kg = Math.abs(at24.lossKg);
+        const target = (startWeight - kg).toFixed(1);
+        return (
+          <div className={`mt-4 rounded-2xl ${touched ? 'bg-white text-brand-700' : 'bg-white/85 text-brand-700/90 border-2 border-dashed border-white/50'} p-4 sm:p-5 text-center shadow-lg`}>
+            <div className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider opacity-70">
+              {touched ? '본인 조건 · 6개월 후 예상' : '예시 결과 · 6개월 후'}
+            </div>
+            <div className="text-4xl sm:text-5xl font-extrabold tabular-nums leading-none mt-2">
+              −{kg.toFixed(1)}<span className="text-2xl"> kg</span>
+            </div>
+            <div className="text-sm font-semibold mt-2 tabular-nums">
+              {startWeight.toFixed(1)} kg → <b>{target} kg</b>
+            </div>
+            <div className="text-[10px] mt-1 opacity-70">
+              {medLabel} · {freqLabel} · 정확도 {accuracy}%
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 예측 곡선 그래프 — 사용 + 중단 후 회복 */}
-      <div className="mt-4 rounded-xl bg-white dark:bg-slate-900 text-ink-900 dark:text-slate-100 p-3">
+      <div className="mt-3 rounded-xl bg-white dark:bg-slate-900 text-ink-900 dark:text-slate-100 p-3">
         <div className="text-xs font-semibold text-ink-700 dark:text-slate-300 mb-2 text-center">
           📈 예측 체중 곡선 — 사용 + 중단 시점 시뮬레이션
         </div>
@@ -519,19 +556,22 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   );
 }
 
-function Slider({ label, value, min, max, step, onChange, fmt }) {
+function Slider({ label, value, min, max, step, onChange, fmt, dim = false }) {
+  // dim: 사용자가 아직 손대지 않은 디폴트 상태. 숫자 강조 약화 + placeholder 풍 안내.
   return (
-    <div>
+    <div className={dim ? 'opacity-70' : ''}>
       <div className="flex justify-between items-center text-xs font-semibold mb-1.5 gap-2">
         <span className="opacity-90">{label}</span>
         {/* 숫자 직접 입력 — 슬라이더 정확 조작 어려운 경우 fallback */}
         <input type="number" inputMode="decimal" step={step} min={min} max={max}
                value={value}
+               placeholder={dim ? `예: ${value}` : ''}
                onChange={e => {
                  const v = +e.target.value;
                  if (!isNaN(v) && v >= min && v <= max) onChange(v);
                }}
-               className="tabular-nums w-20 px-2 py-1 rounded-md bg-white/20 backdrop-blur text-white text-right text-sm font-bold border border-white/30 focus:bg-white/30 focus:border-white focus:outline-none" />
+               className={`tabular-nums w-20 px-2 py-1 rounded-md backdrop-blur text-right text-sm font-bold border focus:bg-white/30 focus:border-white focus:outline-none
+                           ${dim ? 'bg-white/10 text-white/70 border-white/20 italic' : 'bg-white/20 text-white border-white/30'}`} />
         <span className="text-[10px] opacity-70">{fmt ? fmt(value).replace(/[\d.]+\s*/, '') : ''}</span>
       </div>
       <input type="range" min={min} max={max} step={step}
