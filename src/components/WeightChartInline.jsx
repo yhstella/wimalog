@@ -80,6 +80,25 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
     return Storage.getMedCoursesByUser(user.id).filter(c => !c.endDate);
   }, [user, refreshKey]);
 
+  // 약 변경 timeline — 코스 시작일이 weeksBack 범위 안에 있는 모든 코스 (P19 페르소나).
+  // 첫 번째 코스 외 모두 "약 변경" 시점으로 간주.
+  const courseTransitions = useMemo(() => {
+    if (!user) return [];
+    const all = Storage.getMedCoursesByUser(user.id);
+    if (all.length < 2) return [];
+    const sorted = [...all].sort((a, b) => (a.startDate || '').localeCompare(b.startDate || ''));
+    return sorted.slice(1)
+      .map(c => ({
+        date: c.startDate,
+        medication: c.medication,
+        label: MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '') || c.medication,
+      }))
+      .filter(t => {
+        const ms = Date.parse(t.date);
+        return ms >= startDate.getTime() && ms <= today.getTime() + 86400000;
+      });
+  }, [user, refreshKey, weeksBack, startDate, today]);
+
   // Y축 scale — currentWeight를 deps에서 제거해서 입력해도 흔들리지 않음.
   // 최소 ±6kg 보장 → 빈/작은 데이터에서도 충분한 입력 공간 확보.
   // anchor 우선순위: startWeight → 최신 log → currentWeight → 70 (절대 fallback)
@@ -480,6 +499,21 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
                     opacity={isSeed ? 0.5 : 1}
                     stroke={isSeed ? undefined : 'white'}
                     strokeWidth={isSeed ? 0 : 1} />
+          );
+        })}
+
+        {/* 약 변경 시점 vertical line — 코스 startDate (첫 코스 제외) (P19 페르소나) */}
+        {courseTransitions.map((t, i) => {
+          const x = dateMsToX(Date.parse(t.date));
+          const color = MED_COLORS[t.medication] || MED_COLORS.other;
+          return (
+            <g key={'tr'+i}>
+              <line x1={x} y1={PAD.top} x2={x} y2={H - PAD.bottom}
+                    stroke={color} strokeWidth="1.5" strokeDasharray="6 3" strokeOpacity="0.75" />
+              <text x={x + 4} y={PAD.top + 12} fontSize="10" fill={color} fontWeight="700">
+                ↔ {t.label}
+              </text>
+            </g>
           );
         })}
 

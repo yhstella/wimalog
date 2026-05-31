@@ -211,7 +211,7 @@ export default function App() {
           {effectiveRoute === 'profile'    && user && (
             <Profile user={user} navigate={navigate} onLogout={logout} refresh={refresh} />
           )}
-          {effectiveRoute === 'info'       && <Info />}
+          {effectiveRoute === 'info'       && <Info navigate={navigate} />}
           {effectiveRoute === 'doctor-report' && user && (
             <DoctorReport user={user} onBack={() => navigate('profile')} />
           )}

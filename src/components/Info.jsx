@@ -3,6 +3,62 @@ import { RED_FLAG_SYMPTOMS } from '../lib/constants.js';
 import { MedicalDisclaimer, RedFlagBanner } from './SafetyBanner.jsx';
 import { ShareButtons } from './Share.jsx';
 
+// 의료 안전 핵심 가이드 — Info 페이지 상단에 강조 노출
+function SafetyGuideHighlights({ navigate }) {
+  const safety = [
+    { id: 'pregnancy',     icon: '🤰', title: '임신·수유부 안전',  desc: '사용 금지 + washout 2개월 권고' },
+    { id: 'interactions',  icon: '💊', title: '약물 상호작용',     desc: '갑상선·당뇨·항응고제·피임약' },
+    { id: 'mental-health', icon: '🧠', title: '정신건강 모니터링', desc: '우울감·자살 사고 변화 신호' },
+  ];
+  return (
+    <div className="rounded-2xl border-2 border-rose-200 dark:border-rose-900/40 bg-rose-50/60 dark:bg-rose-900/15 p-4">
+      <div className="text-xs font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2">
+        🚨 의료 안전 핵심 가이드 — 필독
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {safety.map(s => (
+          <button key={s.id} onClick={() => navigate?.(`guide/${s.id}`)}
+                  className="text-left rounded-xl bg-white dark:bg-slate-900 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition border border-rose-200 dark:border-rose-800/40 p-3">
+            <div className="text-xl">{s.icon}</div>
+            <div className="text-sm font-bold text-ink-900 dark:text-slate-100 mt-0.5">{s.title}</div>
+            <div className="text-[11px] text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">{s.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// 교육·전략 가이드 — Info 페이지 중단에 카테고리별 노출
+function EducationGuides({ navigate }) {
+  const edu = [
+    { id: 'surgery-vs-glp1',  icon: '⚖️', title: '비만 수술 vs GLP-1',     desc: '효과·비용·위험·지속성 비교' },
+    { id: 'exercise-synergy', icon: '🏋', title: '운동 + GLP-1 시너지',    desc: '운동 지속자 1.4배 감량 데이터' },
+    { id: 'maintenance',      icon: '🌳', title: '유지 단계 인정',         desc: '"더 안 빠진다"가 성공의 다음 단계' },
+    { id: 'restart',          icon: '🔄', title: '중단 후 재시작 용량',    desc: '4주/12주 기준 용량 가이드' },
+    { id: 'sarcopenia',       icon: '💪', title: '근감소 모니터링',         desc: '인바디·단백질·근력운동 핵심' },
+    { id: 'caregiver',        icon: '👨‍👩‍👧', title: '가족 가이드',         desc: '도와주는 사람을 위한 안내' },
+    { id: 'plateau-causes',   icon: '🔍', title: '정체기 원인 다양화',     desc: '약·식이·운동·수면·호르몬' },
+  ];
+  return (
+    <div className="rounded-2xl border border-ink-200 dark:border-slate-700 p-4">
+      <div className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-slate-400 mb-2">
+        📚 교육·전략 가이드
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+        {edu.map(s => (
+          <button key={s.id} onClick={() => navigate?.(`guide/${s.id}`)}
+                  className="text-left rounded-xl bg-white dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition border border-ink-200 dark:border-slate-700 hover:border-brand-300 p-2.5">
+            <div className="text-base">{s.icon}</div>
+            <div className="text-[12px] font-bold text-ink-900 dark:text-slate-100 mt-0.5 leading-tight">{s.title}</div>
+            <div className="text-[10px] text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">{s.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const FAQ_SECTIONS = [
   {
     title: '🤔 처음 알게 된 분',
@@ -108,7 +164,7 @@ const FAQ_SECTIONS = [
   },
 ];
 
-export function Info() {
+export function Info({ navigate }) {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
@@ -117,6 +173,10 @@ export function Info() {
           GLP-1 비만 치료제(위고비·마운자로·삭센다)에 대한 일반 안전 정보와 자주 묻는 질문입니다.
         </p>
       </div>
+
+      <SafetyGuideHighlights navigate={navigate} />
+
+      <EducationGuides navigate={navigate} />
 
       <RedFlagBanner />
 

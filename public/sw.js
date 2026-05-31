@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v31';  // bumped 2026-05-26: 페르소나 P0 6건 — 가격 range, 예시 배지, 결과 hero, 시드 구분, PDF·공유 상단
+const VERSION = 'v32';  // bumped 2026-06-01: 페르소나 라운드2 22건 — 의료 안전 + UX 임팩트 + 콘텐츠 + 소수 기능
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

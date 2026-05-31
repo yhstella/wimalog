@@ -359,6 +359,10 @@ export function coachHeadline({ progress, plateau }) {
   if (progress.stage === 'no-medication') {
     return '약 코스 등록 시 코치 분석 시작';
   }
+  // 유지 단계 (late phase + plateau + 충분한 누적 감량) — "유지 단계 = 성공" 인정 (P52 페르소나)
+  if (progress.phase === 'late' && plateau?.plateau && Math.abs(progress.lossPct) >= 8) {
+    return '🌳 유지 단계 — 안정화 성공';
+  }
   if (plateau?.plateau) {
     return `정체기 감지 — 최근 3주 ±${plateau.range.toFixed(1)}kg`;
   }
@@ -387,9 +391,13 @@ export function coachTone({ progress, plateau }) {
 }
 
 // 상세 부 메시지 — 헤드라인 아래 한 문장
-export function coachSubMessage({ progress }) {
+export function coachSubMessage({ progress, plateau }) {
   if (!progress || progress.stage !== 'on-medication') return '';
-  const { weeksOnMed, lossPct, cohortPct, cohortWeek, medLabel } = progress;
+  const { weeksOnMed, lossPct, cohortPct, cohortWeek, medLabel, phase } = progress;
+  // 유지 단계 메시지 (P52)
+  if (phase === 'late' && plateau?.plateau && Math.abs(lossPct) >= 8) {
+    return `${medLabel} ${weeksOnMed}주차 · 누적 -${Math.abs(lossPct).toFixed(1)}% · 더 안 빠지는 게 자연스러운 다음 단계입니다`;
+  }
   if (cohortPct == null) {
     return `${medLabel} ${weeksOnMed}주차 · 누적 ${Math.abs(lossPct).toFixed(1)}%`;
   }

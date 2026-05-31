@@ -55,25 +55,24 @@ export function CostInsightCard({ user, navigate }) {
   const { ageDays, totalCost, lostKg, costPerKg, annualProjection, doseCount, savingsPct } = data;
 
   return (
-    <section className="card border-l-4 border-amber-500">
-      <div className="flex items-start gap-3 mb-3">
-        <div className="text-2xl flex-shrink-0">💰</div>
-        <div className="flex-1">
-          <h3 className="font-bold text-ink-900 dark:text-slate-100">누적 약값 분석</h3>
-          <p className="text-xs text-ink-500 dark:text-slate-400">
-            가입 후 {ageDays}일 · {doseCount}회 투약 기록 기준
-          </p>
+    <section className="card border-2 border-amber-300 dark:border-amber-800/60 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/15 dark:to-slate-900">
+      {/* 누적 약값 hero — 큰 숫자 (P7·P12 페르소나 — "어디서 보이는지 모르겠음") */}
+      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
+        <div className="flex items-start gap-3">
+          <div className="text-3xl flex-shrink-0">💰</div>
+          <div>
+            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">누적 약값</div>
+            <div className="text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight text-amber-700 dark:text-amber-400 mt-0.5">
+              {(totalCost / 10000).toFixed(0)}<span className="text-xl">만원</span>
+            </div>
+            <div className="text-[11px] text-ink-500 dark:text-slate-400 mt-0.5">
+              가입 후 {ageDays}일 · {doseCount}회 투약
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        <div className="rounded-xl bg-amber-50/60 dark:bg-amber-900/15 border border-amber-200/40 dark:border-amber-800/30 p-3">
-          <div className="text-[10px] text-ink-500 uppercase tracking-wide">누적 약값</div>
-          <div className="text-xl font-extrabold text-amber-700 dark:text-amber-400 tabular-nums mt-1">
-            {(totalCost / 10000).toFixed(0)}만원
-          </div>
-          <div className="text-[10px] text-ink-500 mt-0.5">전체 기록</div>
-        </div>
+      <div className="grid grid-cols-2 gap-2.5">
         <div className="rounded-xl bg-brand-50/60 dark:bg-brand-900/15 border border-brand-200/40 dark:border-brand-800/30 p-3">
           <div className="text-[10px] text-ink-500 uppercase tracking-wide">1kg 감량당 비용</div>
           <div className="text-xl font-extrabold text-brand-700 dark:text-brand-400 tabular-nums mt-1">

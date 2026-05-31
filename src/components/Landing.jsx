@@ -11,6 +11,10 @@ const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
 export function Landing({ navigate, onSignup, user }) {
   const [showSignup, setShowSignup] = useState(false);
   const [showFull, setShowFull] = useState(false);   // 신규 사용자에게는 가이드/계산기 숨김
+  // 추천 링크 진입자 — sessionStorage에서 ref 코드 감지 (App.jsx에서 캡처됨, P37 페르소나)
+  const referralCode = (() => {
+    try { return sessionStorage.getItem('wimalog_referral_code'); } catch { return null; }
+  })();
   // Simulator 입력 echo — sessionStorage 폴링으로 가벼운 sync
   const [prefill, setPrefill] = useState(null);
   useEffect(() => {
@@ -34,6 +38,21 @@ export function Landing({ navigate, onSignup, user }) {
 
   return (
     <div className="space-y-8 sm:space-y-10">
+      {/* 추천 링크 환영 — 친구 추천으로 진입한 사용자에게 별도 환영 (P37) */}
+      {!user && referralCode && (
+        <section className="rounded-2xl bg-gradient-to-br from-pink-50 to-amber-50 dark:from-pink-900/20 dark:to-amber-900/20 border-2 border-pink-200 dark:border-pink-800/40 p-4 sm:p-5 flex items-start gap-3">
+          <div className="text-3xl flex-shrink-0">🎁</div>
+          <div className="flex-1 min-w-0">
+            <div className="font-bold text-pink-900 dark:text-pink-100 text-sm">
+              친구 추천으로 오셨군요!
+            </div>
+            <p className="text-xs text-pink-800 dark:text-pink-200/90 mt-1 leading-relaxed">
+              지인이 이미 위마로그로 본인 데이터를 정리하고 있어요. 가입하면 친구와 비슷한 코호트(나이대·BMI·동반질환)의 실제 감량 곡선이 더 빠르게 매칭됩니다.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* Hero — TOSS 톤: 큰 숫자 + 짧은 메시지 + 단일 액션 */}
       <section className="text-center pt-2 sm:pt-6">
         <div className="inline-flex items-center gap-1.5 chip-brand mb-4">
@@ -57,6 +76,15 @@ export function Landing({ navigate, onSignup, user }) {
           <button onClick={() => navigate('calc/cost')}
                   className="ml-1 text-[11px] text-brand-700 dark:text-brand-400 font-semibold hover:underline">
             비용 계산기 →
+          </button>
+        </div>
+
+        {/* 비대면 처방 옵션 — 진료 접근성 명시 (P24 페르소나) */}
+        <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-ink-600 dark:text-slate-400">
+          <span>📱 비대면 진료 + 약 배송 가능</span>
+          <button onClick={() => navigate('guide/prescription')}
+                  className="text-brand-700 dark:text-brand-400 font-semibold hover:underline">
+            처방 가이드 →
           </button>
         </div>
       </section>

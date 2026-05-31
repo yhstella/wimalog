@@ -26,6 +26,8 @@ import { CoachReport } from './CoachReport.jsx';
 import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { InitialSetup } from './InitialSetup.jsx';
 import { ShareButtons } from './Share.jsx';
+import { EarlyStageBanner } from './EarlyStageBanner.jsx';
+import { SideEffectQuickWidget } from './SideEffectQuickWidget.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
@@ -265,6 +267,12 @@ export function Dashboard({ user, navigate }) {
                           onOpenMeds={() => navigate('meds')} />
         )}
       </div>
+
+      {/* 시작 용량 단계 위로 — 좌절 이탈 방지 (P42·P50) */}
+      <EarlyStageBanner user={liveUser} />
+
+      {/* 부작용 즉답 — 사용 중 사용자에게 (P41) */}
+      {activeMeds.length > 0 && <SideEffectQuickWidget navigate={navigate} />}
 
       {/* 신규 사용자(14일 미만)만 — 입력 보상 + Notification 노이즈 줄임 */}
       {(() => {

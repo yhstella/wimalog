@@ -272,6 +272,14 @@ export function AIPredictionPanel({ user }) {
              style={{ width: `${score}%` }} />
       </div>
 
+      {/* AI 정확도 한 줄 설명 — score에 따라 동적 (P1·P14 페르소나) */}
+      <p className="mt-2 text-[11px] text-ink-600 dark:text-slate-400 leading-relaxed">
+        {score < 60 && <>비슷한 BMI 사용자 1년 감량 평균 기반 — 본인 정보 더 입력 시 본인 코호트로 매칭</>}
+        {score >= 60 && score < 75 && <>본인 일부 정보 반영 — 비슷한 BMI·성별·나이대 사용자 평균</>}
+        {score >= 75 && score < 85 && <>본인 동반질환·운동까지 반영 — 정밀 코호트 매칭</>}
+        {score >= 85 && <>거의 모든 정보 반영 — 본인 추이로 정밀 예측 (최대 90%, 100%는 불가능)</>}
+      </p>
+
       {/* 정확도 상승 체크박스 */}
       <div className="mt-5 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
         <div className="text-xs font-bold text-ink-700 dark:text-slate-300 mb-2">

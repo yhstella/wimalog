@@ -119,6 +119,46 @@ export function DoctorReport({ user, onBack }) {
     }
   };
 
+  // 의료인 데이터 export — JSON/CSV (P58 페르소나)
+  const downloadBlob = (filename, content, mime) => {
+    const blob = new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+  const exportJSON = () => {
+    const payload = {
+      meta: { generatedAt: new Date().toISOString(), source: 'wimalog', schemaVersion: 1 },
+      patient: {
+        gender: user.gender, ageGroup: user.ageGroup, height: user.height,
+        startWeight: user.startWeight, targetWeight: user.targetWeight,
+        conditions: user.conditions || {},
+      },
+      logs, courses, doses, exercises,
+    };
+    downloadBlob(`wimalog-export-${new Date().toISOString().slice(0,10)}.json`,
+                 JSON.stringify(payload, null, 2), 'application/json');
+  };
+  const exportCSV = () => {
+    // weight + dose + exercise → 합본 CSV
+    const rows = [['date', 'type', 'value', 'unit', 'meta']];
+    for (const l of logs) rows.push([l.date, 'weight', l.weight, 'kg', '']);
+    for (const d of doses) {
+      const course = courses.find(c => c.id === d.courseId);
+      rows.push([d.date, 'dose', d.dose, '', `${MED_BY_ID[course?.medication]?.label || ''}${d.price ? ' / '+d.price+'원' : ''}`]);
+    }
+    for (const e of exercises) rows.push([e.date, 'exercise', e.durationMin, 'min', e.type || '']);
+    rows.sort((a, b) => (a[0] || '').localeCompare(b[0] || ''));
+    const csv = rows.map(r => r.map(c => {
+      const s = c == null ? '' : String(c);
+      return s.includes(',') || s.includes('"') ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(',')).join('\n');
+    downloadBlob(`wimalog-export-${new Date().toISOString().slice(0,10)}.csv`,
+                 csv, 'text/csv;charset=utf-8');
+  };
+
   return (
     <div className="max-w-3xl mx-auto bg-white text-black p-8 print:p-4 print:max-w-full doctor-report">
       {/* 화면에만 보이는 컨트롤 */}
@@ -126,10 +166,16 @@ export function DoctorReport({ user, onBack }) {
         <button onClick={onBack} className="btn-ghost text-sm">← 돌아가기</button>
         <div className="flex gap-2 flex-wrap">
           <button onClick={copyText} className="btn-ghost !py-2 !px-3 text-sm border border-ink-300">
-            {copied ? '✓ 복사됨' : '📋 텍스트 요약 복사'}
+            {copied ? '✓ 복사됨' : '📋 텍스트 요약'}
+          </button>
+          <button onClick={exportJSON} className="btn-ghost !py-2 !px-3 text-sm border border-ink-300" title="의료인용 — 전체 데이터 JSON (P58)">
+            📦 JSON
+          </button>
+          <button onClick={exportCSV} className="btn-ghost !py-2 !px-3 text-sm border border-ink-300" title="의료인용 — 시점별 합본 CSV">
+            📥 CSV
           </button>
           <button onClick={() => window.print()} className="btn-primary !py-2 !px-4 text-sm">
-            🖨️ 인쇄 / PDF 저장
+            🖨️ 인쇄 / PDF
           </button>
         </div>
       </div>

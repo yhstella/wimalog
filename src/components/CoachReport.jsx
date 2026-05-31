@@ -45,6 +45,7 @@ export function CoachReport({ user, navigate }) {
   const icon = coachIcon(analysis);
   const tone = coachTone(analysis);
   const subMsg = coachSubMessage(analysis);
+  const isMaintenance = progress?.phase === 'late' && plateau?.plateau && Math.abs(progress.lossPct) >= 8;
 
   const toneClass = {
     emerald: 'border-emerald-300 dark:border-emerald-800/50 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/15 dark:to-slate-900',

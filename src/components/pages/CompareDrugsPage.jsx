@@ -64,8 +64,18 @@ export function CompareDrugsPage({ navigate, user }) {
   const sideByMed = supaSideByMed || localSideByMed;
   const priceByMed = supaPriceByMed || localPriceByMed;
 
+  // 가성비 점수 — 12주 감량 kg / 12주 약값 (3박스). g/만원 단위 (P53·P16 페르소나 — 가성비 best 추천).
+  const valueScore = (drugId) => {
+    const c12 = compare12.find(c => c.id === drugId);
+    const price = priceByMed[drugId];
+    if (!c12?.avg || !price) return null;
+    const lossKg = refWeight * Math.abs(c12.avg) / 100;
+    const cost12wkMan = 3 * price / 10000; // 3박스 = 12주, 만원 단위
+    return Math.round(lossKg * 1000 / cost12wkMan); // g per 만원
+  };
+
   // 정렬 — TOSS 톤: 사용자가 원하는 기준으로 정렬
-  const [sortKey, setSortKey] = useState('default');  // 'default' | 'loss' | 'side' | 'price'
+  const [sortKey, setSortKey] = useState('default');  // 'default' | 'loss' | 'side' | 'price' | 'value'
   const drugs = useMemo(() => {
     const list = Object.values(DRUG_CONTENT);
     if (sortKey === 'loss') {
@@ -81,8 +91,20 @@ export function CompareDrugsPage({ navigate, user }) {
     if (sortKey === 'price') {
       return [...list].sort((a, b) => (priceByMed[a.id] ?? Infinity) - (priceByMed[b.id] ?? Infinity));
     }
+    if (sortKey === 'value') {
+      return [...list].sort((a, b) => (valueScore(b.id) ?? 0) - (valueScore(a.id) ?? 0));
+    }
     return list;
   }, [sortKey, compare12, sideByMed, priceByMed]);
+  // 최고 가성비 약 — 1위 표시
+  const bestValueId = useMemo(() => {
+    let bestId = null, bestVal = 0;
+    for (const id of Object.keys(DRUG_CONTENT)) {
+      const v = valueScore(id);
+      if (v != null && v > bestVal) { bestVal = v; bestId = id; }
+    }
+    return bestId;
+  }, [compare12, priceByMed]);
 
   const SortHeader = ({ col, label, align = 'right' }) => (
     <th className={`py-2 px-2 text-${align} ${col ? 'cursor-pointer hover:text-brand-700 dark:hover:text-brand-400 transition select-none' : ''}`}
@@ -124,6 +146,7 @@ export function CompareDrugsPage({ navigate, user }) {
                 <th className="py-2 px-2 text-right">최종 효과</th>
                 <SortHeader col="side" label="오심" />
                 <SortHeader col="price" label="평균 (4주분)" />
+                <SortHeader col="value" label="가성비 g/만원" />
                 <th className="py-2 px-2 pr-5">주기</th>
               </tr>
             </thead>
@@ -149,6 +172,18 @@ export function CompareDrugsPage({ navigate, user }) {
                     <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">
                       {priceByMed[d.id] ? `${Math.round(priceByMed[d.id] / 10000)}만원` : '—'}
                     </td>
+                    <td className="py-2 px-2 text-right tabular-nums whitespace-nowrap">
+                      {(() => {
+                        const v = valueScore(d.id);
+                        if (v == null) return '—';
+                        return (
+                          <span className={d.id === bestValueId ? 'font-bold text-emerald-700 dark:text-emerald-400' : 'text-ink-700 dark:text-slate-300'}>
+                            {v} g
+                            {d.id === bestValueId && <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30">BEST</span>}
+                          </span>
+                        );
+                      })()}
+                    </td>
                     <td className="py-2 px-2 pr-5 text-xs text-ink-500 dark:text-slate-400 whitespace-nowrap">{d.frequency}</td>
                   </tr>
                 );
@@ -157,7 +192,7 @@ export function CompareDrugsPage({ navigate, user }) {
           </table>
         </div>
         <p className="helptext px-5 pb-4 mt-3">
-          12주 감량은 본인 시작 체중 <b>{refWeight} kg</b> 기준. 평균 가격은 4주분(1박스). 최종 효과는 임상시험 결과 (68-72주).
+          12주 감량은 본인 시작 체중 <b>{refWeight} kg</b> 기준. 평균 가격은 4주분(1박스). 가성비 = 12주 감량 g / 12주 약값 만원 (3박스). 최종 효과는 임상시험 결과 (68-72주).
         </p>
       </section>
 

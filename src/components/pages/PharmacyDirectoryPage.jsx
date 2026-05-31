@@ -58,8 +58,35 @@ export function PharmacyDirectoryPage({ navigate, user, regionId }) {
 
   // 우선순위: Supabase fresh > snapshot > localStorage 시드
   const summary = supaSummary || snapSummary || localSummary;
-  const regions = supaRegions || snapRegions || localRegions;
+  const rawRegions = supaRegions || snapRegions || localRegions;
   const detail  = supaDetail  || localDetail;
+
+  // 본인 지역 — 가입자의 최근 dose region에서 추론. 있으면 해당 지역이 1순위 (P7 페르소나).
+  const myRegion = useMemo(() => {
+    if (!user) return null;
+    try {
+      const doses = Storage.getDosesByUser(user.id);
+      const recent = doses.filter(d => d.region).slice(-5);
+      if (!recent.length) return null;
+      // 가장 자주 등장한 region
+      const counts = {};
+      for (const d of recent) counts[d.region] = (counts[d.region] || 0) + 1;
+      return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    } catch { return null; }
+  }, [user, version]);
+
+  // 본인 지역 우선 정렬
+  const regions = useMemo(() => {
+    if (!myRegion || !rawRegions?.length) return rawRegions;
+    const matchScore = (r) => {
+      if (r.region === myRegion) return 2;
+      // 부분 매칭 (예: "서울 강남" ↔ "서울 송파"는 같은 도시)
+      const myCity = myRegion.split(' ')[0];
+      if (r.region.startsWith(myCity)) return 1;
+      return 0;
+    };
+    return [...rawRegions].sort((a, b) => matchScore(b) - matchScore(a));
+  }, [rawRegions, myRegion]);
 
   // 단일 지역 보기 모드
   if (regionId) {
@@ -122,10 +149,16 @@ export function PharmacyDirectoryPage({ navigate, user, regionId }) {
         </div>
       </section>
 
-      {/* 지역 리스트 */}
+      {/* 지역 리스트 — 본인 지역(myRegion) 우선 */}
+      {myRegion && (
+        <div className="text-xs text-ink-500 dark:text-slate-400 flex items-center gap-1">
+          📍 본인 지역 <b className="text-brand-700 dark:text-brand-400">{myRegion}</b> 우선 노출
+        </div>
+      )}
       <section className="space-y-3">
         {regions.map(r => (
-          <RegionCard key={r.regionId} region={r} navigate={navigate} medFilter={filter.medication} />
+          <RegionCard key={r.regionId} region={r} navigate={navigate} medFilter={filter.medication}
+                      highlight={r.region === myRegion} />
         ))}
       </section>
 
@@ -196,11 +229,14 @@ function SummaryStat({ big, label }) {
   );
 }
 
-function RegionCard({ region, navigate, medFilter }) {
+function RegionCard({ region, navigate, medFilter, highlight = false }) {
   const topPharm = region.pharmacies[0];
   const hasReports = region.reportCount > 0;
   return (
-    <div className="card hover:shadow-cardHover transition">
+    <div className={`card hover:shadow-cardHover transition ${highlight ? 'border-2 border-brand-400 dark:border-brand-700 bg-brand-50/30 dark:bg-brand-900/15' : ''}`}>
+      {highlight && (
+        <div className="text-[10px] font-bold text-brand-700 dark:text-brand-400 mb-1">📍 본인 지역</div>
+      )}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex-1 min-w-0">
           <button onClick={() => navigate(`pharmacy/${region.regionId}`)}
