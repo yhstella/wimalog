@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v34';  // bumped 2026-06-01: Dashboard 다이어트 — 15위젯 → 핵심 6~7개, 중복 제거
+const VERSION = 'v35';  // bumped 2026-06-01: 결과 공유 카드 (유입·리텐션) — 익명 PNG, Canvas 생성
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

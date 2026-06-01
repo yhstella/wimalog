@@ -20,6 +20,7 @@ import { CostInsightCard } from './CostInsightCard.jsx';
 import { CoachReport } from './CoachReport.jsx';
 import { InitialSetup } from './InitialSetup.jsx';
 import { ShareButtons } from './Share.jsx';
+import { ShareCardModal } from './ShareCardModal.jsx';
 import { EarlyStageBanner } from './EarlyStageBanner.jsx';
 import { SideEffectQuickWidget } from './SideEffectQuickWidget.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
@@ -370,6 +371,7 @@ function shortDate(iso) {
 // Dashboard 상단 공유 버튼 — 클릭 시 popover로 ShareButtons 노출 (P15 페르소나)
 function DashboardShareButton({ user, iconOnly = false }) {
   const [open, setOpen] = useState(false);
+  const [showCard, setShowCard] = useState(false);
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)}
@@ -383,17 +385,28 @@ function DashboardShareButton({ user, iconOnly = false }) {
         <div className="fixed inset-0 z-40 bg-ink-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn"
              onClick={(e) => { if (e.target === e.currentTarget) setOpen(false); }}>
           <div className="w-full sm:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl p-4 animate-slideUp">
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-sm font-bold text-ink-900 dark:text-slate-100">위마로그 공유하기</div>
+            <div className="flex justify-between items-center mb-3">
+              <div className="text-sm font-bold text-ink-900 dark:text-slate-100">공유하기</div>
               <button onClick={() => setOpen(false)} className="btn-ghost !p-1.5 text-base">✕</button>
             </div>
+            {/* 결과 카드 — 유입·리텐션 핵심. 본인 결과를 익명 이미지로 자랑 */}
+            <button onClick={() => { setOpen(false); setShowCard(true); }}
+                    className="w-full flex items-center gap-3 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-3.5 mb-3 hover:shadow-cardHover transition text-left">
+              <span className="text-2xl flex-shrink-0">📸</span>
+              <div className="min-w-0">
+                <div className="font-bold text-sm">내 결과 카드 만들기</div>
+                <div className="text-[11px] opacity-90">본인 감량 + 코호트 비교 · 익명 이미지</div>
+              </div>
+            </button>
+            <div className="text-[10px] text-ink-500 dark:text-slate-500 mb-1.5">링크로 공유</div>
             <ShareButtons
               title="위마로그 — 위고비·마운자로 리얼데이터"
-              text={`${user.nickname || '나'}님이 추천 — 실사용자 익명 데이터 기반 GLP-1 체중 감량 예측`}
+              text="실사용자 익명 데이터 기반 GLP-1 체중 감량 예측"
               url="https://wimalog.kr/" />
           </div>
         </div>
       )}
+      {showCard && <ShareCardModal user={user} onClose={() => setShowCard(false)} />}
     </div>
   );
 }
