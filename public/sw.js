@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v35';  // bumped 2026-06-01: 결과 공유 카드 (유입·리텐션) — 익명 PNG, Canvas 생성
+const VERSION = 'v36';  // bumped 2026-06-01: 🚑 체중 저장 실패 fix — localStorage quota 내성 write + 시드 150 축소
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

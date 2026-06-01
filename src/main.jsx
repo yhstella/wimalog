@@ -22,8 +22,10 @@ ric(() => {
       Storage.resetSeed();
     }
     if (!Storage.isSeeded()) {
-      // 1500 → 500 — 통계 충분, localStorage quota 안전, JSON.stringify 비용 1/3
-      seedIfNeeded(500);
+      // 500 → 150 — 코호트 통계는 Supabase RPC + 빌드타임 snapshot이 담당.
+      // localStorage 시드는 Supabase 미설정 시 fallback일 뿐이라 작게 유지해 quota 여유 확보.
+      // (시드 과다 → write QuotaExceededError → 사용자 체중 저장 실패 회귀 방지)
+      seedIfNeeded(150);
     }
   } catch (e) {
     console.warn('Seed bootstrap warning:', e?.message || e);

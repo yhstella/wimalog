@@ -21,8 +21,33 @@ function read(key, fallback) {
     return fallback;
   }
 }
+// 배열형 컬렉션 키 — quota 초과 시 seed 데이터를 희생할 대상
+const ARRAY_KEYS = ['gl_logs', 'gl_doses', 'gl_exercises', 'gl_diets', 'gl_users', 'gl_med_courses', 'gl_health'];
+
 function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    // QuotaExceededError — localStorage가 시드 데이터로 꽉 참.
+    // 사용자 데이터(seed=false)는 무조건 보존하고, 시드(seed=true)를 희생해 공간 확보 후 재시도.
+    const quota = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+    if (!quota) throw e;
+    try {
+      for (const k of ARRAY_KEYS) {
+        const raw = localStorage.getItem(k);
+        if (!raw) continue;
+        try {
+          const arr = JSON.parse(raw);
+          if (Array.isArray(arr)) localStorage.setItem(k, JSON.stringify(arr.filter(x => !x.seed)));
+        } catch {}
+      }
+      // 대상 value도 배열이면 seed 제외하고 저장 (seed는 어차피 희생)
+      const pruned = Array.isArray(value) ? value.filter(x => !x.seed) : value;
+      localStorage.setItem(key, JSON.stringify(pruned));
+    } catch (e2) {
+      console.error('[storage] write failed even after pruning seed data', e2);
+    }
+  }
 }
 
 // 변경 이벤트 listener (Supabase sync 등 외부 layer가 구독)
