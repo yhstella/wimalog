@@ -2,28 +2,22 @@ import React, { useMemo, useState, useEffect } from 'react';
 import { Storage } from '../lib/storage.js';
 import {
   personalSummary, personalSummaryForCourse, primaryCourse,
-  similarFilter, avgLossCurve, cohortSize, bmiCategory, weeksSinceStart,
-  reboundCurve, reboundByExercise,
+  bmiCategory, weeksSinceStart,
 } from '../lib/stats.js';
 import { LineChart } from './Chart.jsx';
 import { MED_BY_ID, SIDE_EFFECTS } from '../lib/constants.js';
 import { QuickWeightCard, QuickDoseCard } from './QuickEntry.jsx';
-import { PremiumBadge } from './Paywall.jsx';
 import { useToast } from './Toast.jsx';
 // RetentionCards 제거 — 스트릭·배지·주간요약·중단자 패널은 비즈니스 핵심 X.
-// 중단자 패널 기능은 Statistics 페이지의 StopProjector로 대체됨.
 import { WelcomeTour } from './WelcomeTour.jsx';
-import { GoalWidget } from './GoalWidget.jsx';
 import { InputProgressCard } from './InputProgressCard.jsx';
 import { NotificationBanner } from './NotificationBanner.jsx';
 import { PurposeCard } from './PurposeCard.jsx';
 import { UnlockedInsights } from './UnlockedInsights.jsx';
 import { EmptyDashboard } from './EmptyDashboard.jsx';
-import { SideEffectInsightWidget } from './SideEffectInsightWidget.jsx';
 import { MilestoneCard } from './MilestoneCard.jsx';
 import { CostInsightCard } from './CostInsightCard.jsx';
 import { CoachReport } from './CoachReport.jsx';
-import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { InitialSetup } from './InitialSetup.jsx';
 import { ShareButtons } from './Share.jsx';
 import { EarlyStageBanner } from './EarlyStageBanner.jsx';
@@ -48,51 +42,15 @@ export function Dashboard({ user, navigate }) {
     ? personalSummaryForCourse(user, logs, current)
     : personalSummary(user, logs), [user, logs, current]);
 
-  // 비교 코호트 — localStorage 시드 우선, 비어있으면 snapshot fallback
-  const similar    = useMemo(() => similarFilter(user, current), [user, current]);
-  const localN     = useMemo(() => cohortSize(similar), [similar]);
-  const localCurve = useMemo(() => avgLossCurve(similar), [similar]);
-  // snapshot fallback — 약별 곡선 (medication 기반)
-  const snapCurve = useMemo(() => {
-    if (!current?.medication) return null;
-    const rows = snapshotAvgLossCurve(current.medication, [4, 8, 12, 16, 24, 36, 48]);
-    if (!rows || !rows.length) return null;
-    return rows.map(r => ({ week: r.week, avg: r.avg / 100, n: r.n, median: r.median != null ? r.median / 100 : null }));
-  }, [current]);
-  // cohortCurve: localStorage 시드 우선, 비어있으면 snapshot
-  const cohortCurve = (localCurve && localCurve.some(c => c.n > 0)) ? localCurve : (snapCurve || localCurve);
-  // cohortN: snapshot 사용 시 가장 큰 주차의 n 사용
-  const cohortN = localN > 0 ? localN : (snapCurve ? Math.max(...snapCurve.map(c => c.n || 0)) : 0);
-
-  // 본인 코호트 기반 rebound 예상 (약 사용 중일 때만 노출)
-  // similar 필터가 너무 좁으면 표본 부족 → 약제만 매칭하는 fallback 사용
-  const reboundFilter = useMemo(() => {
-    if (!current) return null;
-    const tight = reboundCurve(similar, [24]);
-    if (tight[0]?.n >= 3) return similar;
-    // fallback: 약제만
-    return { medication: current.medication };
-  }, [current, similar]);
-  const rebound = useMemo(() => reboundFilter ? reboundCurve(reboundFilter, [12, 24, 48]) : null, [reboundFilter]);
-  const reboundEx = useMemo(() => reboundFilter ? reboundByExercise(reboundFilter, 24) : null, [reboundFilter]);
+  // 코호트 비교 계산 제거 — 코호트 테이블 카드를 Dashboard에서 제거(→ CoachReport + /stats)했으므로
+  // 관련 dead 계산(similar/localCurve/snapCurve/cohortCurve/rebound 등) 일괄 정리.
 
   // 체중 차트
   const chartData = useMemo(() => logs.map(l => ({
     x: l.date, y: l.weight, label: shortDate(l.date),
   })), [logs]);
 
-  const thisWeek = useMemo(() => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const start = oneWeekAgo.toISOString().slice(0, 10);
-    return {
-      exMinutes: exercises.filter(e => e.date >= start).reduce((s, e) => s + (e.durationMin || 0), 0),
-      exSessions: exercises.filter(e => e.date >= start).length,
-      mealCount: diets.filter(d => d.date >= start).length,
-      doseCount: doses.filter(d => d.date >= start).length,
-    };
-  }, [exercises, diets, doses]);
-
+  // 최근 4회 기록에서 보고된 부작용 — SideEffectQuickWidget 조건부 노출용
   const recentSideEffects = useMemo(() => {
     if (!logs.length) return [];
     const recent = logs.slice(-4);
@@ -104,17 +62,11 @@ export function Dashboard({ user, navigate }) {
   const activeMeds = courses.filter(c => !c.endDate);
   const isDietOnly = courses.length === 0 && (exercises.length > 0 || diets.length > 0 || logs.length >= 3);
 
-  // 정체기 감지: 최근 4주 동안 체중 변화 ±0.3kg 미만
-  const stallAlert = useMemo(() => {
-    if (logs.length < 4) return null;
-    const recent4 = logs.slice(-4);
-    const min = Math.min(...recent4.map(l => l.weight));
-    const max = Math.max(...recent4.map(l => l.weight));
-    if (max - min < 0.4 && current && !current.endDate) {
-      return { range: max - min, weeks: recent4.length };
-    }
-    return null;
-  }, [logs, current]);
+  // 약 시작 후 경과 주 — 부작용 위젯 조건부(초기 8주)용
+  const weeksOnActiveMed = useMemo(() => {
+    if (!current?.startDate) return 0;
+    return Math.max(0, Math.floor((Date.now() - Date.parse(current.startDate)) / (7 * 86400000)));
+  }, [current]);
 
   // Next-Action 가이드 (한 번 dismiss하면 안 보임)
   const [dismissedTour, setDismissedTour] = useState(() => !!localStorage.getItem(NEXT_ACTION_DISMISSED_KEY));
@@ -181,18 +133,18 @@ export function Dashboard({ user, navigate }) {
             )}
           </p>
         </div>
-        <div className="flex gap-2 flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <button onClick={() => navigate('records')} className="btn-secondary !py-1.5 !px-3 text-xs">
             상세 기록 →
           </button>
-          {/* 의사용 PDF 리포트 — 상단 노출 (P22 페르소나: "어디 있는지 못 찾음") */}
+          {/* PDF·공유는 아이콘만 — 매일 쓰는 버튼이 아니므로 시각 비중 최소화 (Dashboard 다이어트) */}
           <button onClick={() => navigate('doctor-report')}
-                  title="진료 시 의사에게 보여줄 12주 PDF 리포트"
-                  className="inline-flex items-center gap-1 !py-1.5 !px-3 text-xs rounded-lg bg-sky-100 dark:bg-sky-900/30 text-sky-800 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-sky-900/50 font-semibold transition border border-sky-200 dark:border-sky-800/40">
-            📄 진료용 PDF
+                  title="진료용 12주 PDF 리포트"
+                  aria-label="진료용 PDF"
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-base text-ink-600 dark:text-slate-400 hover:bg-ink-100 dark:hover:bg-slate-800 transition">
+            📄
           </button>
-          {/* 공유 — 친구 추천 (P15 페르소나) */}
-          <DashboardShareButton user={liveUser} />
+          <DashboardShareButton user={liveUser} iconOnly />
         </div>
       </div>
 
@@ -271,16 +223,19 @@ export function Dashboard({ user, navigate }) {
       {/* 시작 용량 단계 위로 — 좌절 이탈 방지 (P42·P50) */}
       <EarlyStageBanner user={liveUser} />
 
-      {/* 부작용 즉답 — 사용 중 사용자에게 (P41) */}
-      {activeMeds.length > 0 && <SideEffectQuickWidget navigate={navigate} />}
+      {/* 부작용 즉답 — 최근 부작용 보고했거나 초기 8주 사용자만 (확립된 사용자에겐 노이즈) */}
+      {activeMeds.length > 0 && (recentSideEffects.length > 0 || weeksOnActiveMed <= 8) && (
+        <SideEffectQuickWidget navigate={navigate} />
+      )}
 
-      {/* 신규 사용자(14일 미만)만 — 입력 보상 + Notification 노이즈 줄임 */}
+      {/* 신규 사용자(14일 미만) 입력 보상 — 단, Next-Action 투어가 떠 있으면 InputProgressCard는
+          숨김 (둘 다 "이걸 입력하세요" 중복). 투어 닫거나 완료한 뒤에만 노출. */}
       {(() => {
         const ageDays = user?.createdAt ? Math.floor((Date.now() - new Date(user.createdAt).getTime()) / 86400000) : 0;
         if (ageDays >= 14) return null;
         return (
           <>
-            <InputProgressCard user={user} navigate={navigate} />
+            {!showTour && <InputProgressCard user={user} navigate={navigate} />}
             <NotificationBanner user={user} />
           </>
         );
@@ -289,34 +244,45 @@ export function Dashboard({ user, navigate }) {
       {/* 건강지표 입력 시 자동 unlock — 항상 노출 (건강지표 입력자에만 보임) */}
       <UnlockedInsights user={user} />
 
-      {/* 요약 카드 — TOSS 톤: 1 큰 hero + 3 보조 */}
+      {/* ===== 내 진행 — 누적 감량 + 미니 stat + 체중 차트 1카드 통합 (Dashboard 다이어트) =====
+          기존 Summary 4카드 + 체중차트 + 코호트 테이블 카드가 같은 질문을 반복하던 걸 합침.
+          코호트 페이스는 CoachReport가 이미 보여주므로 여기선 "전체 통계 →" link만. */}
       {summary ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Hero 카드 — 누적 감량 */}
-          <div className="sm:col-span-3 card !p-5 sm:!p-6 border-2 border-brand-200 dark:border-brand-800/40 bg-gradient-to-br from-brand-50 to-white dark:from-brand-900/15 dark:to-slate-900">
-            <div className="text-xs text-ink-500 dark:text-slate-400 font-medium">
-              {current ? '현재 약 누적 감량' : '시작 대비 감량'}
-            </div>
-            <div className="mt-2 flex items-baseline gap-3 flex-wrap">
-              <div className={`text-5xl sm:text-6xl font-extrabold tabular-nums tracking-tight ${summary.lossKg > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {summary.lossKg > 0 ? '−' : '+'}{Math.abs(summary.lossKg).toFixed(1)}
-                <span className="text-2xl ml-1">kg</span>
+        <div className="card !p-5 sm:!p-6 border-2 border-brand-200 dark:border-brand-800/40 bg-gradient-to-br from-brand-50/60 to-white dark:from-brand-900/15 dark:to-slate-900">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-xs text-ink-500 dark:text-slate-400 font-medium">
+                {current ? '현재 약 누적 감량' : '시작 대비 감량'}
               </div>
-              <div className="text-base text-ink-500 dark:text-slate-400 tabular-nums">
-                ({Math.abs(summary.lossPct).toFixed(1)}%)
+              <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+                <div className={`text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight ${summary.lossKg > 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  {summary.lossKg > 0 ? '−' : '+'}{Math.abs(summary.lossKg).toFixed(1)}
+                  <span className="text-xl ml-1">kg</span>
+                </div>
+                <div className="text-sm text-ink-500 dark:text-slate-400 tabular-nums">
+                  ({Math.abs(summary.lossPct).toFixed(1)}%)
+                </div>
               </div>
             </div>
+            <button onClick={() => navigate('stats')} className="btn-secondary !py-1.5 !px-3 text-xs flex-shrink-0">
+              코호트 비교 →
+            </button>
           </div>
-          {/* 보조 3개 */}
-          <SummaryCard label="현재 BMI"
-                       value={summary.curBmi?.toFixed(1) ?? '—'}
-                       sub={summary.curBmi ? bmiCategory(summary.curBmi) : ''} />
-          <SummaryCard label="목표까지"
-                       value={summary.targetRemaining > 0 ? `${summary.targetRemaining.toFixed(1)} kg` : '도달 🎉'}
-                       sub={`목표 ${user.targetWeight} kg`} />
-          <SummaryCard label="기록 누적"
-                       value={`${logs.length}회`}
-                       sub={`${summary.weeks}주차`} />
+
+          {/* 미니 stat 3 — thin row */}
+          <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+            <MiniStat label="현재 BMI" value={summary.curBmi?.toFixed(1) ?? '—'} sub={summary.curBmi ? bmiCategory(summary.curBmi) : ''} />
+            <MiniStat label="목표까지" value={summary.targetRemaining > 0 ? `${summary.targetRemaining.toFixed(1)}kg` : '도달 🎉'} sub={`목표 ${user.targetWeight}kg`} />
+            <MiniStat label="기록" value={`${logs.length}회`} sub={`${summary.weeks}주차`} />
+          </div>
+
+          {/* 체중 차트 — 같은 카드 안에 시각 증거 */}
+          <div className="mt-4 pt-4 border-t border-ink-100 dark:border-slate-800">
+            <LineChart data={chartData} target={user.targetWeight} height={220} />
+            <p className="text-[10px] text-ink-400 dark:text-slate-600 text-center mt-1">
+              시작 {user.startWeight}kg → 목표 {user.targetWeight}kg
+            </p>
+          </div>
         </div>
       ) : (
         <div className="card text-center py-10">
@@ -326,41 +292,24 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* GoalWidget 제거 — Summary 보조 카드 '목표까지'와 중복 */}
-      {/* MiniTile 4 제거 — CoachReport의 이번 주 stat 3과 중복 */}
-
-      {/* 체중 차트 */}
-      <div className="card">
-        <div className="flex justify-between items-center mb-3">
-          <div>
-            <h2 className="section-title">체중 추이</h2>
-            <p className="section-subtitle">시작 {user.startWeight} kg → 목표 {user.targetWeight} kg</p>
-          </div>
-        </div>
-        <LineChart data={chartData} target={user.targetWeight} height={240} />
-      </div>
-
-      {/* 현재 사용 중인 약 */}
+      {/* 현재 사용 중인 약 — 1줄 compact */}
       {activeMeds.length > 0 && (
-        <div className="card">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="section-title">진행 중인 약 ({activeMeds.length})</h2>
+        <div className="card !py-3">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-sm font-bold text-ink-900 dark:text-slate-100">진행 중인 약</h2>
             <button onClick={() => navigate('meds')} className="btn-ghost text-xs">관리 →</button>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {activeMeds.map(c => {
               const cDoses = doses.filter(d => d.courseId === c.id);
               const lastDose = cDoses[cDoses.length - 1];
               const weeks = weeksSinceStart(new Date(), c.startDate);
               return (
-                <div key={c.id} className="flex justify-between items-center p-3 rounded-xl bg-brand-50/50 dark:bg-brand-900/20">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-ink-900 dark:text-slate-100">{MED_BY_ID[c.medication]?.label}</div>
-                    <div className="text-xs text-ink-500 dark:text-slate-400">
-                      {weeks}주차 · {cDoses.length}회 투약
-                      {lastDose && <> · 최근 {lastDose.date} {lastDose.dose}</>}
-                    </div>
-                  </div>
+                <div key={c.id} className="flex justify-between items-center text-sm">
+                  <span className="font-semibold text-ink-900 dark:text-slate-100">{MED_BY_ID[c.medication]?.label.replace(/\s*\(.+\)/, '')}</span>
+                  <span className="text-xs text-ink-500 dark:text-slate-400 tabular-nums">
+                    {weeks}주차 · {cDoses.length}회{lastDose && <> · {lastDose.dose}</>}
+                  </span>
                 </div>
               );
             })}
@@ -368,32 +317,10 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 비슷한 사용자 비교 */}
-      <div className="card">
-        <div className="flex justify-between items-center mb-3 flex-wrap gap-2">
-          <div>
-            <h2 className="section-title">나와 비슷한 사용자 비교</h2>
-            <p className="section-subtitle">
-              {current
-                ? <>같은 약제·성별·비슷한 BMI 코호트와 비교</>
-                : <>약 시작 후 비교가 활성화됩니다. 통계 페이지에서 자유롭게 둘러볼 수 있어요.</>}
-            </p>
-          </div>
-          <button onClick={() => navigate('stats')} className="btn-secondary !py-2 !px-3 text-xs">
-            전체 통계 →
-          </button>
-        </div>
-        {current && cohortN > 0 ? (
-          <CohortTable cohortCurve={cohortCurve} mine={summary} startWeight={summary?.startWeight ?? user.startWeight} />
-        ) : (
-          <button onClick={() => navigate('stats')} className="w-full text-sm text-brand-700 dark:text-brand-400 underline py-2">
-            통계 페이지로 이동
-          </button>
-        )}
-      </div>
-
-      {/* Rebound 카드 제거 — Statistics 페이지의 StopProjector + CoachReport 정체 panel로 대체.
-          Dashboard에 중복 노출하면 노이즈 증가. visitPurpose='stopped' 사용자는 PurposeCard가 안내. */}
+      {/* 코호트 비교 테이블 카드 제거 — CoachReport가 본인 vs 코호트 페이스를 이미 보여줌.
+          상세 테이블은 /stats. 위 '내 진행' 카드의 "코호트 비교 →" link로 이동.
+          stallAlert 카드 제거 — CoachReport 정체기 panel 중복.
+          SideEffectInsightWidget 제거 — /stats로 이동, Dashboard 노이즈 감소. */}
 
       {/* 다이어트만 사용자 전용 안내 */}
       {isDietOnly && (
@@ -426,34 +353,11 @@ export function Dashboard({ user, navigate }) {
         </div>
       )}
 
-      {/* 정체기 감지 */}
-      {stallAlert && (
-        <div className="card border border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/15">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">📉</div>
-            <div className="flex-1">
-              <h2 className="section-title">정체기 가능성</h2>
-              <p className="text-sm text-ink-700 dark:text-slate-300 mt-1">
-                최근 4번 체중 기록의 변동이 <b>{stallAlert.range.toFixed(1)} kg</b>밖에 안 됩니다.
-                약 효과가 둔해지는 시점일 수 있어요.
-              </p>
-              <ul className="text-sm text-ink-700 dark:text-slate-300 mt-2 space-y-1 list-disc list-inside">
-                <li>주당 운동 시간 늘리기 (이번 주 {thisWeek.exMinutes}분 → +50%)</li>
-                <li>단백질 섭취 점검 — 근손실 방지</li>
-                <li>의료진과 용량 조정 상의</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 정체기 감지 카드 제거 — CoachReport 정체기 panel이 이미 처리.
+          부작용 인사이트(SideEffectInsightWidget) 제거 — /stats로 이동, Dashboard 노이즈 감소. */}
 
-      {/* 부작용 인사이트 — 본인 vs 코호트 비교 + 관리 팁 */}
-      <SideEffectInsightWidget user={user} navigate={navigate} />
-
-      {/* 누적 약값 분석 (1달+) */}
+      {/* 누적 약값 분석 (1달+) — 비용민감 사용자에게 가치, 조건부 노출이라 유지 */}
       <CostInsightCard user={user} navigate={navigate} />
-
-      {/* 부작용 chip fallback 제거 — SideEffectInsightWidget로 대체 (위에 이미 있음) */}
     </div>
   );
 }
@@ -464,13 +368,16 @@ function shortDate(iso) {
 }
 
 // Dashboard 상단 공유 버튼 — 클릭 시 popover로 ShareButtons 노출 (P15 페르소나)
-function DashboardShareButton({ user }) {
+function DashboardShareButton({ user, iconOnly = false }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)}
-              className="inline-flex items-center gap-1 !py-1.5 !px-3 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 font-semibold transition border border-emerald-200 dark:border-emerald-800/40">
-        📤 공유
+              aria-label="공유"
+              className={iconOnly
+                ? 'inline-flex items-center justify-center w-8 h-8 rounded-lg text-base text-ink-600 dark:text-slate-400 hover:bg-ink-100 dark:hover:bg-slate-800 transition'
+                : 'inline-flex items-center gap-1 !py-1.5 !px-3 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 font-semibold transition border border-emerald-200 dark:border-emerald-800/40'}>
+        {iconOnly ? '📤' : '📤 공유'}
       </button>
       {open && (
         <div className="fixed inset-0 z-40 bg-ink-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn"
@@ -491,79 +398,13 @@ function DashboardShareButton({ user }) {
   );
 }
 
-function SummaryCard({ label, value, sub, highlight }) {
+// '내 진행' 카드 안의 thin stat — 큰 카드 대신 한 줄로 압축 (Dashboard 다이어트)
+function MiniStat({ label, value, sub }) {
   return (
-    <div className="card !p-4">
-      <div className="text-xs text-ink-500 dark:text-slate-400">{label}</div>
-      <div className={`text-2xl font-extrabold tabular-nums mt-0.5 ${highlight ? 'text-brand-600 dark:text-brand-400' : 'text-ink-900 dark:text-slate-100'}`}>
-        {value}
-      </div>
-      {sub && <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">{sub}</div>}
-    </div>
-  );
-}
-
-function MiniTile({ icon, label, value, sub, onClick }) {
-  return (
-    <button onClick={onClick} className="card !p-3 text-left hover:shadow-cardHover transition">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
-        <div className="text-xs text-ink-500 dark:text-slate-400">{label}</div>
-      </div>
-      <div className="text-lg font-bold tabular-nums text-ink-900 dark:text-slate-100 mt-1">{value}</div>
-      {sub && <div className="text-[10px] text-ink-500 dark:text-slate-500">{sub}</div>}
-    </button>
-  );
-}
-
-function CohortTable({ cohortCurve, mine, startWeight }) {
-  const myWeeks = mine?.weeks ?? 0;
-  const toKg = (pct) => pct != null && startWeight ? (startWeight * pct / 100) : null;
-  const cohortMax = Math.max(...cohortCurve.map(c => c.n || 0), 1);
-  return (
-    <div className="overflow-x-auto -mx-2">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left text-ink-500 dark:text-slate-400">
-            <th className="py-2 px-2 font-medium">주차</th>
-            <th className="py-2 px-2 font-medium text-right">코호트 평균</th>
-            <th className="py-2 px-2 font-medium text-right">중앙값</th>
-            <th className="py-2 px-2 font-medium text-right" title="해당 주차까지 추적된 코호트 비율">추적률</th>
-          </tr>
-        </thead>
-        <tbody>
-          {cohortCurve.map(c => {
-            const reached = myWeeks >= c.week;
-            const avgKg = toKg(c.avg);
-            const medianKg = toKg(c.median);
-            const trackPct = Math.round((c.n / cohortMax) * 100);
-            return (
-              <tr key={c.week} className={`border-t border-ink-100 dark:border-slate-800 ${reached ? 'bg-brand-50/50 dark:bg-brand-900/20' : ''}`}>
-                <td className="py-2 px-2">
-                  {c.week}주{reached && <span className="ml-1 text-[10px] text-brand-700 dark:text-brand-400">↑</span>}
-                </td>
-                <td className="py-2 px-2 text-right tabular-nums">
-                  {avgKg != null ? (
-                    <>
-                      <span className="text-ink-900 dark:text-slate-100 font-semibold">−{avgKg.toFixed(1)} kg</span>
-                      <span className="text-ink-300 dark:text-slate-600 text-xs ml-1">({c.avg.toFixed(1)}%)</span>
-                    </>
-                  ) : '—'}
-                </td>
-                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">
-                  {medianKg != null ? `−${medianKg.toFixed(1)} kg` : '—'}
-                </td>
-                <td className="py-2 px-2 text-right tabular-nums text-ink-500 dark:text-slate-500">{trackPct}%</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-      {startWeight && (
-        <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2 text-right">
-          본인 시작 체중 {startWeight} kg 기준 환산
-        </p>
-      )}
+    <div className="rounded-lg bg-white/70 dark:bg-slate-800/50 py-2 px-1">
+      <div className="text-[10px] text-ink-500 dark:text-slate-400">{label}</div>
+      <div className="text-base font-bold tabular-nums text-ink-900 dark:text-slate-100 mt-0.5 leading-none">{value}</div>
+      {sub && <div className="text-[9px] text-ink-400 dark:text-slate-500 mt-0.5 truncate">{sub}</div>}
     </div>
   );
 }

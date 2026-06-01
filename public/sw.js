@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v33';  // bumped 2026-06-01: 페르소나 라운드3 옵션X 8건 — 보안 + UI 버그 + sitemap
+const VERSION = 'v34';  // bumped 2026-06-01: Dashboard 다이어트 — 15위젯 → 핵심 6~7개, 중복 제거
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
