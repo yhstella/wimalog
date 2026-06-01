@@ -64,15 +64,21 @@ export function CompareDrugsPage({ navigate, user }) {
   const sideByMed = supaSideByMed || localSideByMed;
   const priceByMed = supaPriceByMed || localPriceByMed;
 
-  // 가성비 점수 — 12주 감량 kg / 12주 약값 (3박스). g/만원 단위 (P53·P16 페르소나 — 가성비 best 추천).
-  const valueScore = (drugId) => {
-    const c12 = compare12.find(c => c.id === drugId);
-    const price = priceByMed[drugId];
-    if (!c12?.avg || !price) return null;
-    const lossKg = refWeight * Math.abs(c12.avg) / 100;
-    const cost12wkMan = 3 * price / 10000; // 3박스 = 12주, 만원 단위
-    return Math.round(lossKg * 1000 / cost12wkMan); // g per 만원
-  };
+  // 가성비 점수 — 12주 감량 kg / 12주 약값 (3박스). g/만원 단위 (P53·P16 페르소나).
+  // useMemo로 안정화 — sortKey/bestValueId가 stale closure로 갱신 누락되던 문제 fix (B14).
+  const valueScores = useMemo(() => {
+    const out = {};
+    for (const id of Object.keys(DRUG_CONTENT)) {
+      const c12 = compare12.find(c => c.id === id);
+      const price = priceByMed[id];
+      if (!c12?.avg || !price) { out[id] = null; continue; }
+      const lossKg = refWeight * Math.abs(c12.avg) / 100;
+      const cost12wkMan = 3 * price / 10000;
+      out[id] = Math.round(lossKg * 1000 / cost12wkMan);
+    }
+    return out;
+  }, [compare12, priceByMed, refWeight]);
+  const valueScore = (drugId) => valueScores[drugId] ?? null;
 
   // 정렬 — TOSS 톤: 사용자가 원하는 기준으로 정렬
   const [sortKey, setSortKey] = useState('default');  // 'default' | 'loss' | 'side' | 'price' | 'value'
@@ -92,19 +98,19 @@ export function CompareDrugsPage({ navigate, user }) {
       return [...list].sort((a, b) => (priceByMed[a.id] ?? Infinity) - (priceByMed[b.id] ?? Infinity));
     }
     if (sortKey === 'value') {
-      return [...list].sort((a, b) => (valueScore(b.id) ?? 0) - (valueScore(a.id) ?? 0));
+      return [...list].sort((a, b) => (valueScores[b.id] ?? 0) - (valueScores[a.id] ?? 0));
     }
     return list;
-  }, [sortKey, compare12, sideByMed, priceByMed]);
+  }, [sortKey, compare12, sideByMed, priceByMed, valueScores]);
   // 최고 가성비 약 — 1위 표시
   const bestValueId = useMemo(() => {
     let bestId = null, bestVal = 0;
     for (const id of Object.keys(DRUG_CONTENT)) {
-      const v = valueScore(id);
+      const v = valueScores[id];
       if (v != null && v > bestVal) { bestVal = v; bestId = id; }
     }
     return bestId;
-  }, [compare12, priceByMed]);
+  }, [valueScores]);
 
   const SortHeader = ({ col, label, align = 'right' }) => (
     <th className={`py-2 px-2 text-${align} ${col ? 'cursor-pointer hover:text-brand-700 dark:hover:text-brand-400 transition select-none' : ''}`}

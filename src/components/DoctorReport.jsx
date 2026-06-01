@@ -129,14 +129,35 @@ export function DoctorReport({ user, onBack }) {
     document.body.removeChild(a); URL.revokeObjectURL(url);
   };
   const exportJSON = () => {
+    // PII 제거 + 익명화. id/userId/nickname/email/avatarUrl 등 환자 식별 정보 모두 strip.
+    // 시점·체중·약·용량 등 의학적 의사 결정에 필요한 정보만 export.
+    const stripPII = (obj, extraKeys = []) => {
+      const omit = new Set(['id', 'userId', 'courseId', 'createdAt', 'updatedAt',
+                            'nickname', 'email', 'avatarUrl', 'submittedBy', 'authProvider',
+                            'visitPurpose', 'initialSetupComplete', ...extraKeys]);
+      const out = {};
+      for (const [k, v] of Object.entries(obj || {})) {
+        if (!omit.has(k)) out[k] = v;
+      }
+      return out;
+    };
     const payload = {
-      meta: { generatedAt: new Date().toISOString(), source: 'wimalog', schemaVersion: 1 },
+      meta: {
+        generatedAt: new Date().toISOString(),
+        source: 'wimalog',
+        schemaVersion: 1,
+        notice: '익명화된 임상 데이터. 환자 식별자(id·닉네임·이메일 등)는 제거됨.',
+      },
       patient: {
         gender: user.gender, ageGroup: user.ageGroup, height: user.height,
         startWeight: user.startWeight, targetWeight: user.targetWeight,
         conditions: user.conditions || {},
+        conditionsChecked: !!user.conditionsChecked,
       },
-      logs, courses, doses, exercises,
+      logs:      logs.map(l => stripPII(l)),
+      courses:   courses.map(c => stripPII(c, ['seed'])),
+      doses:     doses.map(d => stripPII(d, ['seed', 'pharmacyName', 'region', 'price'])),
+      exercises: exercises.map(e => stripPII(e)),
     };
     downloadBlob(`wimalog-export-${new Date().toISOString().slice(0,10)}.json`,
                  JSON.stringify(payload, null, 2), 'application/json');

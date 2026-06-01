@@ -29,31 +29,46 @@ function SafetyGuideHighlights({ navigate }) {
   );
 }
 
-// 교육·전략 가이드 — Info 페이지 중단에 카테고리별 노출
+// 교육·전략 가이드 — Info 페이지 중단에 카테고리별 노출. 4 + 3 그리드.
 function EducationGuides({ navigate }) {
-  const edu = [
+  // 결정 가이드 (4개) — 약 선택·전략
+  const decisions = [
     { id: 'surgery-vs-glp1',  icon: '⚖️', title: '비만 수술 vs GLP-1',     desc: '효과·비용·위험·지속성 비교' },
     { id: 'exercise-synergy', icon: '🏋', title: '운동 + GLP-1 시너지',    desc: '운동 지속자 1.4배 감량 데이터' },
     { id: 'maintenance',      icon: '🌳', title: '유지 단계 인정',         desc: '"더 안 빠진다"가 성공의 다음 단계' },
     { id: 'restart',          icon: '🔄', title: '중단 후 재시작 용량',    desc: '4주/12주 기준 용량 가이드' },
-    { id: 'sarcopenia',       icon: '💪', title: '근감소 모니터링',         desc: '인바디·단백질·근력운동 핵심' },
-    { id: 'caregiver',        icon: '👨‍👩‍👧', title: '가족 가이드',         desc: '도와주는 사람을 위한 안내' },
-    { id: 'plateau-causes',   icon: '🔍', title: '정체기 원인 다양화',     desc: '약·식이·운동·수면·호르몬' },
   ];
+  // 모니터링·맥락 (3개)
+  const monitoring = [
+    { id: 'sarcopenia',       icon: '💪', title: '근감소 모니터링',         desc: '인바디·단백질·근력운동 핵심' },
+    { id: 'plateau-causes',   icon: '🔍', title: '정체기 원인 다양화',     desc: '약·식이·운동·수면·호르몬' },
+    { id: 'caregiver',        icon: '👨‍👩‍👧‍👦', title: '가족 가이드',     desc: '도와주는 사람을 위한 안내' },
+  ];
+  const renderCard = (s) => (
+    <button key={s.id} onClick={() => navigate?.(`guide/${s.id}`)}
+            className="text-left rounded-xl bg-white dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition border border-ink-200 dark:border-slate-700 hover:border-brand-300 p-2.5">
+      <div className="text-base">{s.icon}</div>
+      <div className="text-[12px] font-bold text-ink-900 dark:text-slate-100 mt-0.5 leading-tight">{s.title}</div>
+      <div className="text-[10px] text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">{s.desc}</div>
+    </button>
+  );
   return (
-    <div className="rounded-2xl border border-ink-200 dark:border-slate-700 p-4">
-      <div className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-slate-400 mb-2">
-        📚 교육·전략 가이드
+    <div className="rounded-2xl border border-ink-200 dark:border-slate-700 p-4 space-y-3">
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-slate-400 mb-2">
+          📚 결정·전략 가이드
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {decisions.map(renderCard)}
+        </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {edu.map(s => (
-          <button key={s.id} onClick={() => navigate?.(`guide/${s.id}`)}
-                  className="text-left rounded-xl bg-white dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-900/15 transition border border-ink-200 dark:border-slate-700 hover:border-brand-300 p-2.5">
-            <div className="text-base">{s.icon}</div>
-            <div className="text-[12px] font-bold text-ink-900 dark:text-slate-100 mt-0.5 leading-tight">{s.title}</div>
-            <div className="text-[10px] text-ink-500 dark:text-slate-400 mt-0.5 leading-snug">{s.desc}</div>
-          </button>
-        ))}
+      <div>
+        <div className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-slate-400 mb-2">
+          🔬 모니터링·맥락
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          {monitoring.map(renderCard)}
+        </div>
       </div>
     </div>
   );

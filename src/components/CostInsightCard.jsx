@@ -57,17 +57,15 @@ export function CostInsightCard({ user, navigate }) {
   return (
     <section className="card border-2 border-amber-300 dark:border-amber-800/60 bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/15 dark:to-slate-900">
       {/* 누적 약값 hero — 큰 숫자 (P7·P12 페르소나 — "어디서 보이는지 모르겠음") */}
-      <div className="flex items-start justify-between gap-3 mb-3 flex-wrap">
-        <div className="flex items-start gap-3">
-          <div className="text-3xl flex-shrink-0">💰</div>
-          <div>
-            <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">누적 약값</div>
-            <div className="text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight text-amber-700 dark:text-amber-400 mt-0.5">
-              {(totalCost / 10000).toFixed(0)}<span className="text-xl">만원</span>
-            </div>
-            <div className="text-[11px] text-ink-500 dark:text-slate-400 mt-0.5">
-              가입 후 {ageDays}일 · {doseCount}회 투약
-            </div>
+      <div className="flex items-center gap-3 mb-4">
+        <div className="text-3xl sm:text-4xl flex-shrink-0">💰</div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300">누적 약값</div>
+          <div className="text-4xl sm:text-5xl font-extrabold tabular-nums tracking-tight text-amber-700 dark:text-amber-400 mt-0.5 leading-none">
+            {(totalCost / 10000).toFixed(0)}<span className="text-xl">만원</span>
+          </div>
+          <div className="text-[11px] text-ink-500 dark:text-slate-400 mt-1">
+            가입 후 {ageDays}일 · {doseCount}회 투약
           </div>
         </div>
       </div>

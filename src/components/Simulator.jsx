@@ -407,15 +407,15 @@ export function Simulator({ onSignup, compact = false, user = null }) {
 
       {/* BMI 즉시 표시 — 입력값 변경 시 라이브 갱신 (P21 페르소나) */}
       {myBmi != null && (
-        <div className="mt-4 rounded-xl bg-white/15 backdrop-blur p-2.5 flex items-center justify-between gap-2">
+        <div className="mt-4 rounded-xl bg-white/15 backdrop-blur p-2.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <div className="flex items-center gap-2">
             <span className="text-[10px] opacity-80 uppercase tracking-wider">BMI</span>
             <span className="text-lg font-extrabold tabular-nums">{myBmi.toFixed(1)}</span>
             <span className="text-xs opacity-90">· {bmiCategory(myBmi)}</span>
           </div>
-          {/* 적응증 안내 — BMI 기반 정중한 안내 */}
-          <span className="text-[10px] opacity-80 leading-tight text-right">
-            {myBmi >= 30 ? '✓ 비만 적응증' : myBmi >= 27 ? '✓ 동반질환 있으면 적응증' : myBmi >= 25 ? '⚠ 동반질환 + 의사 상의' : '⚠ 정상 범위'}
+          {/* 적응증 안내 — BMI 기반 정중한 안내. 모바일에서 줄바꿈 허용. */}
+          <span className="text-[10px] opacity-80 leading-tight">
+            {myBmi >= 30 ? '✓ 비만 적응증' : myBmi >= 27 ? '✓ 동반질환 있으면 적응증' : myBmi >= 25 ? '⚠ 동반질환 + 의사 상의' : '⚠ 정상 범위 · 의사 상의'}
           </span>
         </div>
       )}

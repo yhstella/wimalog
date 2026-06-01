@@ -19,7 +19,8 @@ export function EarlyStageBanner({ user }) {
     if (!isStartDose) return null; // 시작 용량 아니면 banner 안 보임
 
     const courseStart = Date.parse(active.startDate);
-    const weeksUsing = Math.floor((Date.now() - courseStart) / (7 * 86400000));
+    // 미래 날짜 코스(예: 곧 시작 예정)는 0주 처리. 음수 weeksUsing은 banner 의미 없음.
+    const weeksUsing = Math.max(0, Math.floor((Date.now() - courseStart) / (7 * 86400000)));
     if (weeksUsing > 5) return null; // 5주 넘으면 시작 용량 단계 아님
 
     // 본인 감량 (시작 체중 - 최신 체중)

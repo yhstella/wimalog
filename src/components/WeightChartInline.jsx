@@ -502,15 +502,27 @@ export function WeightChartInline({ user, currentWeight, currentDate, currentDat
           );
         })}
 
-        {/* 약 변경 시점 vertical line — 코스 startDate (첫 코스 제외) (P19 페르소나) */}
+        {/* 약 변경 시점 vertical line — 코스 startDate (첫 코스 제외) (P19·P77 페르소나).
+            가까운 transition(20px 이내)이 있으면 Y stack으로 라벨 겹침 회피. */}
         {courseTransitions.map((t, i) => {
           const x = dateMsToX(Date.parse(t.date));
           const color = MED_COLORS[t.medication] || MED_COLORS.other;
+          // 이전 transition 중 본인 X와 20px 이내인 개수 → Y offset (14px씩 stack)
+          const stackIdx = courseTransitions.slice(0, i).filter(prev => {
+            const px = dateMsToX(Date.parse(prev.date));
+            return Math.abs(px - x) < 20;
+          }).length;
+          const labelY = PAD.top + 12 + stackIdx * 14;
+          // 그래프 우측 끝 가까우면 라벨 좌측으로
+          const rightSide = x < W - 70;
           return (
             <g key={'tr'+i}>
               <line x1={x} y1={PAD.top} x2={x} y2={H - PAD.bottom}
                     stroke={color} strokeWidth="1.5" strokeDasharray="6 3" strokeOpacity="0.75" />
-              <text x={x + 4} y={PAD.top + 12} fontSize="10" fill={color} fontWeight="700">
+              <text x={rightSide ? x + 4 : x - 4} y={labelY}
+                    textAnchor={rightSide ? 'start' : 'end'}
+                    fontSize="10" fill={color} fontWeight="700"
+                    stroke="white" strokeWidth="3" paintOrder="stroke">
                 ↔ {t.label}
               </text>
             </g>

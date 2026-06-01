@@ -31,6 +31,21 @@
   <url><loc>https://wimalog.kr/guide/sarcopenia</loc><priority>0.95</priority></url>
   <url><loc>https://wimalog.kr/guide/alcohol</loc><priority>0.95</priority></url>
 
+  <!-- 의료 안전 가이드 (페르소나 라운드2 추가) -->
+  <url><loc>https://wimalog.kr/guide/pregnancy</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/interactions</loc><priority>0.95</priority></url>
+  <url><loc>https://wimalog.kr/guide/mental-health</loc><priority>0.9</priority></url>
+
+  <!-- 결정·전략 가이드 -->
+  <url><loc>https://wimalog.kr/guide/surgery-vs-glp1</loc><priority>0.9</priority></url>
+  <url><loc>https://wimalog.kr/guide/exercise-synergy</loc><priority>0.9</priority></url>
+  <url><loc>https://wimalog.kr/guide/maintenance</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/restart</loc><priority>0.85</priority></url>
+
+  <!-- 모니터링·맥락 가이드 -->
+  <url><loc>https://wimalog.kr/guide/plateau-causes</loc><priority>0.85</priority></url>
+  <url><loc>https://wimalog.kr/guide/caregiver</loc><priority>0.7</priority></url>
+
   <!-- 기본 가이드 -->
   <url><loc>https://wimalog.kr/guide/before-use</loc><priority>0.85</priority></url>
   <url><loc>https://wimalog.kr/guide/first-month</loc><priority>0.85</priority></url>
