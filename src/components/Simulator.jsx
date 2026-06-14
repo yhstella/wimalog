@@ -5,6 +5,7 @@ import { MEDS, MED_BY_ID, PEN_INFO } from '../lib/constants.js';
 import { fetchAvgLossCurve } from '../lib/supabaseStats.js';
 import { snapshotAvgLossCurve, snapshotPlatformScale, snapshotPriceStats, snapshotSideEffectRates } from '../lib/snapshot.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
+import { trackOnce } from '../lib/analytics.js';
 import { ProjectionChart } from './ProjectionChart.jsx';
 
 // 슬라이더 + 즉시 예측 결과 위젯
@@ -29,7 +30,13 @@ export function Simulator({ onSignup, compact = false, user = null }) {
   // 사용자가 직접 입력했는지 — 가입자 본인 데이터 있거나 sessionStorage prefill 있으면 이미 touched.
   // 첫 진입자에게는 디폴트 값(162/78)이 "예시"임을 명시하기 위함. P6 페르소나 피드백.
   const [touched, setTouched] = useState(() => !!user?.height || !!loaded);
-  const markTouched = () => { if (!touched) setTouched(true); };
+  const markTouched = () => {
+    if (!touched) {
+      setTouched(true);
+      // funnel: 비가입자가 시뮬레이터를 실제로 만지기 시작한 시점 (방문→관심 전환)
+      if (!user) trackOnce('sim_interact');
+    }
+  };
   // 가입자 추가 입력 — 정확도 향상에 기여
   const [gender, setGender] = useState(user?.gender || loaded?.gender || null);
   const [ageGroup, setAgeGroup] = useState(user?.ageGroup || loaded?.ageGroup || null);

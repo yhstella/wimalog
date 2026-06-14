@@ -3,6 +3,7 @@ import { Storage, uid } from '../lib/storage.js';
 import { bmi, bmiCategory } from '../lib/stats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { signInWithOAuth } from '../lib/auth.js';
+import { track, trackOnce } from '../lib/analytics.js';
 import { DialInput } from './DialInput.jsx';
 
 /* ============================================================
@@ -148,6 +149,8 @@ export function QuickSignupModal({ onClose, onComplete }) {
     }
     setOauthError(null);
     setOauthLoading(provider);
+    // funnel: OAuth 가입 시도 시작 (redirect 전). 완료는 콜백 후 별도 측정 가능.
+    track('oauth_start', { provider });
     try {
       await signInWithOAuth(provider);
       // 위 호출은 페이지 redirect를 일으킴 → 아래 코드는 실행 안 됨
@@ -223,6 +226,8 @@ export function QuickSignupModal({ onClose, onComplete }) {
     });
     Storage.setSession(userId);
     try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
+    // funnel: 가입 완료 (익명 경로). method/purpose로 어느 경로가 전환되는지 본다.
+    track('signup_complete', { method: 'anonymous', purpose: data.visitPurpose, referred: !!referralCode });
     onComplete(userId);
   };
 
@@ -232,6 +237,9 @@ export function QuickSignupModal({ onClose, onComplete }) {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // funnel: 가입 모달 노출 (세션당 1회) — 시뮬레이터→가입 전환의 중간 단계
+  useEffect(() => { trackOnce('signup_modal_open', { prefilled: !!prefill }); }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink-900/60 backdrop-blur-sm p-0 sm:p-4 animate-fadeIn"

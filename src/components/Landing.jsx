@@ -5,6 +5,7 @@ import { Simulator } from './Simulator.jsx';
 import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
 import { SafetyChecklist } from './SafetyChecklist.jsx';
+import { EncouragementWall } from './EncouragementWall.jsx';
 
 const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
 
@@ -129,6 +130,9 @@ export function Landing({ navigate, onSignup, user }) {
 
       {/* 위마로그 코호트 LIVE — 우리 데이터 강조 (가짜 사이트 느낌 방지) */}
       <CohortLive navigate={navigate} onSignup={handleSignup} user={user} />
+
+      {/* 응원의 한마디 — 익명 응원 wall (사회적 증거 + 정서적 끌림) */}
+      <EncouragementWall user={user} navigate={navigate} onSignup={handleSignup} variant="landing" limit={5} />
 
       {/* 약국 가격 디렉토리 진입 — 다른 사이트엔 없는 차별점 */}
       <section>

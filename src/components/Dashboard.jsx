@@ -23,6 +23,7 @@ import { ShareButtons } from './Share.jsx';
 import { ShareCardModal } from './ShareCardModal.jsx';
 import { EarlyStageBanner } from './EarlyStageBanner.jsx';
 import { SideEffectQuickWidget } from './SideEffectQuickWidget.jsx';
+import { EncouragementWall } from './EncouragementWall.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
@@ -359,6 +360,9 @@ export function Dashboard({ user, navigate }) {
 
       {/* 누적 약값 분석 (1달+) — 비용민감 사용자에게 가치, 조건부 노출이라 유지 */}
       <CostInsightCard user={user} navigate={navigate} />
+
+      {/* 응원의 한마디 — 정서적 끌림 + 재방문 트리거 (리텐션) */}
+      <EncouragementWall user={liveUser} navigate={navigate} variant="dashboard" limit={4} />
     </div>
   );
 }
