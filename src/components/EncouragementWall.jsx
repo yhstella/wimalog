@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useToast } from './Toast.jsx';
 import {
   fetchRecentEncouragements, submitEncouragement, reportEncouragement,
@@ -57,6 +57,16 @@ export function EncouragementWall({ user, navigate, onSignup, variant = 'default
   const [items, setItems] = useState(null);   // null = 로딩
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
+  const inputRef = useRef(null);
+
+  // 마일스톤 등 외부에서 "응원 남기기"로 유도 시 입력창 포커스 (콘텐츠 엔진)
+  useEffect(() => {
+    const onFocus = () => {
+      try { inputRef.current?.focus(); inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+    };
+    window.addEventListener('wimalog:encourage-focus', onFocus);
+    return () => window.removeEventListener('wimalog:encourage-focus', onFocus);
+  }, []);
 
   const load = useCallback(async () => {
     const remote = await fetchRecentEncouragements(Math.max(limit, 12));
@@ -136,7 +146,7 @@ export function EncouragementWall({ user, navigate, onSignup, variant = 'default
   const compact = variant === 'dashboard';
 
   return (
-    <section className={compact
+    <section id="encouragement-wall" className={compact
       ? 'card !p-4'
       : 'rounded-2xl bg-gradient-to-br from-rose-50 to-amber-50 dark:from-rose-900/15 dark:to-amber-900/10 border border-rose-100 dark:border-rose-900/30 p-5 sm:p-6'}>
       <div className="flex items-end justify-between mb-3 gap-2">
@@ -154,6 +164,7 @@ export function EncouragementWall({ user, navigate, onSignup, variant = 'default
       {user ? (
         <form onSubmit={submit} className="flex gap-2 mb-4">
           <input
+            ref={inputRef}
             type="text" value={text}
             onChange={e => setText(e.target.value)}
             maxLength={MAX_LEN}

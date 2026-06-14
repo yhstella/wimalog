@@ -24,6 +24,7 @@ import { ShareCardModal } from './ShareCardModal.jsx';
 import { EarlyStageBanner } from './EarlyStageBanner.jsx';
 import { SideEffectQuickWidget } from './SideEffectQuickWidget.jsx';
 import { EncouragementWall } from './EncouragementWall.jsx';
+import { RecordGapBanner } from './RecordGapBanner.jsx';
 // MotivationBanner 제거 — 감성 카피, 비즈니스 핵심 X
 
 const NEXT_ACTION_DISMISSED_KEY = 'gl_nextaction_dismissed';
@@ -149,6 +150,9 @@ export function Dashboard({ user, navigate }) {
           <DashboardShareButton user={liveUser} iconOnly />
         </div>
       </div>
+
+      {/* 기록 공백 넛지 — 마지막 기록 3일+ 경과 시 재방문 사용자에게 부드럽게 (리텐션) */}
+      <RecordGapBanner user={liveUser} navigate={navigate} />
 
       {/* 🎯 코치 리포트 — 최상단 hero. logs >= 2 + active course면 노출.
           신규(logs < 2) 또는 약 없음이면 MilestoneCard·PurposeCard로 자연 대체. */}

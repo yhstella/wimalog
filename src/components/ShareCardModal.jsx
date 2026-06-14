@@ -4,6 +4,7 @@ import { primaryCourse, personalSummaryForCourse } from '../lib/stats.js';
 import { snapshotAvgLossCurve } from '../lib/snapshot.js';
 import { MED_BY_ID } from '../lib/constants.js';
 import { useToast } from './Toast.jsx';
+import { track } from '../lib/analytics.js';
 
 // 결과 공유 카드 — 본인 데이터를 익명 PNG로 생성 → 카톡/저장/시스템 공유.
 // 유입(바이럴) + 리텐션(성취 자랑) + 데이터 강점(코호트 비교)을 한 번에.
@@ -164,6 +165,9 @@ export function ShareCardModal({ user, onClose }) {
   const [busy, setBusy] = useState(false);
   const data = useMemo(() => buildCardData(user), [user]);
 
+  // funnel: 결과 카드 열림 (바이럴 유입 측정 시작점)
+  useEffect(() => { track('share_card_open', { mode: data.mode }); }, []);
+
   useEffect(() => {
     const c = canvasRef.current;
     if (!c) return;
@@ -186,8 +190,10 @@ export function ShareCardModal({ user, onClose }) {
         : `위마로그 — 나는 얼마나 빠질까? ${data.medLabel} 예측 보기`;
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: '위마로그', text: `${shareText}\nhttps://wimalog.kr` });
+        track('share_card_share', { mode: data.mode });
       } else {
         downloadImage(blob);
+        track('share_card_save', { mode: data.mode, via: 'fallback' });
         toast?.show?.({ kind: 'success', msg: '이미지 저장됨 — 카톡·인스타에 올려보세요' });
       }
     } catch (e) {
@@ -205,7 +211,7 @@ export function ShareCardModal({ user, onClose }) {
 
   const saveImage = async () => {
     setBusy(true);
-    try { downloadImage(await toBlob()); toast?.show?.({ kind: 'success', msg: '이미지 저장됨' }); }
+    try { downloadImage(await toBlob()); track('share_card_save', { mode: data.mode }); toast?.show?.({ kind: 'success', msg: '이미지 저장됨' }); }
     finally { setBusy(false); }
   };
 

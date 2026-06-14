@@ -122,6 +122,18 @@ export function MilestoneCard({ user, navigate }) {
           <p className="mt-2 text-xs text-ink-600 dark:text-slate-400 leading-relaxed">
             {milestone.message}
           </p>
+          {/* 콘텐츠 엔진 — 의미있는 감량(≥1kg) 달성 시 응원 작성 유도.
+              감정적 고점에서 한마디를 남기게 해 wall을 자생적으로 채운다. */}
+          {lostKg >= 1 && (
+            <button
+              onClick={() => {
+                document.getElementById('encouragement-wall')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => { try { window.dispatchEvent(new CustomEvent('wimalog:encourage-focus')); } catch {} }, 350);
+              }}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 px-3 py-1.5 text-xs font-semibold hover:bg-rose-100 dark:hover:bg-rose-900/30 transition">
+              💬 −{Math.abs(lostKg).toFixed(1)}kg 달성! 같은 길 걷는 분들께 한마디
+            </button>
+          )}
         </div>
       </div>
     </section>
