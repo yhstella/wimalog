@@ -36,23 +36,29 @@ export function QuickWeightCard({ user, onSaved }) {
   const toggleSide = (id) => setSideEffects(s => ({ ...s, [id]: !s[id] }));
 
   const save = () => {
-    Storage.addLog({
-      id: uid('log'),
-      userId: user.id,
-      date: today,
-      weight: +weight,
-      appetiteChange: lastLog?.appetiteChange ?? 3,
-      satiety: lastLog?.satiety ?? 3,
-      sideEffects,
-      mealReduction: lastLog?.mealReduction ?? 3,
-      notes: '',
-      createdAt: new Date().toISOString(),
-    });
+    // 같은 날 기록이 이미 있으면 새 row 추가가 아니라 덮어쓰기 (중복 누적 방지)
+    if (todayLog) {
+      Storage.updateLog({ ...todayLog, weight: +weight, sideEffects });
+    } else {
+      Storage.addLog({
+        id: uid('log'),
+        userId: user.id,
+        date: today,
+        weight: +weight,
+        appetiteChange: lastLog?.appetiteChange ?? 3,
+        satiety: lastLog?.satiety ?? 3,
+        sideEffects,
+        mealReduction: lastLog?.mealReduction ?? 3,
+        notes: '',
+        createdAt: new Date().toISOString(),
+      });
+    }
     setSavedAt(Date.now());
     setTimeout(() => setSavedAt(null), 2000);
-    const msg = lastLog
-      ? `${(+weight).toFixed(1)} kg 기록됨 · 지난번 대비 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} kg`
-      : `${(+weight).toFixed(1)} kg 기록됨`;
+    const base = `${(+weight).toFixed(1)} kg ${todayLog ? '수정됨' : '기록됨'}`;
+    const msg = lastLog && !todayLog
+      ? `${base} · 지난번 대비 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} kg`
+      : base;
     onSaved?.(msg);
   };
 

@@ -17,6 +17,9 @@ export function DialInput({
   const railRef = useRef(null);
   const dragRef = useRef({ active: false, startX: 0, startVal: 0 });
   const [hoverDelta, setHoverDelta] = useState(0);
+  // 큰 숫자 탭 → 키보드 직접 입력 (체중계 숫자를 그대로 치고 싶은 경우. UX 감사 발견)
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
 
   // tick 사이 픽셀 폭 (값 1단위당)
   const PX_PER_STEP = 8;
@@ -73,6 +76,13 @@ export function DialInput({
   // 빠른 ± 버튼
   const bump = (n) => onChange(clamp(value + n * step));
 
+  // 직접 입력 커밋
+  const commitDraft = () => {
+    const v = parseFloat(draft);
+    if (!isNaN(v)) onChange(clamp(v));
+    setEditing(false);
+  };
+
   // tick 생성 — 현재 값 기준 ±25 step 범위 표시
   const RANGE = 25;
   const ticks = [];
@@ -89,15 +99,29 @@ export function DialInput({
         <div className="flex items-center justify-between mb-1">
           <span className="text-xs font-semibold text-ink-500 dark:text-slate-400">{label}</span>
           <span className={`text-xs ${highlight ? 'text-brand-700 dark:text-brand-400' : 'text-ink-500 dark:text-slate-500'}`}>
-            드래그 · 휠 · ± 버튼
+            탭하여 입력 · 드래그 · ±
           </span>
         </div>
       )}
 
-      {/* 현재 값 표시 */}
-      <div className={`text-center text-3xl font-extrabold tabular-nums ${highlight ? 'text-brand-700 dark:text-brand-400' : 'text-ink-900 dark:text-slate-100'}`}>
-        {Number(value).toFixed(step < 1 ? 1 : 0)}<span className="text-base font-bold opacity-70 ml-1">{unit}</span>
-      </div>
+      {/* 현재 값 표시 — 탭하면 키보드 직접 입력 */}
+      {editing ? (
+        <div className="flex items-center justify-center gap-1">
+          <input type="number" inputMode="decimal" autoFocus
+                 value={draft} step={step} min={min} max={max}
+                 onChange={e => setDraft(e.target.value)}
+                 onBlur={commitDraft}
+                 onKeyDown={e => { if (e.key === 'Enter') commitDraft(); if (e.key === 'Escape') setEditing(false); }}
+                 className="w-32 text-center text-3xl font-extrabold tabular-nums bg-transparent border-b-2 border-brand-400 focus:outline-none text-brand-700 dark:text-brand-400" />
+          <span className="text-base font-bold opacity-70">{unit}</span>
+        </div>
+      ) : (
+        <button type="button" onClick={() => { setDraft(String(value)); setEditing(true); }}
+                aria-label="값 직접 입력"
+                className={`block w-full text-center text-3xl font-extrabold tabular-nums ${highlight ? 'text-brand-700 dark:text-brand-400' : 'text-ink-900 dark:text-slate-100'}`}>
+          {Number(value).toFixed(step < 1 ? 1 : 0)}<span className="text-base font-bold opacity-70 ml-1">{unit}</span>
+        </button>
+      )}
 
       {/* 다이얼 — 가로 ruler */}
       <div className="relative mt-2 rounded-xl bg-gradient-to-b from-ink-100 to-white dark:from-slate-800 dark:to-slate-900 border border-ink-200 dark:border-slate-700 overflow-hidden">

@@ -180,6 +180,16 @@ export const CONDITIONS = [
   { id: 'thyroid',      label: '갑상선 질환' },
 ];
 
+// 방문 목적 — 가입(Paywall)·온보딩(InitialSetup) 공통 단일 소스.
+// 진입점마다 다르게 하드코딩돼 분기 데이터가 오염되던 문제 방지 (UX 감사 발견).
+export const VISIT_PURPOSE = [
+  { id: 'using',      icon: '💉', label: '약 사용 중' },
+  { id: 'planning',   icon: '🤔', label: '곧 시작 예정' },
+  { id: 'stopped',    icon: '⏸️', label: '중단 고려 중' },
+  { id: 'sideeffect', icon: '⚠️', label: '부작용 경험' },
+  { id: 'curious',    icon: '🔍', label: '그냥 알아보는 중' },
+];
+
 export const SIDE_EFFECTS = [
   { id: 'nausea',      label: '오심(메스꺼움)' },
   { id: 'vomiting',    label: '구토' },

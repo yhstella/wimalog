@@ -210,9 +210,9 @@ export function EncouragementWall({ user, navigate, onSignup, variant = 'default
               </div>
               {!item.seed && !item.mine && (
                 <button onClick={() => report(item)}
-                        title="신고"
-                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-[10px] text-ink-300 dark:text-slate-600 hover:text-rose-500 transition flex-shrink-0">
-                  신고
+                        title="신고" aria-label="이 응원 신고"
+                        className="flex-shrink-0 inline-flex items-center justify-center w-11 h-11 -my-2 rounded-lg text-ink-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition">
+                  🚩
                 </button>
               )}
             </div>

@@ -362,6 +362,9 @@ export function Dashboard({ user, navigate }) {
       {/* 정체기 감지 카드 제거 — CoachReport 정체기 panel이 이미 처리.
           부작용 인사이트(SideEffectInsightWidget) 제거 — /stats로 이동, Dashboard 노이즈 감소. */}
 
+      {/* 결과 카드 직접 진입 — 의미있는 기록(2회+) 있으면 popover 없이 hero CTA로 자랑 동선 단축 */}
+      {logs.length >= 2 && <DashboardShareButton user={liveUser} directCard />}
+
       {/* 누적 약값 분석 (1달+) — 비용민감 사용자에게 가치, 조건부 노출이라 유지 */}
       <CostInsightCard user={user} navigate={navigate} />
 
@@ -377,9 +380,26 @@ function shortDate(iso) {
 }
 
 // Dashboard 상단 공유 버튼 — 클릭 시 popover로 ShareButtons 노출 (P15 페르소나)
-function DashboardShareButton({ user, iconOnly = false }) {
+function DashboardShareButton({ user, iconOnly = false, directCard = false }) {
   const [open, setOpen] = useState(false);
   const [showCard, setShowCard] = useState(false);
+  // directCard: popover 2단계에 묻지 않고 결과 카드를 바로 연다 (자랑 동선 마찰 제거. UX 감사 발견)
+  if (directCard) {
+    return (
+      <>
+        <button onClick={() => setShowCard(true)}
+                className="w-full flex items-center gap-3 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white p-4 hover:shadow-cardHover transition text-left">
+          <span className="text-2xl flex-shrink-0">📸</span>
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-sm">내 결과 카드 만들기</div>
+            <div className="text-[11px] opacity-90">본인 감량 + 비슷한 사람 비교 · 익명 이미지로 자랑하기</div>
+          </div>
+          <span className="text-white/70">→</span>
+        </button>
+        {showCard && <ShareCardModal user={user} onClose={() => setShowCard(false)} />}
+      </>
+    );
+  }
   return (
     <div className="relative">
       <button onClick={() => setOpen(o => !o)}
@@ -403,7 +423,7 @@ function DashboardShareButton({ user, iconOnly = false }) {
               <span className="text-2xl flex-shrink-0">📸</span>
               <div className="min-w-0">
                 <div className="font-bold text-sm">내 결과 카드 만들기</div>
-                <div className="text-[11px] opacity-90">본인 감량 + 코호트 비교 · 익명 이미지</div>
+                <div className="text-[11px] opacity-90">본인 감량 + 비슷한 사람 비교 · 익명 이미지</div>
               </div>
             </button>
             <div className="text-[10px] text-ink-500 dark:text-slate-500 mb-1.5">링크로 공유</div>

@@ -27,11 +27,17 @@ export function ShareButtons({ title, text, url }) {
     }
   };
 
+  // 카카오 SDK 미도입 상태 — 사장된 story.kakao.com 대신 OS 공유 시트로.
+  // 모바일 공유 시트는 카카오톡을 최상단에 노출하므로 '톡으로 보내기'가 실제 동작.
   const kakaoShare = () => {
-    // 카카오 SDK 없이도 동작: 카카오톡 url scheme (모바일에서만 활성)
-    const enc = encodeURIComponent;
-    const u = `https://story.kakao.com/share?url=${enc(shareUrl)}&text=${enc(title + '\n' + text)}`;
-    window.open(u, '_blank', 'noopener,width=500,height=600');
+    if (navigator.share) {
+      navigator.share({ title, text, url: shareUrl }).catch(e => {
+        if (e?.name !== 'AbortError') copyLink();
+      });
+    } else {
+      copyLink();
+      toast.success('링크 복사됨 — 카톡에 붙여넣어 보내세요');
+    }
   };
 
   return (
@@ -47,7 +53,7 @@ export function ShareButtons({ title, text, url }) {
                 className="flex flex-col items-center gap-1 py-3 rounded-xl border border-transparent transition"
                 style={{ background: '#FEE500', color: '#191600' }}>
           <span className="text-lg">💬</span>
-          <span className="text-xs font-semibold">카카오</span>
+          <span className="text-xs font-semibold">카톡으로</span>
         </button>
         <button onClick={systemShare}
                 className="flex flex-col items-center gap-1 py-3 rounded-xl bg-white dark:bg-slate-800 border border-ink-200 dark:border-slate-700 hover:border-brand-400 transition">

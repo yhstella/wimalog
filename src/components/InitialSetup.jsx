@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Storage, uid } from '../lib/storage.js';
+import { VISIT_PURPOSE } from '../lib/constants.js';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -85,14 +86,10 @@ export function InitialSetup({ user, onDone }) {
               현재 어느 단계인가요?
             </div>
             <div className="grid grid-cols-2 gap-2">
-              {[
-                { id: 'using',      icon: '💉', label: '약 사용 중' },
-                { id: 'planning',   icon: '🤔', label: '곧 시작 예정' },
-                { id: 'stopped',    icon: '⏸️', label: '중단 고려 중' },
-                { id: 'sideeffect', icon: '⚠️', label: '부작용 경험' },
-              ].map(o => (
+              {VISIT_PURPOSE.map((o, i, arr) => (
                 <button key={o.id} type="button" onClick={() => setPurpose(o.id)}
                         className={`px-3 py-4 rounded-xl font-medium border-2 transition text-center
+                                    ${i === arr.length - 1 && arr.length % 2 === 1 ? 'col-span-2' : ''}
                                     ${purpose === o.id
                                       ? 'bg-brand-500 text-white border-brand-500 shadow-md'
                                       : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-200 dark:border-slate-700 hover:border-brand-400'}`}>

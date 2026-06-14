@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Storage, uid } from '../lib/storage.js';
+import { VISIT_PURPOSE } from '../lib/constants.js';
 import { bmi, bmiCategory } from '../lib/stats.js';
 import { supabaseConfigured } from '../lib/supabaseClient.js';
 import { signInWithOAuth } from '../lib/auth.js';
@@ -118,7 +119,12 @@ const readPrefill = () => {
 
 export function QuickSignupModal({ onClose, onComplete }) {
   const [step, setStep] = useState(0);
-  const [authProvider, setAuthProvider] = useState(null); // 'google' | 'kakao' | 'naver' | 'anonymous' | null
+  // 🔴 CRITICAL fix: authProvider가 truthy여야 입력 폼이 뜨는데, 이전엔 truthy로 세팅하는
+  //   경로가 전무해 익명 가입 폼이 도달 불가 dead code였음. 시뮬레이터 prefill이 있거나
+  //   소셜 로그인 미설정이면 즉시 익명 폼을 보여줘 가입을 막지 않는다.
+  const [authProvider, setAuthProvider] = useState(
+    () => (readPrefill() || !supabaseConfigured) ? 'anonymous' : null
+  ); // 'google' | 'anonymous' | null
   const [oauthError, setOauthError] = useState(null);
   const [oauthLoading, setOauthLoading] = useState(null); // provider id 또는 null
   // Simulator에서 입력한 값 자동 prefill — lazy user 마찰 제거
@@ -268,8 +274,16 @@ export function QuickSignupModal({ onClose, onComplete }) {
                   ⚠ {oauthError}
                 </div>
               )}
+              {/* 익명(계정 없이) 시작 — 한국 유저 다수가 소셜 로그인 회피. 핵심 진입로 */}
+              <div className="flex items-center gap-2 text-[11px] text-ink-400 dark:text-slate-600">
+                <span className="h-px flex-1 bg-ink-200 dark:bg-slate-700" />또는<span className="h-px flex-1 bg-ink-200 dark:bg-slate-700" />
+              </div>
+              <button onClick={() => setAuthProvider('anonymous')}
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-ink-300 dark:border-slate-600 px-4 py-3 font-bold text-ink-800 dark:text-slate-200 hover:border-brand-400 hover:bg-brand-50/40 dark:hover:bg-brand-900/15 transition">
+                계정 없이 바로 시작 →
+              </button>
               <p className="text-[11px] text-ink-500 dark:text-slate-500 text-center leading-relaxed">
-                Google 계정으로 안전하게 시작하세요.
+                계정 없이 시작하면 데이터는 이 기기에 저장돼요. Google로 시작하면 기기 간 동기화됩니다.
               </p>
             </>
           )}
@@ -278,9 +292,9 @@ export function QuickSignupModal({ onClose, onComplete }) {
           {authProvider && (
           <>
           <div className="rounded-lg bg-ink-100 dark:bg-slate-800 px-3 py-2 text-xs text-ink-700 dark:text-slate-300 flex items-center justify-between">
-            <span>🔵 Google로 시작합니다</span>
+            <span>{authProvider === 'anonymous' ? '🕶️ 계정 없이 익명으로 시작합니다' : '🔵 Google로 시작합니다'}</span>
             <button onClick={() => setAuthProvider(null)} className="text-brand-700 dark:text-brand-400 underline">
-              변경
+              {authProvider === 'anonymous' ? 'Google로 전환' : '변경'}
             </button>
           </div>
           {data._prefilled && (
@@ -306,13 +320,7 @@ export function QuickSignupModal({ onClose, onComplete }) {
           <div>
             <div className="label">현재 어느 단계인가요?</div>
             <div className="grid grid-cols-2 gap-1.5">
-              {[
-                { id: 'using',      icon: '💉', label: '약 사용 중' },
-                { id: 'planning',   icon: '🤔', label: '곧 시작 예정' },
-                { id: 'stopped',    icon: '⏸️', label: '중단 고려 중' },
-                { id: 'sideeffect', icon: '⚠️', label: '부작용 경험' },
-                { id: 'curious',    icon: '🔍', label: '그냥 알아보는 중' },
-              ].map((o, i, arr) => (
+              {VISIT_PURPOSE.map((o, i, arr) => (
                 <button key={o.id} type="button" onClick={() => set('visitPurpose', o.id)}
                         className={`px-3 py-2.5 rounded-xl text-sm font-medium border transition text-left
                                     ${i === arr.length - 1 ? 'col-span-2' : ''}

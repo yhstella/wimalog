@@ -83,22 +83,50 @@ function WeightTab({ user, version, refresh, navigate }) {
 
   const submit = () => {
     if (!weight || +weight < 30 || +weight > 250) return;
-    Storage.addLog({
-      id: uid('log'),
-      userId: user.id,
-      date,
-      weight: +weight,
-      appetiteChange, satiety, mealReduction,
-      sideEffects,
-      notes: notes.trim(),
-      createdAt: new Date().toISOString(),
-    });
+    // 같은 날짜 기록이 이미 있으면 덮어쓰기 (중복 row 누적 방지)
+    const existing = allLogs.find(l => l.date === date);
+    if (existing) {
+      Storage.updateLog({ ...existing, weight: +weight, appetiteChange, satiety, mealReduction, sideEffects, notes: notes.trim() });
+    } else {
+      Storage.addLog({
+        id: uid('log'),
+        userId: user.id,
+        date,
+        weight: +weight,
+        appetiteChange, satiety, mealReduction,
+        sideEffects,
+        notes: notes.trim(),
+        createdAt: new Date().toISOString(),
+      });
+    }
     const delta = lastLog ? +weight - lastLog.weight : 0;
     setSideEffects({});
     setNotes('');
     setShowDetail(false);
     refresh();
-    toast.success(`체중 ${(+weight).toFixed(1)} kg 기록됨${lastLog ? ` · 지난 기록 대비 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} kg` : ''}`);
+    toast.success(`체중 ${(+weight).toFixed(1)} kg ${existing ? '수정됨' : '기록됨'}${!existing && lastLog ? ` · 지난 기록 대비 ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} kg` : ''}`);
+  };
+
+  // 최근 기록 리스트에서 항목 수정 — 폼에 값 로드 후 맨 위로
+  const editLog = (log) => {
+    setDate(log.date);
+    setExactMs(null);
+    setWeight(String(log.weight));
+    setSideEffects(log.sideEffects || {});
+    setAppetiteChange(log.appetiteChange ?? 3);
+    setSatiety(log.satiety ?? 3);
+    setMealReduction(log.mealReduction ?? 3);
+    setNotes(log.notes || '');
+    if (Object.values(log.sideEffects || {}).some(Boolean) || log.notes) setShowDetail(true);
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    toast.info(`${log.date} 기록을 불러왔어요 — 수정 후 저장하면 덮어써집니다`);
+  };
+
+  const deleteLog = (log) => {
+    if (!window.confirm(`${log.date} · ${log.weight}kg 기록을 삭제할까요?`)) return;
+    Storage.deleteLog(log.id);
+    refresh();
+    toast.success('기록을 삭제했어요');
   };
 
   return (
@@ -221,7 +249,55 @@ function WeightTab({ user, version, refresh, navigate }) {
         />
       )}
 
-      <RecentStat count={allLogs.length} label="체중 기록" lastDate={lastLog?.date} />
+      <RecentWeightList logs={allLogs} onEdit={editLog} onDelete={deleteLog} />
+    </div>
+  );
+}
+
+/* 최근 체중 기록 — 수정/삭제 가능 (CRUD의 R/U/D 보강. UX 감사 최우선 발견) */
+function RecentWeightList({ logs, onEdit, onDelete }) {
+  // 최신순 7개
+  const recent = [...logs].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7);
+  if (recent.length === 0) {
+    return (
+      <div className="card !py-4 text-center text-sm text-ink-500 dark:text-slate-400">
+        아직 체중 기록이 없어요. 위에서 첫 기록을 저장해 보세요.
+      </div>
+    );
+  }
+  return (
+    <div className="card !p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-bold text-ink-900 dark:text-slate-100">최근 기록</h3>
+        <span className="text-xs text-ink-400 dark:text-slate-500">총 {logs.length}회 · 탭하여 수정</span>
+      </div>
+      <div className="divide-y divide-ink-100 dark:divide-slate-800">
+        {recent.map((log, i) => {
+          const prev = recent[i + 1];
+          const delta = prev ? log.weight - prev.weight : null;
+          const sides = Object.values(log.sideEffects || {}).filter(Boolean).length;
+          return (
+            <div key={log.id} className="flex items-center gap-2 py-2.5">
+              <button onClick={() => onEdit(log)}
+                      className="flex-1 min-w-0 flex items-center gap-3 text-left rounded-lg -mx-1 px-1 py-1 hover:bg-ink-100/50 dark:hover:bg-slate-800/50 transition">
+                <span className="text-xs text-ink-500 dark:text-slate-400 tabular-nums w-16 flex-shrink-0">{log.date?.slice(5)}</span>
+                <span className="font-bold text-ink-900 dark:text-slate-100 tabular-nums">{log.weight}<span className="text-xs font-normal text-ink-400 ml-0.5">kg</span></span>
+                {delta != null && delta !== 0 && (
+                  <span className={`text-xs tabular-nums ${delta < 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-500'}`}>
+                    {delta < 0 ? '−' : '+'}{Math.abs(delta).toFixed(1)}
+                  </span>
+                )}
+                {sides > 0 && <span className="text-[10px] text-rose-500">부작용 {sides}</span>}
+              </button>
+              <button onClick={() => onDelete(log)}
+                      aria-label="삭제"
+                      className="flex-shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg text-ink-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition">
+                🗑
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

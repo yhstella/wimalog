@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v37';  // bumped 2026-06-15: 트래픽 측정(Vercel Analytics 퍼널) + 응원의 한마디 wall
+const VERSION = 'v38';  // bumped 2026-06-15: UX 감사 일괄 수정 — 익명 가입 폼 복구·기록 수정/삭제·다이얼 직접입력 등 11건
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

@@ -227,6 +227,11 @@ export function ShareCardModal({ user, onClose }) {
           <button onClick={onClose} className="btn-ghost !p-2 text-base">✕</button>
         </div>
         <div className="p-5 space-y-4">
+          {data.mode === 'projection' && (
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-3.5 py-2.5 text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+              <b>예상 카드예요.</b> 아직 실제 결과가 아니라 비슷한 사용자 기반 예측이에요. 체중을 <b>2회 이상</b> 기록하면 본인 실제 감량 카드로 바뀝니다.
+            </div>
+          )}
           <canvas ref={canvasRef} width={W} height={H}
                   className="w-full rounded-2xl shadow-md aspect-square" />
           <div className="grid grid-cols-2 gap-2">
@@ -239,7 +244,7 @@ export function ShareCardModal({ user, onClose }) {
           </div>
           <p className="text-[11px] text-ink-500 dark:text-slate-500 text-center leading-relaxed">
             {data.mode === 'real'
-              ? '본인 실제 기록 기반 카드입니다. 닉네임·개인정보는 포함되지 않아요.'
+              ? '닉네임·이메일은 포함되지 않아요. 단, 입력한 체중 숫자(시작·현재)는 카드에 표시됩니다.'
               : '체중을 2회 이상 기록하면 본인 실제 결과 카드로 바뀝니다.'}
           </p>
         </div>
