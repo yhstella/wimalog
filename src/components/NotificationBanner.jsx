@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast.jsx';
+import { subscribeToPush, pushSupported } from '../lib/push.js';
 
 const KEY = 'gl_notify';
 
@@ -28,20 +29,24 @@ export function NotificationBanner({ user }) {
   if (!mobile) return null;
   if (dismissed || enabled) return null;
 
+  const [busy, setBusy] = useState(false);
   const enable = async () => {
-    if ('Notification' in window) {
-      try {
-        const perm = await Notification.requestPermission();
-        if (perm === 'granted') {
-          localStorage.setItem(KEY + '_enabled', '1');
-          setEnabled(true);
-          toast.success('알림 권한 허용됨 — 백엔드 출시 후 일일 알림 발송 시작');
-          new Notification('위마로그', { body: '오늘 체중을 기록해 보세요 🌱' });
-          return;
-        }
-      } catch {}
+    if (!pushSupported()) {
+      toast.error('이 브라우저는 알림을 지원하지 않아요');
+      return;
     }
-    toast.error('알림 권한 거부됨 또는 브라우저 미지원');
+    setBusy(true);
+    const res = await subscribeToPush(user?.id);
+    setBusy(false);
+    if (res.ok) {
+      localStorage.setItem(KEY + '_enabled', '1');
+      setEnabled(true);
+      toast.success('알림 켜졌어요 — 기록을 잊지 않게 가끔 알려드릴게요');
+    } else if (res.error === 'denied') {
+      toast.error('알림 권한이 거부됐어요. 브라우저 설정에서 허용할 수 있어요');
+    } else {
+      toast.error('알림 설정에 실패했어요. 잠시 후 다시 시도해 주세요');
+    }
   };
 
   const dismiss = () => {
@@ -54,18 +59,20 @@ export function NotificationBanner({ user }) {
       <div className="flex items-start gap-3">
         <div className="text-2xl">🔔</div>
         <div className="flex-1">
-          <div className="font-bold text-ink-900 dark:text-slate-100">매일 체중 기록 알림</div>
+          <div className="font-bold text-ink-900 dark:text-slate-100">기록 알림 받기</div>
           <p className="text-xs text-ink-500 dark:text-slate-400 mt-1">
-            매일 같은 시간 알림 — 스트릭 유지에 도움. 브라우저 권한 필요.
+            기록을 잊지 않게 가끔 알려드려요. 앱을 닫아도 받을 수 있어요.
           </p>
         </div>
       </div>
       <div className="flex gap-2 mt-3">
-        <button onClick={enable} className="btn-primary !py-2 !px-3 text-xs">권한 허용</button>
+        <button onClick={enable} disabled={busy} className="btn-primary !py-2 !px-3 text-xs disabled:opacity-50">
+          {busy ? '설정 중…' : '알림 켜기'}
+        </button>
         <button onClick={dismiss} className="btn-secondary !py-2 !px-3 text-xs">나중에</button>
       </div>
       <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-2">
-        브라우저 알림 권한이 필요합니다. 알림은 본인 기기에서만 동작합니다.
+        브라우저 알림 권한이 필요해요. 언제든 끌 수 있어요.
       </p>
     </div>
   );

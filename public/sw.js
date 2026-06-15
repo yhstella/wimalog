@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v38';  // bumped 2026-06-15: UX 감사 일괄 수정 — 익명 가입 폼 복구·기록 수정/삭제·다이얼 직접입력 등 11건
+const VERSION = 'v39';  // bumped 2026-06-16: Web Push 알림 (push/notificationclick 핸들러)
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 
@@ -82,4 +82,35 @@ self.addEventListener('fetch', (event) => {
 // 메시지로 강제 갱신 트리거
 self.addEventListener('message', (event) => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// ── Web Push ──────────────────────────────────────────────
+// 서버(/api/send-push)가 보낸 푸시를 표시. payload는 JSON { title, body, url, tag }.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch { data = { body: event.data && event.data.text() }; }
+  const title = data.title || '위마로그';
+  const options = {
+    body: data.body || '오늘 체중을 기록해 보세요 🌱',
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
+    tag: data.tag || 'wimalog-reminder',   // 같은 tag면 알림 누적 안 됨
+    data: { url: data.url || '/' },
+    requireInteraction: false,
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// 알림 클릭 → 해당 URL로 포커스/오픈
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if (c.url.includes(location.origin) && 'focus' in c) { c.navigate(target); return c.focus(); }
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });
