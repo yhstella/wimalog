@@ -85,8 +85,8 @@ export function AIPredictionPanel({ user }) {
     if (user && n >= 30 && n <= 250) updateUser({ startWeight: n });
   };
 
-  // 입력 초기화 — sessionStorage 시뮬레이터 prefill + 가입자라면 demographic·동반질환도 wipe.
-  // 키·체중·약·빈도는 placeholder 기본값(162/78/wegovy/weekly)으로 돌려 50% 베이스라인 근처로 리셋.
+  // 입력 초기화 — 시뮬레이터 입력만 리셋. 가입자의 실제 프로필(성별·나이대·동반질환)은 보존.
+  //   (이전엔 Storage.upsertUser로 프로필을 통째로 wipe해 demographic 영구 손실 → 제거)
   const resetInputs = () => {
     try { sessionStorage.removeItem(SIM_PREFILL_KEY); } catch {}
     setSim({
@@ -100,16 +100,6 @@ export function AIPredictionPanel({ user }) {
       hasDiabetes: false,
     });
     setOpen(null);
-    if (liveUser) {
-      Storage.upsertUser({
-        ...liveUser,
-        gender: null,
-        ageGroup: null,
-        conditions: {},
-        conditionsChecked: false,
-      });
-      setVersion(v => v + 1);
-    }
   };
 
   const { score } = useMemo(

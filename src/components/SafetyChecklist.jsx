@@ -62,16 +62,17 @@ export function SafetyChecklist({ compact = false }) {
     resultTitle = '신중 검토 필요';
     resultMsg = `${caution.length}개 항목에서 신중 사용 대상에 해당합니다. 사용 가능 여부·시작 용량·모니터링 강도를 의료진과 면밀히 상의하세요.`;
   } else if (submitted) {
-    resultTone = 'emerald';
-    resultIcon = '✓';
-    resultTitle = '일반 사용 후보';
-    resultMsg = '체크된 금기·신중 항목 없음. 본인 BMI·동반질환·기존 약을 종합해 의료진과 결정하세요.';
+    // 체크된 항목 없음 — 강한 녹색 '사용 후보' 긍정은 거짓 안심을 줄 수 있어 중립 톤으로.
+    resultTone = 'neutral';
+    resultIcon = 'ℹ️';
+    resultTitle = '선택한 금기·신중 항목 없음';
+    resultMsg = '여기 나열된 금기·신중 항목엔 해당이 없네요. 다만 이 체크만으로 사용 가능 판정은 아니며, BMI·동반질환·기존 약을 종합해 반드시 의료진과 결정하세요.';
   }
 
   const toneClass = {
     rose:    'bg-rose-50 dark:bg-rose-900/15 border-rose-300 dark:border-rose-800/40 text-rose-900 dark:text-rose-200',
     amber:   'bg-amber-50 dark:bg-amber-900/15 border-amber-300 dark:border-amber-800/40 text-amber-900 dark:text-amber-200',
-    emerald: 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-800/40 text-emerald-900 dark:text-emerald-200',
+    neutral: 'bg-ink-50 dark:bg-slate-800/40 border-ink-200 dark:border-slate-700 text-ink-700 dark:text-slate-300',
   };
 
   return (

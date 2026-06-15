@@ -55,7 +55,7 @@ function UsingCard({ user, navigate }) {
           icon="💊"
           title="약 사용력 기록"
           desc={hasMedHistory ? `${courses.length}개 코스 ✓` : '시작일·약·용량 입력. 격주·간헐 사용도 OK'}
-          onClick={() => navigate('records?tab=dose')}
+          onClick={() => { try { sessionStorage.setItem('wimalog_records_tab', 'dose'); } catch {} navigate('records'); }}
         />
       </div>
 

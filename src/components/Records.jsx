@@ -25,7 +25,14 @@ const TABS = [
 ];
 
 export function Records({ user, navigate, initialTab = 'weight' }) {
-  const [tab, setTab] = useState(initialTab);
+  // deep-link 탭 힌트 — EmptyDashboard/PurposeCard 등이 sessionStorage로 지정 (라우터가 ?query 미지원이라)
+  const [tab, setTab] = useState(() => {
+    try {
+      const hint = sessionStorage.getItem('wimalog_records_tab');
+      if (hint && TABS.some(t => t.id === hint)) { sessionStorage.removeItem('wimalog_records_tab'); return hint; }
+    } catch {}
+    return initialTab;
+  });
   const [version, setVersion] = useState(0);
   const refresh = () => setVersion(v => v + 1);
 
@@ -358,9 +365,13 @@ function DoseTab({ user, version, refresh, navigate }) {
       toast.error(`${activeMed.label}은 최소 ${minIntervalDays}일 간격이 필요합니다 (${earliestNextDate} 이후)`);
       return;
     }
-    // 약 변경 시: 새 코스 자동 생성
+    // 약 변경 시: 기존 활성 코스 종료(두 약 동시 '진행 중' 방지) + 새 코스 자동 생성
     let targetCourseId = courseForLog?.id;
     if (selectedMedId !== medId || !targetCourseId) {
+      if (selectedMedId !== medId) {
+        const oldActive = activeCourses.find(c => c.medication === medId);
+        if (oldActive) Storage.updateMedCourse({ ...oldActive, endDate: date, discontinueReason: 'switch' });
+      }
       const newCourse = {
         id: uid('mc'),
         userId: user.id,

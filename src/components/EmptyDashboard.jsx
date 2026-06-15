@@ -9,8 +9,8 @@ export function EmptyDashboard({ user, navigate }) {
   const ACTIONS = {
     using: [
       { id: 'weight', icon: '⚖️', title: '오늘 체중 기록', desc: '1분. 그래프 자동 그려져요', cta: 'records' },
-      { id: 'med',    icon: '💊', title: '사용 중인 약 등록', desc: '약·용량·시작일 입력', cta: 'records?tab=dose' },
-      { id: 'exercise', icon: '🏃', title: '오늘 운동 기록', desc: '걷기 10분이라도 OK', cta: 'records?tab=exercise' },
+      { id: 'med',    icon: '💊', title: '사용 중인 약 등록', desc: '약·용량·시작일 입력', cta: 'records', tab: 'dose' },
+      { id: 'exercise', icon: '🏃', title: '오늘 운동 기록', desc: '걷기 10분이라도 OK', cta: 'records', tab: 'exercise' },
     ],
     planning: [
       { id: 'sim',  icon: '🔮', title: '본인 조건 시뮬레이션', desc: '5개 약 비교 + 예상 감량', cta: 'landing' },
@@ -20,16 +20,20 @@ export function EmptyDashboard({ user, navigate }) {
     stopped: [
       { id: 'guide', icon: '📉', title: '중단 후 요요 관리', desc: '운동 지속이 회복률 절반', cta: 'guide/after-stop' },
       { id: 'weight', icon: '⚖️', title: '현재 체중 기록', desc: '중단 후 추이 추적', cta: 'records' },
-      { id: 'exercise', icon: '🏃', title: '오늘 운동 기록', desc: '주 90분+ 운동 그룹은 회복률 −50%', cta: 'records?tab=exercise' },
+      { id: 'exercise', icon: '🏃', title: '오늘 운동 기록', desc: '주 90분+ 운동 그룹은 회복률 −50%', cta: 'records', tab: 'exercise' },
     ],
     sideeffect: [
       { id: 'weight', icon: '⚖️', title: '체중 + 부작용 기록', desc: '날짜별 증상 추적', cta: 'records' },
       { id: 'guide', icon: '🩺', title: '부작용 대처 가이드', desc: '의사 상담 기준', cta: 'info' },
-      { id: 'health', icon: '💪', title: '건강지표 기록', desc: '혈압·수면·인바디 추가하면 패턴 분석', cta: 'records?tab=health' },
+      { id: 'health', icon: '💪', title: '건강지표 기록', desc: '혈압·수면·인바디 추가하면 패턴 분석', cta: 'records', tab: 'health' },
     ],
   };
 
   const actions = ACTIONS[visitPurpose] || ACTIONS.using;
+  const go = (a) => {
+    if (a.tab) { try { sessionStorage.setItem('wimalog_records_tab', a.tab); } catch {} }
+    navigate(a.cta);
+  };
 
   return (
     <div className="card border-2 border-dashed border-brand-300 dark:border-brand-700/50 bg-gradient-to-br from-brand-50/30 to-white dark:from-brand-900/15 dark:to-slate-900">
@@ -46,7 +50,7 @@ export function EmptyDashboard({ user, navigate }) {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         {actions.map(a => (
-          <button key={a.id} onClick={() => navigate(a.cta)}
+          <button key={a.id} onClick={() => go(a)}
                   className="text-left rounded-xl border border-ink-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-brand-400 hover:shadow-cardHover transition p-4">
             <div className="text-2xl mb-2">{a.icon}</div>
             <div className="font-bold text-sm text-ink-900 dark:text-slate-100">{a.title}</div>

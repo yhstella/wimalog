@@ -242,10 +242,8 @@ function SwitchMedForm({ course, user, onCancel, onSaved }) {
   const save = () => {
     if (!newDose) return;
     // 1) 기존 코스 변경일에 종료
-    Storage.updateMedCourse(course.id, {
-      endDate: switchDate,
-      discontinueReason: 'switch',
-    });
+    //   ⚠ updateMedCourse는 객체 1개를 받아 item.id로 탐색 — id 문자열을 넘기면 무산됐었음(데이터 오염 fix)
+    Storage.updateMedCourse({ ...course, endDate: switchDate, discontinueReason: 'switch' });
     // 2) 새 코스 시작
     const newCourseId = uid('mc');
     Storage.addMedCourse({

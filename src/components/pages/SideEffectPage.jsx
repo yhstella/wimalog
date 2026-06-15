@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { SIDE_EFFECT_CONTENT, DRUG_CONTENT, GUIDE_CONTENT } from '../../lib/content.js';
 import { sideEffectRates, sideEffectTiming, avgLossCurve } from '../../lib/stats.js';
 import { QuickSignupModal } from '../Paywall.jsx';
-import { MedicalDisclaimer } from '../SafetyBanner.jsx';
+import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 // InterestButton 제거 — '저도 겪고 있어요' 1탭 수집은 비즈니스 핵심 X
 import { TestimonialBox } from '../TestimonialBox.jsx';
@@ -215,6 +215,9 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
 
       {/* 한 줄 후기 (가입자) */}
       <TestimonialBox topicId={`effect:${effectId}`} user={user} />
+
+      {/* 응급 신호 통합 배너 — 검색 최다 유입 페이지인데 공통 위험신호가 없던 문제 (UX 감사) */}
+      <RedFlagBanner />
 
       {/* 의사 상담 기준 */}
       <section className="card border border-rose-200 dark:border-rose-900/40 bg-rose-50/40 dark:bg-rose-900/15">
