@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v40';  // bumped 2026-06-16: UX 감사 2R CRITICAL 5건 — 약코스 오염·EmptyDashboard 라우트·안전체크 역전·RedFlag·프로필 wipe
+const VERSION = 'v41';  // bumped 2026-06-16: 디자인 — ink 색 스케일 완성(111곳 일관) + 대비 수정(footer·게이지)
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

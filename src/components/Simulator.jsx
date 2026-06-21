@@ -246,10 +246,10 @@ export function Simulator({ onSignup, compact = false, user = null }) {
                           ${accuracy >= 80 ? 'bg-emerald-300' : accuracy >= 60 ? 'bg-amber-300' : 'bg-white/60'}`}
                style={{ width: `${accuracy}%` }} />
         </div>
-        <div className="text-[10px] opacity-80 mt-1.5 leading-snug">
-          {accuracy < 50 && <>키·체중·약·빈도 4개 입력 — <b>기본 코호트 평균</b></>}
-          {accuracy >= 50 && accuracy < 75 && <>가입 + 일부 정보 입력 — <b>나와 비슷한 사용자</b>와 매칭</>}
-          {accuracy >= 75 && accuracy < 90 && <>운동·동반질환·나이·성별까지 입력 — <b>높은 정확도</b></>}
+        <div className="text-[11px] opacity-95 mt-1.5 leading-snug">
+          {accuracy < 66 && <>키·체중·약·빈도 입력 — <b>비슷한 사용자 평균</b> 기준</>}
+          {accuracy >= 66 && accuracy < 80 && <>가입 + 일부 정보 입력 — <b>나와 비슷한 사용자</b>와 매칭</>}
+          {accuracy >= 80 && accuracy < 90 && <>운동·동반질환·나이·성별까지 입력 — <b>높은 정확도</b></>}
           {accuracy >= 90 && <>거의 모든 정보 입력 완료 — <b>최고 정확도</b> (본인 데이터 추가하면 +)</>}
         </div>
       </div>
