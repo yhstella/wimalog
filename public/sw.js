@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v42';  // bumped 2026-06-16: 모바일 터치타겟 44px sweep — 헤더·시뮬칩·약그리드·부작용칩 + 로그아웃 아이콘 명확화
+const VERSION = 'v43';  // bumped 2026-06-23: 투약·운동·식단 탭 수정/삭제(CRUD) UI 추가 + 죽은 HealthTab/NumField 정리
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

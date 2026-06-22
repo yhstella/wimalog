@@ -309,6 +309,53 @@ function RecentWeightList({ logs, onEdit, onDelete }) {
   );
 }
 
+/* 최근 기록 리스트 (투약/운동/식단 공용) — 탭하여 수정, 🗑 삭제(44px).
+   RecentWeightList와 동일한 인터랙션. renderRow는 한 행의 본문을 그림. */
+function RecentEntryList({ title, items, totalCount, onEdit, onDelete, renderRow, emptyText, editingId }) {
+  if (!items.length) {
+    return (
+      <div className="card !py-4 text-center text-sm text-ink-500 dark:text-slate-400">
+        {emptyText}
+      </div>
+    );
+  }
+  return (
+    <div className="card !p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-bold text-ink-900 dark:text-slate-100">{title}</h3>
+        <span className="text-xs text-ink-400 dark:text-slate-500">총 {totalCount}회 · 탭하여 수정</span>
+      </div>
+      <div className="divide-y divide-ink-100 dark:divide-slate-800">
+        {items.map(item => (
+          <div key={item.id}
+               className={`flex items-center gap-2 py-2.5 ${editingId === item.id ? 'bg-amber-50/60 dark:bg-amber-900/10 -mx-1 px-1 rounded-lg' : ''}`}>
+            <button onClick={() => onEdit(item)}
+                    className="flex-1 min-w-0 text-left rounded-lg -mx-1 px-1 py-1 hover:bg-ink-100/50 dark:hover:bg-slate-800/50 transition">
+              {renderRow(item)}
+            </button>
+            <button onClick={() => onDelete(item)}
+                    aria-label="삭제"
+                    className="flex-shrink-0 inline-flex items-center justify-center w-11 h-11 rounded-lg text-ink-300 dark:text-slate-600 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition">
+              🗑
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* 수정 모드 안내 배너 — 폼 상단. 저장 시 덮어쓰기, 취소로 신규 입력 복귀 */
+function EditingBanner({ label, onCancel }) {
+  return (
+    <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 px-3 py-2 text-xs flex items-center justify-between gap-2">
+      <span className="text-amber-800 dark:text-amber-300 font-semibold">✏️ {label} 수정 중 — 저장하면 덮어써집니다</span>
+      <button type="button" onClick={onCancel}
+              className="text-amber-700 dark:text-amber-400 underline flex-shrink-0 min-h-[32px] px-1">취소</button>
+    </div>
+  );
+}
+
 /* ============================================================
    투약 탭 — 새로운 UX:
    - 코스 개념 숨김 (자동 처리)
@@ -347,6 +394,7 @@ function DoseTab({ user, version, refresh, navigate }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [switchMed, setSwitchMed] = useState(false);
   const [selectedMedId, setSelectedMedId] = useState(medId);
+  const [editingId, setEditingId] = useState(null);
 
   // 첫 사용자 — 약 선택 화면 표시 (모든 hooks 호출 후)
   if (!lastDose && activeCourses.length === 0) {
@@ -359,8 +407,43 @@ function DoseTab({ user, version, refresh, navigate }) {
   const activeMed = MED_BY_ID[selectedMedId] || med;
   const isIntervalShort = lastDoseMs && date < earliestNextDate;
 
+  // 기존 투약 기록 수정 — 약/코스는 그대로, 날짜·용량·가격·지역만 갱신 (간격 제약 미적용)
+  const editDose = (d) => {
+    setEditingId(d.id);
+    setDate(d.date);
+    setDose(d.dose);
+    setPrice(d.price ?? '');
+    setRegion(d.region ?? '');
+    setShowAdvanced(d.price != null || !!d.region);
+    setSwitchMed(false);
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    toast.info(`${d.date} 투약 기록을 불러왔어요`);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDate(recommendedDate);
+    setDose(lastDose?.dose || med?.doses[0] || '');
+    setPrice(lastDose?.price ?? '');
+    setRegion(lastDose?.region ?? '');
+  };
+  const deleteDose = (d) => {
+    if (!window.confirm(`${d.date} · ${d.dose} 투약 기록을 삭제할까요?`)) return;
+    Storage.deleteDose(d.id);
+    if (editingId === d.id) cancelEdit();
+    refresh();
+    toast.success('투약 기록을 삭제했어요');
+  };
+
   const submit = () => {
     if (!dose) return;
+    // 수정 모드 — 기존 dose row 덮어쓰기 (코스/약 변경 로직·간격 제약 우회)
+    if (editingId) {
+      Storage.updateDose({ id: editingId, date, dose, price: +price || null, region: region.trim() || null });
+      setEditingId(null);
+      refresh();
+      toast.success(`투약 기록 수정됨 · ${date} ${dose}`);
+      return;
+    }
     if (isIntervalShort && selectedMedId === medId) {
       toast.error(`${activeMed.label}은 최소 ${minIntervalDays}일 간격이 필요합니다 (${earliestNextDate} 이후)`);
       return;
@@ -417,7 +500,7 @@ function DoseTab({ user, version, refresh, navigate }) {
 
   return (
     <div className="space-y-4">
-      {lastDose && !switchMed && (
+      {lastDose && !switchMed && !editingId && (
         <div className="rounded-2xl bg-brand-50 dark:bg-brand-900/20 border border-brand-200 dark:border-brand-800/40 px-4 py-3 text-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="text-ink-700 dark:text-slate-300">
@@ -433,8 +516,9 @@ function DoseTab({ user, version, refresh, navigate }) {
       )}
 
       <div className="card space-y-4">
-        {/* 약 선택 (변경 시에만) */}
-        {switchMed && (
+        {editingId && <EditingBanner label="투약 기록" onCancel={cancelEdit} />}
+        {/* 약 선택 (변경 시에만, 수정 모드 아님) */}
+        {switchMed && !editingId && (
           <div>
             <div className="label">약</div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -483,7 +567,7 @@ function DoseTab({ user, version, refresh, navigate }) {
                    max={todayISO()}
                    value={date} onChange={e => setDate(e.target.value)} />
           </div>
-          {isIntervalShort && selectedMedId === medId && (
+          {!editingId && isIntervalShort && selectedMedId === medId && (
             <div className="text-xs text-rose-600 dark:text-rose-400">
               ⚠ 이전 투약({lastDose.date})으로부터 {minIntervalDays}일이 지나지 않았어요. {earliestNextDate} 이후로 선택.
             </div>
@@ -536,15 +620,42 @@ function DoseTab({ user, version, refresh, navigate }) {
           )}
         </div>
 
-        <div className="flex justify-end">
-          <button onClick={submit} disabled={!dose || (isIntervalShort && selectedMedId === medId)}
+        <div className="flex justify-end gap-2">
+          {editingId && (
+            <button onClick={cancelEdit} className="btn-ghost !py-3 !px-4 text-base">취소</button>
+          )}
+          <button onClick={submit} disabled={!dose || (!editingId && isIntervalShort && selectedMedId === medId)}
                   className="btn-primary !py-3 !px-6 text-base">
-            ✓ 투약 기록
+            {editingId ? '✓ 수정 저장' : '✓ 투약 기록'}
           </button>
         </div>
       </div>
 
-      <RecentStat count={allDoses.length} label="투약 기록" lastDate={lastDose?.date} />
+      <RecentEntryList
+        title="최근 투약"
+        totalCount={allDoses.length}
+        editingId={editingId}
+        items={[...allDoses].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7)}
+        emptyText="아직 투약 기록이 없어요."
+        onEdit={editDose}
+        onDelete={deleteDose}
+        renderRow={(d) => {
+          const c = courses.find(x => x.id === d.courseId);
+          const m = c ? MED_BY_ID[c.medication] : null;
+          return (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-ink-500 dark:text-slate-400 tabular-nums w-12 flex-shrink-0">{d.date?.slice(5)}</span>
+              <span className="font-semibold text-sm text-ink-900 dark:text-slate-100 truncate">
+                {m?.label.replace(/\s*\(.+\)/, '') || '투약'}
+                <span className="text-brand-700 dark:text-brand-400 ml-1.5">{d.dose}</span>
+              </span>
+              {d.price > 0 && (
+                <span className="text-xs text-ink-400 dark:text-slate-500 tabular-nums ml-auto flex-shrink-0">{d.price.toLocaleString()}원</span>
+              )}
+            </div>
+          );
+        }}
+      />
     </div>
   );
 }
@@ -702,8 +813,11 @@ function ExerciseTab({ user, version, refresh }) {
   const [durationMin, setDurationMin] = useState(lastEx?.durationMin || 30);
   const [intensity, setIntensity] = useState(lastEx?.intensity || 3);
   const [notes, setNotes] = useState('');
+  const [editingId, setEditingId] = useState(null);
   // type 변경 시 같은 type의 마지막 기록으로 duration/intensity 자동 갱신
+  // (수정 모드에선 불러온 값을 덮어쓰지 않도록 건너뜀)
   useEffect(() => {
+    if (editingId) return;
     const sameType = allEx.filter(e => e.type === type);
     const last = sameType[sameType.length - 1];
     if (last) {
@@ -723,6 +837,17 @@ function ExerciseTab({ user, version, refresh }) {
 
   const submit = () => {
     if (!durationMin || durationMin < 1) return;
+    if (editingId) {
+      Storage.updateExercise({
+        id: editingId, date, type, durationMin: +durationMin, intensity,
+        estKcal: estKcal || null, notes: notes.trim(),
+      });
+      setEditingId(null);
+      setNotes('');
+      refresh();
+      toast.success(`운동 기록 수정됨 · ${EXERCISE_BY_ID[type]?.label} ${durationMin}분`);
+      return;
+    }
     Storage.addExercise({
       id: uid('ex'),
       userId: user.id,
@@ -738,6 +863,30 @@ function ExerciseTab({ user, version, refresh }) {
     setNotes('');
     refresh();
     toast.success(`${EXERCISE_BY_ID[type]?.label} ${durationMin}분 · ${estKcal || '?'} kcal 기록됨`);
+  };
+
+  // 기존 운동 기록 수정/삭제
+  const editEx = (ex) => {
+    setEditingId(ex.id);
+    setDate(ex.date);
+    setType(ex.type);
+    setDurationMin(ex.durationMin);
+    setIntensity(ex.intensity);
+    setNotes(ex.notes || '');
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    toast.info(`${ex.date} 운동 기록을 불러왔어요`);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNotes('');
+    setDate(todayISO());
+  };
+  const deleteEx = (ex) => {
+    if (!window.confirm(`${ex.date} · ${EXERCISE_BY_ID[ex.type]?.label} ${ex.durationMin}분 기록을 삭제할까요?`)) return;
+    Storage.deleteExercise(ex.id);
+    if (editingId === ex.id) cancelEdit();
+    refresh();
+    toast.success('운동 기록을 삭제했어요');
   };
 
   const quickRepeat = (ex) => {
@@ -824,6 +973,7 @@ function ExerciseTab({ user, version, refresh }) {
       )}
 
       <div className="card space-y-4">
+        {editingId && <EditingBanner label="운동 기록" onCancel={cancelEdit} />}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className="label">날짜</div>
@@ -885,11 +1035,38 @@ function ExerciseTab({ user, version, refresh }) {
               </span>
             </div>
           )}
-          <button onClick={submit} disabled={!durationMin} className="btn-primary ml-auto">운동 기록 저장</button>
+          <div className="flex gap-2 ml-auto">
+            {editingId && (
+              <button onClick={cancelEdit} className="btn-ghost">취소</button>
+            )}
+            <button onClick={submit} disabled={!durationMin} className="btn-primary">
+              {editingId ? '수정 저장' : '운동 기록 저장'}
+            </button>
+          </div>
         </div>
       </div>
 
-      <RecentStat count={allEx.length} label="운동 세션" lastDate={allEx[allEx.length - 1]?.date} />
+      <RecentEntryList
+        title="최근 운동"
+        totalCount={allEx.length}
+        editingId={editingId}
+        items={[...allEx].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7)}
+        emptyText="아직 운동 기록이 없어요."
+        onEdit={editEx}
+        onDelete={deleteEx}
+        renderRow={(ex) => (
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-ink-500 dark:text-slate-400 tabular-nums w-12 flex-shrink-0">{ex.date?.slice(5)}</span>
+            <span className="font-semibold text-sm text-ink-900 dark:text-slate-100 truncate">
+              {EXERCISE_BY_ID[ex.type]?.label}
+              <span className="text-ink-400 dark:text-slate-500 font-normal ml-1.5">{ex.durationMin}분</span>
+            </span>
+            {ex.estKcal > 0 && (
+              <span className="text-xs text-brand-600 dark:text-brand-400 tabular-nums ml-auto flex-shrink-0">{ex.estKcal} kcal</span>
+            )}
+          </div>
+        )}
+      />
     </div>
   );
 }
@@ -920,9 +1097,10 @@ function DietTab({ user, version, refresh }) {
   const [proteinG, setProteinG] = useState('');
   const [estCalories, setEstCalories] = useState('');
   const [pattern, setPattern] = useState(lastDiet?.pattern || '');
+  const [editingId, setEditingId] = useState(null);
   // mealType 바꿀 때 같은 mealType의 마지막 pattern prefill (단, 사용자가 메뉴를 입력하지 않았을 때만)
   useEffect(() => {
-    if (description.trim()) return;
+    if (editingId || description.trim()) return;
     const sameMeal = allDiets.filter(d => d.mealType === mealType);
     const last = sameMeal[sameMeal.length - 1];
     if (last) {
@@ -933,6 +1111,19 @@ function DietTab({ user, version, refresh }) {
   const submit = () => {
     if (!description.trim()) return;
     const savedDesc = description.trim();
+    if (editingId) {
+      Storage.updateDiet({
+        id: editingId, date, mealType, description: savedDesc,
+        proteinG: +proteinG || null, estCalories: +estCalories || null, pattern: pattern || null,
+      });
+      setEditingId(null);
+      setDescription('');
+      setProteinG('');
+      setEstCalories('');
+      refresh();
+      toast.success(`식단 기록 수정됨 · '${savedDesc.slice(0, 20)}'`);
+      return;
+    }
     Storage.addDiet({
       id: uid('diet'),
       userId: user.id,
@@ -950,6 +1141,33 @@ function DietTab({ user, version, refresh }) {
     setEstCalories('');
     refresh();
     toast.success(`${MEAL_BY_ID[mealType]?.label} '${savedDesc.slice(0, 20)}' 기록됨`);
+  };
+
+  // 기존 식단 기록 수정/삭제
+  const editDiet = (d) => {
+    setEditingId(d.id);
+    setDate(d.date);
+    setMealType(d.mealType);
+    setDescription(d.description || '');
+    setProteinG(d.proteinG != null ? String(d.proteinG) : '');
+    setEstCalories(d.estCalories != null ? String(d.estCalories) : '');
+    setPattern(d.pattern || '');
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    toast.info(`${d.date} 식단 기록을 불러왔어요`);
+  };
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDescription('');
+    setProteinG('');
+    setEstCalories('');
+    setDate(todayISO());
+  };
+  const deleteDietEntry = (d) => {
+    if (!window.confirm(`${d.date} · ${(d.description || '').slice(0, 20)} 기록을 삭제할까요?`)) return;
+    Storage.deleteDiet(d.id);
+    if (editingId === d.id) cancelEdit();
+    refresh();
+    toast.success('식단 기록을 삭제했어요');
   };
 
   const quickAdd = (item) => {
@@ -1008,7 +1226,8 @@ function DietTab({ user, version, refresh }) {
       )}
 
       <div className="card space-y-4">
-        {phaseLabel && (
+        {editingId && <EditingBanner label="식단 기록" onCancel={cancelEdit} />}
+        {phaseLabel && !editingId && (
           <div className="rounded-xl bg-brand-50 dark:bg-brand-900/20 px-3 py-2 text-xs font-semibold text-brand-700 dark:text-brand-300">
             {phaseLabel} — 식이 패턴이 시간에 따라 어떻게 다른지 자동으로 분석돼요
           </div>
@@ -1078,228 +1297,35 @@ function DietTab({ user, version, refresh }) {
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <button onClick={submit} disabled={!description.trim()} className="btn-primary">식단 저장</button>
+        <div className="flex justify-end gap-2">
+          {editingId && (
+            <button onClick={cancelEdit} className="btn-ghost">취소</button>
+          )}
+          <button onClick={submit} disabled={!description.trim()} className="btn-primary">
+            {editingId ? '수정 저장' : '식단 저장'}
+          </button>
         </div>
       </div>
 
-      <RecentStat count={allDiets.length} label="식단 기록" lastDate={allDiets[allDiets.length - 1]?.date} />
-    </div>
-  );
-}
-
-/* ============================================================
-   건강 지표 탭 — 인바디·혈액검사·혈압·음주 (덜 자주 입력, 가이드 페르소나 직접 연결)
-============================================================ */
-function HealthTab({ user, version, refresh, navigate }) {
-  const toast = useToast();
-  const allMetrics = useMemo(() => Storage.getHealthMetricsByUser(user.id), [user.id, version]);
-  const [date, setDate] = useState(todayISO());
-  const [category, setCategory] = useState('inbody');
-  // 인바디
-  const [bodyFatPct, setBodyFatPct] = useState('');
-  const [muscleKg, setMuscleKg] = useState('');
-  const [waistCm, setWaistCm] = useState('');
-  // 혈액검사
-  const [alt, setAlt] = useState('');
-  const [ast, setAst] = useState('');
-  const [hba1c, setHba1c] = useState('');
-  const [totalChol, setTotalChol] = useState('');
-  // 혈압
-  const [sbp, setSbp] = useState('');
-  const [dbp, setDbp] = useState('');
-  // 음주
-  const [alcoholDrinksPerWeek, setAlcoholDrinksPerWeek] = useState('');
-  const [alcoholCravingChange, setAlcoholCravingChange] = useState(3);
-  // 수면
-  const [sleepHours, setSleepHours] = useState('');
-  const [stressLevel, setStressLevel] = useState(3);
-
-  const CATEGORIES = [
-    { id: 'inbody',   label: '인바디',     icon: '💪', desc: '체지방률·근육량·허리둘레' },
-    { id: 'blood',    label: '혈액검사',   icon: '🩸', desc: 'ALT·AST·HbA1c·콜레스테롤' },
-    { id: 'bp',       label: '혈압',       icon: '❤️', desc: '수축기·이완기' },
-    { id: 'alcohol',  label: '음주',       icon: '🍺', desc: '주당 잔수·갈망 변화' },
-    { id: 'sleep',    label: '수면·스트레스', icon: '😴', desc: '수면 시간·스트레스' },
-  ];
-
-  const submit = () => {
-    let payload = null;
-    if (category === 'inbody') {
-      if (!bodyFatPct && !muscleKg && !waistCm) { toast.error('한 개 이상 입력해 주세요'); return; }
-      payload = { bodyFatPct: +bodyFatPct || null, muscleKg: +muscleKg || null, waistCm: +waistCm || null };
-    } else if (category === 'blood') {
-      if (!alt && !ast && !hba1c && !totalChol) { toast.error('한 개 이상 입력해 주세요'); return; }
-      payload = { alt: +alt || null, ast: +ast || null, hba1c: +hba1c || null, totalChol: +totalChol || null };
-    } else if (category === 'bp') {
-      if (!sbp || !dbp) { toast.error('수축기·이완기 모두 입력해 주세요'); return; }
-      payload = { sbp: +sbp, dbp: +dbp };
-    } else if (category === 'alcohol') {
-      if (!alcoholDrinksPerWeek && alcoholCravingChange === 3) { toast.error('주당 잔수 또는 갈망 변화 입력'); return; }
-      payload = { drinksPerWeek: +alcoholDrinksPerWeek || 0, cravingChange: alcoholCravingChange };
-    } else if (category === 'sleep') {
-      if (!sleepHours && stressLevel === 3) { toast.error('수면 시간 또는 스트레스 입력'); return; }
-      payload = { sleepHours: +sleepHours || null, stressLevel };
-    }
-    Storage.addHealthMetric({
-      id: uid('hm'),
-      userId: user.id,
-      seed: false,
-      date,
-      category,
-      ...payload,
-      createdAt: new Date().toISOString(),
-    });
-    // reset
-    setBodyFatPct(''); setMuscleKg(''); setWaistCm('');
-    setAlt(''); setAst(''); setHba1c(''); setTotalChol('');
-    setSbp(''); setDbp('');
-    setAlcoholDrinksPerWeek(''); setAlcoholCravingChange(3);
-    setSleepHours(''); setStressLevel(3);
-    refresh();
-    toast.success(`${CATEGORIES.find(c => c.id === category).label} 기록됨`);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="card space-y-4">
-        <div>
-          <div className="label">날짜</div>
-          <input type="date" className="input max-w-[180px]" value={date} max={todayISO()}
-                 onChange={e => setDate(e.target.value)} />
-        </div>
-
-        <div>
-          <div className="label">카테고리</div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
-            {CATEGORIES.map(c => (
-              <button key={c.id} type="button" onClick={() => setCategory(c.id)}
-                      className={`px-2 py-2 rounded-xl text-xs font-medium border transition text-left
-                                  ${category === c.id
-                                    ? 'bg-brand-500 text-white border-brand-500'
-                                    : 'bg-white dark:bg-slate-800 text-ink-700 dark:text-slate-300 border-ink-300 dark:border-slate-700 hover:border-brand-300'}`}>
-                <div className="text-base">{c.icon}</div>
-                <div className="mt-0.5">{c.label}</div>
-              </button>
-            ))}
-          </div>
-          <p className="helptext !mt-2">{CATEGORIES.find(c => c.id === category)?.desc}</p>
-        </div>
-
-        {category === 'inbody' && (
-          <div className="grid grid-cols-3 gap-3">
-            <NumField label="체지방률" suffix="%" value={bodyFatPct} onChange={setBodyFatPct} placeholder="28.5" />
-            <NumField label="근육량" suffix="kg" value={muscleKg} onChange={setMuscleKg} placeholder="42.0" />
-            <NumField label="허리둘레" suffix="cm" value={waistCm} onChange={setWaistCm} placeholder="82" />
+      <RecentEntryList
+        title="최근 식단"
+        totalCount={allDiets.length}
+        editingId={editingId}
+        items={[...allDiets].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 7)}
+        emptyText="아직 식단 기록이 없어요."
+        onEdit={editDiet}
+        onDelete={deleteDietEntry}
+        renderRow={(d) => (
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-ink-500 dark:text-slate-400 tabular-nums w-12 flex-shrink-0">{d.date?.slice(5)}</span>
+            <span className="text-[10px] text-ink-500 dark:text-slate-500 flex-shrink-0">{MEAL_BY_ID[d.mealType]?.label}</span>
+            <span className="font-semibold text-sm text-ink-900 dark:text-slate-100 truncate">{d.description}</span>
+            {d.estCalories > 0 && (
+              <span className="text-xs text-brand-600 dark:text-brand-400 tabular-nums ml-auto flex-shrink-0">{d.estCalories} kcal</span>
+            )}
           </div>
         )}
-
-        {category === 'blood' && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <NumField label="ALT" suffix="U/L" value={alt} onChange={setAlt} placeholder="25" />
-            <NumField label="AST" suffix="U/L" value={ast} onChange={setAst} placeholder="22" />
-            <NumField label="HbA1c" suffix="%" value={hba1c} onChange={setHba1c} placeholder="5.7" />
-            <NumField label="총콜레스테롤" suffix="mg/dL" value={totalChol} onChange={setTotalChol} placeholder="180" />
-          </div>
-        )}
-
-        {category === 'bp' && (
-          <div className="grid grid-cols-2 gap-3">
-            <NumField label="수축기" suffix="mmHg" value={sbp} onChange={setSbp} placeholder="120" />
-            <NumField label="이완기" suffix="mmHg" value={dbp} onChange={setDbp} placeholder="80" />
-          </div>
-        )}
-
-        {category === 'alcohol' && (
-          <div className="space-y-3">
-            <NumField label="주당 음주 잔수 (소주 기준)" suffix="잔" value={alcoholDrinksPerWeek}
-                      onChange={setAlcoholDrinksPerWeek} placeholder="7" />
-            <Scale label="알코올 갈망 변화 (약 시작 전 대비)" value={alcoholCravingChange}
-                   onChange={setAlcoholCravingChange} minLabel="크게 감소" maxLabel="평소" />
-            <button onClick={() => navigate('guide/alcohol')}
-                    className="w-full text-xs text-brand-700 dark:text-brand-400 hover:underline py-1">
-              → GLP-1과 알코올 사용장애 가이드 보기
-            </button>
-          </div>
-        )}
-
-        {category === 'sleep' && (
-          <div className="space-y-3">
-            <NumField label="수면 시간" suffix="시간" value={sleepHours} onChange={setSleepHours} placeholder="7.5" />
-            <Scale label="스트레스" value={stressLevel} onChange={setStressLevel}
-                   minLabel="없음" maxLabel="매우 심함" />
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button onClick={submit} className="btn-primary">기록 저장</button>
-        </div>
-      </div>
-
-      <div className="rounded-xl bg-brand-50/60 dark:bg-brand-900/20 border border-brand-200/50 dark:border-brand-800/40 px-3 py-2.5">
-        <div className="flex items-start gap-2">
-          <span className="text-base flex-shrink-0">🤖</span>
-          <p className="text-xs text-ink-700 dark:text-slate-300 leading-relaxed">
-            <b>건강 지표를 추가할수록 AI 예측이 더 정밀해져요.</b> 인바디는 마른비만/근손실, 혈액검사는 지방간, 음주는 알코올 갈망 패턴 분석에 직접 활용됩니다.
-          </p>
-        </div>
-      </div>
-
-      <RecentList
-        items={allMetrics.slice().reverse().slice(0, 15)}
-        empty="아직 건강 지표 기록이 없습니다."
-        render={(m) => {
-          const cat = CATEGORIES.find(c => c.id === m.category);
-          const parts = [];
-          if (m.category === 'inbody') {
-            if (m.bodyFatPct) parts.push(`체지방 ${m.bodyFatPct}%`);
-            if (m.muscleKg) parts.push(`근육 ${m.muscleKg}kg`);
-            if (m.waistCm) parts.push(`허리 ${m.waistCm}cm`);
-          } else if (m.category === 'blood') {
-            if (m.alt) parts.push(`ALT ${m.alt}`);
-            if (m.ast) parts.push(`AST ${m.ast}`);
-            if (m.hba1c) parts.push(`HbA1c ${m.hba1c}%`);
-            if (m.totalChol) parts.push(`콜레스테롤 ${m.totalChol}`);
-          } else if (m.category === 'bp') {
-            parts.push(`${m.sbp}/${m.dbp} mmHg`);
-          } else if (m.category === 'alcohol') {
-            if (m.drinksPerWeek) parts.push(`주 ${m.drinksPerWeek}잔`);
-            if (m.cravingChange != null) parts.push(`갈망 ${m.cravingChange}/5`);
-          } else if (m.category === 'sleep') {
-            if (m.sleepHours) parts.push(`수면 ${m.sleepHours}시간`);
-            if (m.stressLevel != null) parts.push(`스트레스 ${m.stressLevel}/5`);
-          }
-          return (
-            <div className="flex justify-between items-center gap-3">
-              <div className="min-w-0 flex items-center gap-2">
-                <span className="text-base">{cat?.icon}</span>
-                <div>
-                  <div className="font-semibold text-sm text-ink-900 dark:text-slate-100">
-                    {cat?.label} <span className="text-xs text-ink-500 dark:text-slate-500 ml-1">{m.date}</span>
-                  </div>
-                  <div className="text-xs text-ink-500 dark:text-slate-400 mt-0.5">{parts.join(' · ')}</div>
-                </div>
-              </div>
-              <button onClick={() => { Storage.deleteHealthMetric(m.id); refresh(); }}
-                      className="text-xs text-rose-600 hover:underline">삭제</button>
-            </div>
-          );
-        }}
       />
-    </div>
-  );
-}
-
-function NumField({ label, suffix, value, onChange, placeholder }) {
-  return (
-    <div>
-      <div className="label">{label}</div>
-      <div className="relative">
-        <input type="number" inputMode="decimal" step="0.1"
-               className="input pr-12" value={value}
-               onChange={e => onChange(e.target.value)} placeholder={placeholder} />
-        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-500 dark:text-slate-500 pointer-events-none">{suffix}</span>}
-      </div>
     </div>
   );
 }
@@ -1323,17 +1349,6 @@ function Scale({ label, value, onChange, minLabel, maxLabel }) {
       <div className="flex justify-between text-[10px] text-ink-500 mt-1">
         <span>1 {minLabel}</span><span>5 {maxLabel}</span>
       </div>
-    </div>
-  );
-}
-
-// 컴팩트 통계 — 저장된 기록 수만 한 줄로 표시 (전체 목록은 통계/대시보드에서 확인)
-function RecentStat({ count, label, lastDate }) {
-  if (!count) return null;
-  return (
-    <div className="rounded-xl bg-ink-100/50 dark:bg-slate-800/40 px-3 py-2 text-xs text-ink-500 dark:text-slate-400 flex items-center justify-between">
-      <span>총 <b className="text-ink-700 dark:text-slate-200 tabular-nums">{count}</b>개 {label}</span>
-      {lastDate && <span>마지막: {lastDate}</span>}
     </div>
   );
 }
