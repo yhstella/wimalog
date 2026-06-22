@@ -216,7 +216,7 @@ function WeightTab({ user, version, refresh, navigate }) {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {SIDE_EFFECTS.map(s => (
                   <button key={s.id} type="button" onClick={() => toggleSide(s.id)}
-                          className={`px-3 py-2 rounded-xl text-sm border transition text-left
+                          className={`px-3 min-h-[44px] inline-flex items-center rounded-xl text-sm border transition text-left
                                       ${sideEffects[s.id]
                                         ? 'bg-rose-500 text-white border-rose-500'
                                         : 'bg-white text-ink-700 border-ink-300 hover:border-rose-300'}`}>

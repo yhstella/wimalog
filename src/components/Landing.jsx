@@ -162,16 +162,17 @@ export function Landing({ navigate, onSignup, user }) {
           </button>
         </div>
         {/* 사용량 비율 반영: 위고비·마운자로 4 (큼), 삭센다 2 (중간), 오젬픽·젭바운드 각 1 (작음) */}
-        <div className="grid grid-cols-12 gap-2">
+        {/* 인기 위계는 글씨 크기로, 터치타겟은 전부 ≥44px 균등 (col-span-1 ~30px 문제 해소) */}
+        <div className="grid grid-cols-6 gap-2">
           {[
-            ['wegovy',   '위고비',   'col-span-4', 'text-3xl', 'text-base'],
-            ['mounjaro', '마운자로', 'col-span-4', 'text-3xl', 'text-base'],
-            ['saxenda',  '삭센다',   'col-span-2', 'text-xl',  'text-sm'],
-            ['ozempic',  '오젬픽',   'col-span-1', 'text-sm',  'text-[10px]'],
-            ['zepbound', '젭바운드', 'col-span-1', 'text-sm',  'text-[10px]'],
+            ['wegovy',   '위고비',   'col-span-3', 'text-3xl', 'text-base'],
+            ['mounjaro', '마운자로', 'col-span-3', 'text-3xl', 'text-base'],
+            ['saxenda',  '삭센다',   'col-span-2', 'text-2xl', 'text-sm'],
+            ['ozempic',  '오젬픽',   'col-span-2', 'text-2xl', 'text-sm'],
+            ['zepbound', '젭바운드', 'col-span-2', 'text-2xl', 'text-sm'],
           ].map(([id, label, colCls, iconCls, textCls]) => (
             <button key={id} onClick={() => navigate(`drug/${id}`)}
-                    className={`${colCls} card !p-2 sm:!p-3 text-center hover:shadow-cardHover hover:border-brand-300 transition group flex flex-col items-center justify-center min-w-0`}>
+                    className={`${colCls} card !p-2 sm:!p-3 min-h-[64px] text-center hover:shadow-cardHover hover:border-brand-300 transition group flex flex-col items-center justify-center min-w-0`}>
               <div className={`${iconCls} mb-0.5`}>💉</div>
               <div className={`${textCls} font-semibold text-ink-900 dark:text-slate-100 group-hover:text-brand-600 dark:group-hover:text-brand-400 truncate w-full`}>
                 {label}

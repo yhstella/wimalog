@@ -273,7 +273,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-1">
             {MEDS.filter(m => m.id !== 'other').map(m => (
               <button key={m.id} type="button" onClick={() => { markTouched(); setMedication(m.id); }}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border
+                      className={`flex-shrink-0 px-3.5 min-h-[44px] inline-flex items-center rounded-lg text-xs font-medium transition border
                                   ${medication === m.id
                                     ? 'bg-white text-brand-700 border-white'
                                     : 'bg-white/10 text-white border-white/30 hover:bg-white/20'}`}>
@@ -288,7 +288,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
             {USAGE_FREQUENCIES.map(f => (
               <button key={f.id} type="button" onClick={() => { markTouched(); setFrequency(f.id); }}
                       title={f.desc}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition border
+                      className={`flex-shrink-0 px-3.5 min-h-[44px] inline-flex items-center rounded-lg text-xs font-medium transition border
                                   ${frequency === f.id
                                     ? 'bg-white text-brand-700 border-white'
                                     : 'bg-white/10 text-white border-white/30 hover:bg-white/20'}`}>

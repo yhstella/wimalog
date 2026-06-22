@@ -83,7 +83,7 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
             <SearchTrigger navigate={navigate} />
             <button onClick={cycleTheme}
                     title={`테마: ${theme}`}
-                    className="btn-ghost !p-2 text-base"
+                    className="inline-flex items-center justify-center w-11 h-11 rounded-lg text-base text-ink-600 dark:text-slate-400 hover:bg-ink-100 dark:hover:bg-slate-800 active:scale-[.97] transition"
                     aria-label="테마 전환">
               {theme === 'light' ? '☀️' : theme === 'dark' ? '🌙' : '🖥️'}
             </button>
@@ -92,7 +92,8 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
                 {/* 로그인 상태 명확히 표시 — 아바타 + 닉네임 (sm 이상) */}
                 <button onClick={() => navigate('profile')}
                         title={user.email || user.nickname}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-ink-100 dark:hover:bg-slate-800 transition">
+                        aria-label="내 프로필"
+                        className="flex items-center gap-1.5 px-2 min-h-[44px] rounded-lg hover:bg-ink-100 dark:hover:bg-slate-800 transition">
                   {user.avatarUrl ? (
                     <img src={user.avatarUrl} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
                   ) : (
@@ -169,8 +170,8 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
             <button onClick={onLogout}
                     aria-label="로그아웃"
                     className="flex-1 min-h-[56px] py-2.5 px-1 text-[10px] font-medium text-ink-500 dark:text-slate-500 flex flex-col items-center gap-0.5">
-              <span className="text-lg leading-none" aria-hidden>↩</span>
-              <span>나가기</span>
+              <span className="text-lg leading-none" aria-hidden>🚪</span>
+              <span>로그아웃</span>
             </button>
             {/* 테스트용 탈퇴 — 모바일에서도 즉시 가입/탈퇴 반복 가능하도록 */}
             <button onClick={handleDelete}
