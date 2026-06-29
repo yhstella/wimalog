@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v43';  // bumped 2026-06-23: 투약·운동·식단 탭 수정/삭제(CRUD) UI 추가 + 죽은 HealthTab/NumField 정리
+const VERSION = 'v44';  // bumped 2026-06-29: 정확도 카피 정합(50~90% 일관)·DoctorReport '12주'→'12회'·코호트→비슷한 사용자(in-flow)·StopProjector 제거
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

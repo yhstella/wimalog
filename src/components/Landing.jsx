@@ -48,7 +48,7 @@ export function Landing({ navigate, onSignup, user }) {
               친구 추천으로 오셨군요!
             </div>
             <p className="text-xs text-pink-800 dark:text-pink-200/90 mt-1 leading-relaxed">
-              지인이 이미 위마로그로 본인 데이터를 정리하고 있어요. 가입하면 친구와 비슷한 코호트(나이대·BMI·동반질환)의 실제 감량 곡선이 더 빠르게 매칭됩니다.
+              지인이 이미 위마로그로 본인 데이터를 정리하고 있어요. 가입하면 친구와 비슷한 사용자(나이대·BMI·동반질환)의 실제 감량 곡선이 더 빠르게 매칭됩니다.
             </p>
           </div>
         </section>

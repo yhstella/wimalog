@@ -64,9 +64,9 @@ export function MilestoneCard({ user, navigate }) {
   const cohortMsg = cohortAvgPct != null && cohortN >= 5 && lostPct !== 0 ? (() => {
     const myAbsPct = Math.abs(lostPct);
     const cohortAbs = Math.abs(cohortAvgPct);
-    if (myAbsPct > cohortAbs * 1.1) return { tone: 'good', text: '코호트 평균보다 빠른 페이스' };
-    if (myAbsPct < cohortAbs * 0.7) return { tone: 'slow', text: '코호트 평균보다 느린 페이스 (정상 범위)' };
-    return { tone: 'normal', text: '코호트 평균 페이스' };
+    if (myAbsPct > cohortAbs * 1.1) return { tone: 'good', text: '비슷한 사용자 평균보다 빠른 페이스' };
+    if (myAbsPct < cohortAbs * 0.7) return { tone: 'slow', text: '비슷한 사용자 평균보다 느린 페이스 (정상 범위)' };
+    return { tone: 'normal', text: '비슷한 사용자 평균 페이스' };
   })() : null;
 
   const toneClass = {
@@ -155,12 +155,12 @@ function pickMilestone(ageDays) {
   if (ageDays <= 7) {
     return { label: `${ageDays}일째`, icon: '✨', borderColor: 'border-emerald-400',
       title: '첫 주 진행 중',
-      message: '데이터가 누적되면 본인 vs 코호트 비교가 의미있어집니다. 매일 체중 기록을 유지해 주세요.' };
+      message: '데이터가 누적되면 나와 비슷한 사용자와의 비교가 의미있어집니다. 매일 체중 기록을 유지해 주세요.' };
   }
   if (ageDays <= 14) {
     return { label: '1주 + α', icon: '🌿', borderColor: 'border-emerald-500',
       title: '1주차 완료 — 패턴이 보이기 시작',
-      message: '부작용 인사이트 위젯이 의미있는 비교를 시작할 수 있습니다. 통계 페이지의 본인 vs 코호트 차트를 확인해 보세요.' };
+      message: '부작용 인사이트 위젯이 의미있는 비교를 시작할 수 있습니다. 통계 페이지의 본인 vs 비슷한 사용자 차트를 확인해 보세요.' };
   }
   if (ageDays <= 30) {
     return { label: '한 달', icon: '📊', borderColor: 'border-amber-500',
@@ -169,8 +169,8 @@ function pickMilestone(ageDays) {
   }
   if (ageDays <= 90) {
     return { label: '3개월', icon: '🎯', borderColor: 'border-brand-500',
-      title: '3개월 — 코호트 비교가 가장 정확해지는 시점',
-      message: '12주차 코호트 평균과의 비교로 본인 페이스 객관화 가능. 중단 고려 시 통계 페이지의 본인 맞춤 예측을 확인하세요.' };
+      title: '3개월 — 비슷한 사용자 비교가 가장 정확해지는 시점',
+      message: '12주차 비슷한 사용자 평균과의 비교로 본인 페이스 객관화 가능. 중단 고려 시 통계 페이지의 본인 맞춤 예측을 확인하세요.' };
   }
   if (ageDays <= 180) {
     return { label: '6개월', icon: '🏆', borderColor: 'border-amber-600',

@@ -92,7 +92,7 @@ export function CostInsightCard({ user, navigate }) {
       {/* 코호트 비교 */}
       {savingsPct != null && (
         <div className="mt-3 rounded-lg bg-ink-100/40 dark:bg-slate-800/40 px-3 py-2 text-xs leading-relaxed">
-          📊 본인 평균 약값은 코호트 평균 대비{' '}
+          📊 본인 평균 약값은 비슷한 사용자 평균 대비{' '}
           {savingsPct > 5 ? (
             <b className="text-emerald-700 dark:text-emerald-400">{savingsPct.toFixed(0)}% 저렴</b>
           ) : savingsPct < -5 ? (

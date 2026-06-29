@@ -359,7 +359,7 @@ export function ProjectionChart({ startWeight, height, medication = 'wegovy', fr
           );
         })()}
         <span className="block mt-1 text-[10px] opacity-70">
-          ※ 비슷한 BMI·약·빈도 코호트 평균 기반. 개인차 큼. 운동/식이 지속이 유지율 50% 이상 차이.
+          ※ 비슷한 BMI·약·빈도 사용자 평균 기반. 개인차 큼. 운동/식이 지속이 유지율 50% 이상 차이.
         </span>
       </div>
     </div>

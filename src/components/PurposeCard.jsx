@@ -61,7 +61,7 @@ function UsingCard({ user, navigate }) {
 
       <p className="mt-3 text-[11px] text-ink-500 dark:text-slate-500 leading-relaxed">
         💡 이전 체중 측정값이 있다면 그래프를 좌클릭 드래그로 한 번에 그려 넣을 수 있어요.
-        약 사용일이 정확할수록 비슷한 코호트와의 비교가 정밀해집니다.
+        약 사용일이 정확할수록 비슷한 사용자와의 비교가 정밀해집니다.
       </p>
     </div>
   );
@@ -81,7 +81,7 @@ function PlanningCard({ user, navigate }) {
               본인 조건의 예상 변화
             </h2>
             <p className="text-xs text-ink-500 dark:text-slate-400 mt-1">
-              비슷한 키·체중의 사용자 코호트 기준 예측. 약·빈도를 바꿔 비교해 보세요.
+              비슷한 키·체중의 사용자 기준 예측. 약·빈도를 바꿔 비교해 보세요.
             </p>
           </div>
         </div>

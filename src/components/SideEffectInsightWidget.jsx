@@ -74,7 +74,7 @@ export function SideEffectInsightWidget({ user, navigate }) {
         <div>
           <h2 className="section-title">부작용 인사이트</h2>
           <p className="section-subtitle">
-            최근 12주 본인 기록 {totalLogs}건 vs 코호트 평균
+            최근 본인 기록 {totalLogs}건 vs 비슷한 사용자 평균
             {medication && <> · {medication}</>}
           </p>
         </div>
@@ -110,7 +110,7 @@ export function SideEffectInsightWidget({ user, navigate }) {
                 <span className="tabular-nums text-xs text-ink-500 dark:text-slate-400">
                   본인 <b className="text-ink-900 dark:text-slate-100">{myPct}%</b>
                   <span className="mx-1">·</span>
-                  코호트 {cohortPct}%
+                  비슷한 사용자 {cohortPct}%
                 </span>
               </div>
               {/* 본인 막대 (위) */}
@@ -163,7 +163,7 @@ export function SideEffectInsightWidget({ user, navigate }) {
       {/* 본인이 다 평균보다 적게 겪고 있으면 칭찬 */}
       {items.every(i => i.comparison !== 'higher') && items.length >= 2 && (
         <div className="mt-3 rounded-lg bg-emerald-50/60 dark:bg-emerald-900/15 border border-emerald-200/40 dark:border-emerald-800/30 px-3 py-2 text-xs text-emerald-900 dark:text-emerald-100">
-          ✨ 본인의 부작용 발생률이 코호트 평균보다 전반적으로 낮습니다 — 잘 적응하고 계세요.
+          ✨ 본인의 부작용 발생률이 비슷한 사용자 평균보다 전반적으로 낮습니다 — 잘 적응하고 계세요.
         </div>
       )}
     </section>

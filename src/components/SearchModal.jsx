@@ -17,7 +17,7 @@ const ALL_ITEMS = [
   { type: 'tool', icon: '💰', label: '약 비용 계산기', sub: '약·기간으로 총 예상 비용', route: 'calc/cost', keywords: '비용 가격 계산기 cost' },
   { type: 'tool', icon: '🔥', label: '칼로리 계산기', sub: 'BMR/TDEE/감량 목표', route: 'calc/bmr', keywords: '칼로리 BMR TDEE 기초대사량 calorie' },
   { type: 'tool', icon: '🎯', label: '목표 체중 계산기', sub: 'BMI 정상 체중', route: 'calc/target', keywords: '목표 체중 BMI 정상' },
-  { type: 'page', icon: '📊', label: '전체 통계', sub: '코호트 평균 감량률·부작용·가격', route: 'stats', keywords: '통계 평균' },
+  { type: 'page', icon: '📊', label: '전체 통계', sub: '비슷한 사용자 평균 감량률·부작용·가격', route: 'stats', keywords: '통계 평균' },
   { type: 'page', icon: '⚖️', label: '5개 약 한눈 비교', sub: '효과·부작용·가격 비교 표', route: 'compare', keywords: '비교 compare' },
   { type: 'page', icon: '🛡️', label: '안전 정보 + FAQ', sub: '자주 묻는 질문 30개+', route: 'info', keywords: '안전 FAQ 자주 묻는 질문' },
 ];

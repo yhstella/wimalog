@@ -157,7 +157,7 @@ function CostCalculator({ navigate }) {
           <div className="card space-y-3">
             <h3 className="font-bold text-ink-900 dark:text-slate-100">📊 비용 대비 효과</h3>
             <p className="text-xs text-ink-500 dark:text-slate-400 -mt-1">
-              본인 시작 체중 {startWeight}kg 기준 · {drug.label} 코호트 평균 -{expectedLossPct?.toFixed(1) ?? '?'}% ({matchWeek}주차)
+              본인 시작 체중 {startWeight}kg 기준 · {drug.label} 사용자 평균 -{expectedLossPct?.toFixed(1) ?? '?'}% ({matchWeek}주차)
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {/* 1kg당 비용 */}
@@ -211,7 +211,7 @@ function CostCalculator({ navigate }) {
             ))}
           </div>
           <p className="text-[10px] text-ink-500 dark:text-slate-500 mt-3">
-            ※ 위마로그 익명 코호트 실측 평균. 지역·약국·할인에 따라 다를 수 있습니다.
+            ※ 위마로그 익명 사용자 실측 평균. 지역·약국·할인에 따라 다를 수 있습니다.
           </p>
         </div>
       )}

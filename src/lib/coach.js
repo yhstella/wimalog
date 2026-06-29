@@ -7,7 +7,7 @@ import { MED_BY_ID } from './constants.js';
 const DAY_MS = 86400000;
 
 // ============================================================
-// 1) 진척도 평가 — 본인 N주차 vs 코호트 평균
+// 1) 진척도 평가 — 본인 N주차 vs 비슷한 사용자 평균
 // ============================================================
 export function analyzeProgress(user) {
   if (!user) return { stage: 'no-user' };
@@ -35,7 +35,7 @@ export function analyzeProgress(user) {
 
   const weeksOnMed = Math.max(1, Math.floor((Date.now() - new Date(activeCourse.startDate).getTime()) / (7 * DAY_MS)));
 
-  // 코호트 평균 — 본인 진행 주차에 가장 가까운 시점
+  // 비슷한 사용자 평균 — 본인 진행 주차에 가장 가까운 시점
   const cohortRows = snapshotAvgLossCurve(activeCourse.medication, [4, 8, 12, 16, 24, 36, 48, 52]);
   let cohortPct = null;
   let cohortWeek = null;
@@ -278,7 +278,7 @@ export function nextActions({ progress, plateau, summary }) {
       actions.push({
         type: 'pace-slow',
         icon: '🐢',
-        title: slowerPct ? `코호트 평균보다 ${slowerPct}% 느린 페이스` : '코호트 평균보다 느린 페이스',
+        title: slowerPct ? `비슷한 사용자 평균보다 ${slowerPct}% 느린 페이스` : '비슷한 사용자 평균보다 느린 페이스',
         action: '운동·식이 점검 → 4주 더 관찰. 변화 없으면 의사와 용량 조정 상의',
         priority: 'medium',
       });
@@ -286,7 +286,7 @@ export function nextActions({ progress, plateau, summary }) {
       actions.push({
         type: 'pace-fast',
         icon: '🚀',
-        title: '코호트 평균보다 빠른 페이스',
+        title: '비슷한 사용자 평균보다 빠른 페이스',
         action: '근손실·탈수 주의 — 단백질 1.5g/체중kg/일 + 수분 충분히',
         priority: 'low',
       });
@@ -294,7 +294,7 @@ export function nextActions({ progress, plateau, summary }) {
       actions.push({
         type: 'pace-normal',
         icon: '✨',
-        title: '코호트 평균 페이스로 진행 중',
+        title: '비슷한 사용자 평균 페이스로 진행 중',
         action: '현재 패턴 유지. 다음 주 체중·운동 기록 계속',
         priority: 'low',
       });
@@ -366,9 +366,9 @@ export function coachHeadline({ progress, plateau }) {
   if (plateau?.plateau) {
     return `정체기 감지 — 최근 3주 ±${plateau.range.toFixed(1)}kg`;
   }
-  if (progress.pace === 'fast') return '코호트 평균보다 빠른 페이스';
-  if (progress.pace === 'slow') return '코호트 평균보다 느린 페이스';
-  if (progress.pace === 'normal') return '코호트 평균 페이스로 진행 중';
+  if (progress.pace === 'fast') return '비슷한 사용자 평균보다 빠른 페이스';
+  if (progress.pace === 'slow') return '비슷한 사용자 평균보다 느린 페이스';
+  if (progress.pace === 'normal') return '비슷한 사용자 평균 페이스로 진행 중';
   return `${progress.weeksOnMed}주차 진행 중`;
 }
 
@@ -401,5 +401,5 @@ export function coachSubMessage({ progress, plateau }) {
   if (cohortPct == null) {
     return `${medLabel} ${weeksOnMed}주차 · 누적 ${Math.abs(lossPct).toFixed(1)}%`;
   }
-  return `${medLabel} ${weeksOnMed}주차 · 본인 -${Math.abs(lossPct).toFixed(1)}% vs ${cohortWeek}주차 코호트 평균 -${Math.abs(cohortPct).toFixed(1)}%`;
+  return `${medLabel} ${weeksOnMed}주차 · 본인 -${Math.abs(lossPct).toFixed(1)}% vs ${cohortWeek}주차 비슷한 사용자 평균 -${Math.abs(cohortPct).toFixed(1)}%`;
 }

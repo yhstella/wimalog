@@ -3,8 +3,10 @@ import { Storage } from '../lib/storage.js';
 import { calculateAccuracy, accuracyBreakdown } from '../lib/accuracy.js';
 
 // Statistics 페이지 상단 AI 정확도 카드 — 정밀 세분화 버전
-// Static (47): 키·체중·약·빈도·가입·성별·나이대·동반질환 — 한 번 입력
-// Dynamic (53): 체중·운동·식단·부작용·검사·투약 — 누적 단계별 가산
+// 입력 기여 점수 100점(Static 30 + Dynamic 70)이 게이지의 입력 구간(50%→90%)에 매핑됨.
+//   표시 정확도 = 50%(베이스라인) + 입력점수 × 0.4  → 최대 90% (100%는 불가능)
+// Static (30): 키·체중·약·빈도·가입·현재단계·성별·나이대·동반질환 — 한 번 입력
+// Dynamic (70): 체중·운동·식단·부작용·검사·투약 — 누적 단계별 가산
 export function AccuracyCard({ user, navigate }) {
   const [version, setVersion] = useState(0);
 
@@ -30,9 +32,6 @@ export function AccuracyCard({ user, navigate }) {
     () => accuracyBreakdown({ user, simulator }),
     [user, simulator, version],
   );
-
-  const totalGainable = [...staticItems, ...dynamicItems]
-    .reduce((s, b) => s + (b.filled ? 0 : (b.weight - (b.gained || 0))), 0);
 
   // 입력 핸들러
   const updateUser = (partial) => {
@@ -74,10 +73,10 @@ export function AccuracyCard({ user, navigate }) {
             )}
           </div>
           <p className="text-sm text-ink-600 dark:text-slate-300 mt-2 leading-relaxed">
-            {score < 50 && '기본 코호트 평균 — 본인 정보 입력 시 빠르게 정밀화됩니다.'}
-            {score >= 50 && score < 75 && '본인 조건 일부 반영 중 — 운동·식단·검사 누적이 가장 효과적입니다.'}
-            {score >= 75 && score < 90 && '높은 정확도 — 매주 체중 기록을 누적하면 추세까지 반영.'}
-            {score >= 90 && '거의 모든 데이터 입력 완료 — 본인 trend로 정밀 예측.'}
+            {score <= 54 && '50%는 동전 던지기 기준선 — 본인 정보를 입력할수록 빠르게 정밀화됩니다.'}
+            {score > 54 && score < 75 && '본인 조건 일부 반영 중 — 운동·식단·검사 누적이 가장 효과적입니다.'}
+            {score >= 75 && score < 88 && '높은 정확도 — 매주 체중 기록을 누적하면 추세까지 반영.'}
+            {score >= 88 && '거의 모든 데이터 입력 완료 — 본인 추이로 정밀 예측 (상한 90%).'}
           </p>
         </div>
       </div>
@@ -89,12 +88,12 @@ export function AccuracyCard({ user, navigate }) {
              style={{ width: `${score}%` }} />
       </div>
 
-      {/* === Static 항목 — 기본 정보 (47%) === */}
+      {/* === Static 항목 — 기본 정보 (30점) === */}
       <div className="mt-5 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
         <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-          <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📋 기본 정보 <span className="text-ink-500 font-normal">(최대 47%)</span></div>
+          <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📋 기본 정보 <span className="text-ink-500 font-normal">(입력 30점)</span></div>
           <span className="text-[10px] tabular-nums text-ink-500 dark:text-slate-500">
-            {staticItems.filter(b => b.filled).reduce((s, b) => s + b.weight, 0)} / 47
+            {staticItems.filter(b => b.filled).reduce((s, b) => s + b.weight, 0)} / 30점
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
@@ -145,13 +144,13 @@ export function AccuracyCard({ user, navigate }) {
         )}
       </div>
 
-      {/* === Dynamic — 누적 데이터 (53%) === */}
+      {/* === Dynamic — 누적 데이터 (70점) === */}
       {user && (
         <div className="mt-5 pt-4 border-t border-ink-200/40 dark:border-slate-700/40">
           <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
-            <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📊 누적 데이터 <span className="text-ink-500 font-normal">(최대 53%)</span></div>
+            <div className="text-xs font-bold text-ink-700 dark:text-slate-300">📊 누적 데이터 <span className="text-ink-500 font-normal">(누적 70점)</span></div>
             <span className="text-[10px] tabular-nums text-ink-500 dark:text-slate-500">
-              {dynamicItems.reduce((s, b) => s + (b.gained || 0), 0)} / 53
+              {dynamicItems.reduce((s, b) => s + (b.gained || 0), 0)} / 70점
             </span>
           </div>
           <div className="space-y-2">
@@ -166,7 +165,7 @@ export function AccuracyCard({ user, navigate }) {
       {!user && (
         <div className="mt-4 pt-4 border-t border-ink-200/40 dark:border-slate-700/40 text-xs text-ink-600 dark:text-slate-400 leading-relaxed">
           <b>가입하면</b> 성별·나이대·동반질환·운동·식단·체중 추이·검사·투약 누적까지 반영되어
-          정확도가 <b className="text-brand-600 dark:text-brand-400">최대 100%</b>까지 올라갑니다.
+          정확도가 <b className="text-brand-600 dark:text-brand-400">최대 90%</b>까지 올라갑니다. (생물학적 예측이라 100%는 불가능)
         </div>
       )}
     </section>
@@ -240,7 +239,7 @@ function DynamicRow({ item, navigate }) {
       {nextTier && (
         <div className="flex justify-between items-center text-[10px] gap-2">
           <span className="text-ink-500 dark:text-slate-500">
-            {nextTier.hint} (+{nextTier.addPct}%)까지 <b className="tabular-nums">{nextTier.count - item.count}</b>건 남음
+            {nextTier.hint} (+{nextTier.addPct}점)까지 <b className="tabular-nums">{nextTier.count - item.count}</b>건 남음
           </span>
           <button onClick={() => navigate?.(recordPaths[item.key])}
                   className="text-brand-700 dark:text-brand-400 hover:underline text-[10px] font-semibold">
@@ -273,7 +272,7 @@ function ConditionsChecklist({ user, onComplete }) {
       <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-ink-700 dark:text-slate-300">동반질환 점검</span>
-          <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">+3%</span>
+          <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">+3점</span>
         </div>
         <span className="text-[10px] text-ink-500 dark:text-slate-500">해당사항 클릭, 없으면 그대로 완료</span>
       </div>
@@ -303,7 +302,7 @@ function QuickInputRow({ label, gain, children }) {
       <div className="flex items-center gap-2">
         <span className="text-xs text-ink-700 dark:text-slate-300 font-medium">{label}</span>
         <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
-          +{gain}%
+          +{gain}점
         </span>
       </div>
       <div>{children}</div>

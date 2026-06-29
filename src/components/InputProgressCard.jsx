@@ -54,13 +54,13 @@ function buildUnlockedSummary(user) {
 
   return {
     weight: lossKg != null ? `시작 ${user.startWeight}kg → 현재 ${lastLog.weight}kg (${lossKg >= 0 ? '-' : '+'}${Math.abs(lossKg).toFixed(1)} kg) · 본인 추세선 차트에 표시` : null,
-    course: activeMed ? `${MED_BY_ID[activeMed.medication]?.label.replace(/\s*\(.+\)/, '')} 사용자 코호트와 비교 중` : null,
+    course: activeMed ? `${MED_BY_ID[activeMed.medication]?.label.replace(/\s*\(.+\)/, '')} 사용자와 비교 중` : null,
     dose: avgPrice ? `평균 ${avgPrice}만원/회 · ${dosesWithPrice.length}건 기준 · 지역별 비교 가능` : (doses.length ? `${doses.length}회 투약 · 가격 입력하면 비용 비교 활성화` : null),
     exercise: weeklyExMin ? `주당 평균 ${weeklyExMin}분 (${exTypes}종) · 비슷한 운동량 사용자와 감량률 비교` : null,
     diet: avgProtein ? `평균 단백질 ${avgProtein}g · 투약 직후 vs 평소 식이 비교 활성화` : (diets.length ? `${diets.length}회 식단 · 단백질도 입력하면 분석 활성화` : null),
     inbody: lastInbody ? `체지방 ${lastInbody.bodyFatPct}% · 근육 ${lastInbody.muscleKg}kg · 마른비만 분석 활성화` : null,
-    blood: lastBlood ? `ALT ${lastBlood.alt || '?'} · HbA1c ${lastBlood.hba1c || '?'}% · 지방간 코호트 비교 중` : null,
-    bp: lastBp ? `${lastBp.sbp}/${lastBp.dbp} mmHg · 대사증후군 동반자 코호트 비교 중` : null,
+    blood: lastBlood ? `ALT ${lastBlood.alt || '?'} · HbA1c ${lastBlood.hba1c || '?'}% · 지방간 동반자와 비교 중` : null,
+    bp: lastBp ? `${lastBp.sbp}/${lastBp.dbp} mmHg · 대사증후군 동반자와 비교 중` : null,
     alcohol: lastAlcohol ? `주 ${lastAlcohol.drinksPerWeek || 0}잔 · 갈망 변화 추적 중` : null,
     sleep: lastSleep ? `평균 ${lastSleep.sleepHours}시간 · 스트레스 vs 정체기 상관 분석` : null,
     history: logs.length >= 12 ? `12주차 본인 추이 차트에 표시 (총 ${logs.length}회 기록)` : null,
@@ -69,7 +69,7 @@ function buildUnlockedSummary(user) {
 
 // visitPurpose별 안내 문구
 const PURPOSE_HINT = {
-  using:      '약 사용 데이터가 정확할수록 본인 코호트 매칭이 정밀해져요',
+  using:      '약 사용 데이터가 정확할수록 비슷한 사용자 매칭이 정밀해져요',
   planning:   '시작 전 baseline(인바디·식단·운동)을 기록하면 변화 측정이 정확해져요',
   stopped:    '운동·식단을 기록하면 중단 후 유지 패턴이 비슷한 사용자를 자동 매칭해요',
   sideeffect: '수면·혈압·음주를 함께 기록하면 부작용 원인 패턴 분석이 가능해져요',
@@ -109,7 +109,7 @@ export function InputProgressCard({ user, navigate }) {
           </div>
           <p className="text-xs text-ink-500 dark:text-slate-400 mt-1 leading-relaxed">
             {allDone
-              ? '모든 데이터가 입력됐어요. 본인 코호트 매칭이 가장 정밀한 수준입니다.'
+              ? '모든 데이터가 입력됐어요. 비슷한 사용자 매칭이 가장 정밀한 수준입니다.'
               : purposeHint}
           </p>
         </div>

@@ -44,7 +44,7 @@ export function EmptyDashboard({ user, navigate }) {
             지금 시작하면 좋은 것
           </h2>
           <p className="text-xs text-ink-500 dark:text-slate-400 mt-1 leading-relaxed">
-            아직 기록이 없어요. 아래 3가지 중 하나라도 입력하면 본인 데이터 + 코호트 비교가 즉시 활성화됩니다.
+            아직 기록이 없어요. 아래 3가지 중 하나라도 입력하면 본인 데이터 + 비슷한 사용자 비교가 즉시 활성화됩니다.
           </p>
         </div>
       </div>

@@ -235,7 +235,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
           : '실사용자 익명 데이터 기반 AI 예측 — 본인 키·체중·약·빈도와 비슷한 사용자를 찾아 3개월/6개월/1년 감량·비용·부작용을 예측합니다. 정보를 더 입력할수록 정확도가 올라가요.'}
       </div>
 
-      {/* 정확도 게이지 — 입력한 정보 수에 따라 0~100% */}
+      {/* 정확도 게이지 — 입력한 정보 수에 따라 50%(베이스라인)~90%(상한) */}
       <div className="mb-4 rounded-xl bg-white/15 backdrop-blur p-3">
         <div className="flex justify-between items-center text-[11px] font-semibold mb-1.5">
           <span className="opacity-90">🎯 예측 정확도</span>
@@ -306,7 +306,7 @@ export function Simulator({ onSignup, compact = false, user = null }) {
             <span className="text-lg flex-shrink-0">🔒</span>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold opacity-95 leading-snug">
-                정확도 +50% — 가입하면 추가 입력 가능
+                정확도 최대 90%까지{accuracy < 90 ? ` (지금 +${Math.max(0, 90 - accuracy)}% 여지)` : ''} — 가입하면 추가 입력 가능
               </div>
               <div className="text-[11px] opacity-80 mt-1 leading-relaxed">
                 나이·성별·운동량·당뇨/지방간 동반질환까지 입력하면 본인 조건에 가까운 사용자 코호트로 예측합니다.

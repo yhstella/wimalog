@@ -19,7 +19,7 @@ export function DoctorReport({ user, onBack }) {
   const summary = personalSummary(user, logs);
   const activeMeds = courses.filter(c => !c.endDate);
   const primaryCourse = activeMeds[0] || courses[courses.length - 1] || null;
-  const last12Weeks = logs.slice(-12);
+  const recentLogs = logs.slice(-12);   // 최근 12개 '기록'(주 단위 아님). 라벨도 '회/기록'으로 표기
 
   // 약 시작 후 경과 주
   const weeksOnMed = useMemo(() => {
@@ -41,15 +41,15 @@ export function DoctorReport({ user, onBack }) {
     return { week: closest.week, avg: closest.avg, n: closest.n };
   }, [primaryCourse, weeksOnMed]);
 
-  // 부작용 합계 (최근 12주) + 코호트 비교
+  // 부작용 합계 (최근 12개 기록) + 코호트 비교 — 발생률 = 발생 기록수 / 전체 기록수
   const sideAnalysis = useMemo(() => {
     const sideCounts = {};
-    for (const l of last12Weeks) {
+    for (const l of recentLogs) {
       for (const [k, v] of Object.entries(l.sideEffects || {})) {
         if (v) sideCounts[k] = (sideCounts[k] || 0) + 1;
       }
     }
-    const myTotalLogs = last12Weeks.length || 1;
+    const myTotalLogs = recentLogs.length || 1;
     const cohortRates = primaryCourse?.medication
       ? snapshotSideEffectRates(primaryCourse.medication) || []
       : [];
@@ -66,7 +66,7 @@ export function DoctorReport({ user, onBack }) {
         };
       });
     return items;
-  }, [last12Weeks, primaryCourse]);
+  }, [recentLogs, primaryCourse]);
 
   const totalEx12wk = useMemo(() => {
     const cutoff = Date.now() - 12 * 7 * 86400000;
@@ -85,7 +85,7 @@ export function DoctorReport({ user, onBack }) {
     lines.push(`시작/현재 체중: ${summary.startWeight}kg → ${summary.currentWeight}kg (${summary.lossKg >= 0 ? '-' : '+'}${Math.abs(summary.lossKg).toFixed(1)}kg, ${Math.abs(summary.lossPct).toFixed(1)}%)`);
     lines.push(`BMI: ${bmi(user.startWeight, user.height)?.toFixed(1)} → ${summary.curBmi?.toFixed(1) || '?'}`);
     if (primaryCourse) {
-      lines.push(`현재 약: ${MED_BY_ID[primaryCourse.medication]?.label} ${weeksOnMed ? `(${weeksOnMed}주차)` : ''}`);
+      lines.push(`현재 약: ${MED_BY_ID[primaryCourse.medication]?.label} ${weeksOnMed != null ? `(${weeksOnMed}주차)` : ''}`);
       const cDoses = doses.filter(d => d.courseId === primaryCourse.id);
       const last = cDoses[cDoses.length - 1];
       if (last) lines.push(`최근 용량: ${last.dose}, 총 ${cDoses.length}회 투약`);
@@ -94,7 +94,7 @@ export function DoctorReport({ user, onBack }) {
       lines.push(`코호트 비교: ${cohortLossAtMyWeek.week}주차 평균 -${cohortLossAtMyWeek.avg.toFixed(1)}% (본인 -${Math.abs(summary.lossPct).toFixed(1)}%)`);
     }
     if (sideAnalysis.length) {
-      lines.push(`부작용 (최근 12주):`);
+      lines.push(`부작용 (최근 ${recentLogs.length}개 기록):`);
       sideAnalysis.forEach(s => {
         const cohortPct = s.cohortRate != null ? `, 코호트 ${(s.cohortRate * 100).toFixed(0)}%` : '';
         lines.push(`  · ${s.label}: ${s.count}회 (본인 ${(s.myRate * 100).toFixed(0)}%${cohortPct})`);
@@ -205,7 +205,7 @@ export function DoctorReport({ user, onBack }) {
       <header className="border-b-2 border-black pb-3 mb-4">
         <div className="flex justify-between items-end">
           <div>
-            <h1 className="text-2xl font-bold">진료용 12주 리포트</h1>
+            <h1 className="text-2xl font-bold">진료용 요약 리포트</h1>
             <p className="text-sm text-gray-600">위마로그에서 생성 · {new Date().toLocaleDateString('ko-KR')}</p>
           </div>
           <div className="text-right text-xs text-gray-500">
@@ -287,17 +287,17 @@ export function DoctorReport({ user, onBack }) {
       )}
 
       {/* 체중 추이 SVG 차트 — print에 최적화 */}
-      {last12Weeks.length >= 2 && (
+      {recentLogs.length >= 2 && (
         <section className="mb-4 doctor-section">
-          <h2 className="text-lg font-bold mb-2">체중 추이 (최근 {last12Weeks.length}회)</h2>
-          <WeightChartPrint logs={last12Weeks} target={user.targetWeight} startWeight={user.startWeight} />
+          <h2 className="text-lg font-bold mb-2">체중 추이 (최근 {recentLogs.length}회)</h2>
+          <WeightChartPrint logs={recentLogs} target={user.targetWeight} startWeight={user.startWeight} />
         </section>
       )}
 
-      {/* 최근 12주 체중 기록 표 */}
-      {last12Weeks.length > 0 && (
+      {/* 최근 12개 기록 체중 표 */}
+      {recentLogs.length > 0 && (
         <section className="mb-4 doctor-section">
-          <h2 className="text-lg font-bold mb-2">상세 기록 ({last12Weeks.length}건)</h2>
+          <h2 className="text-lg font-bold mb-2">상세 기록 ({recentLogs.length}건)</h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-300">
@@ -308,8 +308,8 @@ export function DoctorReport({ user, onBack }) {
               </tr>
             </thead>
             <tbody>
-              {last12Weeks.map((l, i) => {
-                const prev = i === 0 ? user.startWeight : last12Weeks[i - 1].weight;
+              {recentLogs.map((l, i) => {
+                const prev = i === 0 ? user.startWeight : recentLogs[i - 1].weight;
                 const delta = l.weight - prev;
                 return (
                   <tr key={l.id} className="border-b border-gray-100">
@@ -328,7 +328,7 @@ export function DoctorReport({ user, onBack }) {
       {/* 부작용 요약 + 코호트 비교 */}
       {sideAnalysis.length > 0 && (
         <section className="mb-4 doctor-section">
-          <h2 className="text-lg font-bold mb-2">최근 12주 보고 부작용</h2>
+          <h2 className="text-lg font-bold mb-2">최근 기록 보고 부작용 ({recentLogs.length}건 중)</h2>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-300">

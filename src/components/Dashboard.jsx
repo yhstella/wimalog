@@ -91,7 +91,7 @@ export function Dashboard({ user, navigate }) {
     },
     {
       id: 'stats', icon: '📊', title: '비슷한 사용자 통계 보기',
-      desc: `같은 약·BMI·성별 코호트의 평균 감량률 + 약 중단 후 회복률까지 확인하세요.`,
+      desc: `같은 약·BMI·성별 사용자의 평균 감량률 + 약 중단 후 회복률까지 확인하세요.`,
       done: false,
       cta: '통계 보기', onClick: () => navigate('stats'),
     },
@@ -271,7 +271,7 @@ export function Dashboard({ user, navigate }) {
               </div>
             </div>
             <button onClick={() => navigate('stats')} className="btn-secondary !py-1.5 !px-3 text-xs flex-shrink-0">
-              코호트 비교 →
+              비슷한 사용자 비교 →
             </button>
           </div>
 
