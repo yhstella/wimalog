@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  EXP_STAGES, STAGE_BY_ID, EXPERIENCES, BASIS_NOTE,
+  EXP_STAGES, STAGE_BY_ID, EXPERIENCES, EXPERIENCE_COUNT, BASIS_NOTE,
   LANDING_STAGE_ORDER, experiencesForDrug,
 } from '../lib/experiences.js';
 
@@ -41,6 +41,8 @@ function QuoteCard({ exp, className = '' }) {
 
 export function RealExperiences({ variant = 'full', drug = null, defaultStage = 'all', navigate, className = '' }) {
   const [stage, setStage] = useState(defaultStage);
+  const STEP = variant === 'landing' ? 8 : 9;
+  const [visible, setVisible] = useState(STEP);
 
   // 후보 풀
   const pool = useMemo(() => {
@@ -65,7 +67,8 @@ export function RealExperiences({ variant = 'full', drug = null, defaultStage = 
   }, [pool]);
 
   const isLanding = variant === 'landing';
-  const shown = isLanding && stage === 'all' ? list.slice(0, 6) : list;
+  const shown = list.slice(0, visible);
+  const onFilter = (s) => { setStage(s); setVisible(STEP); };
 
   return (
     <section className={className} aria-label="실사용 경험">
@@ -76,6 +79,7 @@ export function RealExperiences({ variant = 'full', drug = null, defaultStage = 
             <span aria-hidden>💬</span> 실제로 어떤 경험을 할까
           </h2>
         </div>
+        <span className="chip flex-shrink-0 tabular-nums">{EXPERIENCE_COUNT.toLocaleString()}개</span>
       </div>
       <p className="section-subtitle mb-3 leading-relaxed">
         {isLanding
@@ -85,9 +89,9 @@ export function RealExperiences({ variant = 'full', drug = null, defaultStage = 
 
       {/* 단계 필터 칩 */}
       <div className="flex gap-1.5 overflow-x-auto -mx-1 px-1 pb-2 mb-1">
-        <FilterPill active={stage === 'all'} onClick={() => setStage('all')} label="전체" />
+        <FilterPill active={stage === 'all'} onClick={() => onFilter('all')} label="전체" />
         {stagesPresent.map(s => (
-          <FilterPill key={s.id} active={stage === s.id} onClick={() => setStage(s.id)}
+          <FilterPill key={s.id} active={stage === s.id} onClick={() => onFilter(s.id)}
                       icon={s.icon} label={s.label} />
         ))}
       </div>
@@ -109,6 +113,16 @@ export function RealExperiences({ variant = 'full', drug = null, defaultStage = 
       {shown.length === 0 && (
         <div className="card !py-6 text-center text-sm text-ink-500 dark:text-slate-400">
           이 단계의 경험은 아직 정리 중이에요.
+        </div>
+      )}
+
+      {/* 더 보기 */}
+      {visible < list.length && (
+        <div className="mt-3 text-center">
+          <button onClick={() => setVisible(v => v + STEP * 2)}
+                  className="btn-secondary !py-2 !px-5 text-sm">
+            더 보기 <span className="text-ink-400 dark:text-slate-500 tabular-nums">({list.length - visible})</span>
+          </button>
         </div>
       )}
 

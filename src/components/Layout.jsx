@@ -137,6 +137,8 @@ export function Layout({ route, navigate, user, onLogout, onSignup, children }) 
             <span>·</span>
             <button onClick={() => navigate('terms')} className="hover:underline">이용약관</button>
             <span>·</span>
+            <button onClick={() => navigate('contact')} className="hover:underline font-semibold text-brand-700 dark:text-brand-400">문의하기</button>
+            <span>·</span>
             <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold">
               🆓 Free
             </span>

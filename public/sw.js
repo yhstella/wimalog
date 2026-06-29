@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v45';  // bumped 2026-06-30: 실사용 경험(RealExperiences) 레이어 — 신규 진입자 낯섬 제거. Landing/DrugInfo/EmptyDashboard 배치 + 후기 프레이밍 정직화
+const VERSION = 'v46';  // bumped 2026-06-30: 실사용 경험 1100+개로 확대(조각 생성기) + 문의 폼(Web3Forms, 메일노출X)
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

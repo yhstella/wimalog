@@ -31,6 +31,7 @@ const DoctorReport = lazy(() => import('./components/DoctorReport.jsx').then(m =
 const AboutPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.AboutPage })));
 const PrivacyPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.TermsPage })));
+const ContactPage = lazy(() => import('./components/pages/StaticPages.jsx').then(m => ({ default: m.ContactPage })));
 
 // Lazy 로딩 동안 fallback — 짧은 로딩 indicator
 function PageLoading() {
@@ -218,6 +219,7 @@ export default function App() {
           {effectiveRoute === 'about'   && <AboutPage />}
           {effectiveRoute === 'privacy' && <PrivacyPage />}
           {effectiveRoute === 'terms'   && <TermsPage />}
+          {effectiveRoute === 'contact' && <ContactPage />}
 
           {/* SEO 콘텐츠 페이지 */}
           {effectiveRoute === 'compare' && <CompareDrugsPage navigate={navigate} user={user} />}

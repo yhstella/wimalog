@@ -20,6 +20,7 @@ const ALL_ITEMS = [
   { type: 'page', icon: '📊', label: '전체 통계', sub: '비슷한 사용자 평균 감량률·부작용·가격', route: 'stats', keywords: '통계 평균' },
   { type: 'page', icon: '⚖️', label: '5개 약 한눈 비교', sub: '효과·부작용·가격 비교 표', route: 'compare', keywords: '비교 compare' },
   { type: 'page', icon: '🛡️', label: '안전 정보 + FAQ', sub: '자주 묻는 질문 30개+', route: 'info', keywords: '안전 FAQ 자주 묻는 질문' },
+  { type: 'page', icon: '✉️', label: '문의하기', sub: '오류 제보·제휴·연구 협력 (메일 노출 없이)', route: 'contact', keywords: '문의 contact 연락 제보 협력 메일' },
 ];
 
 const TYPE_COLOR = {

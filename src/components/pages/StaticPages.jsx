@@ -1,6 +1,26 @@
 import React from 'react';
 import { MedicalDisclaimer } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
+import { ContactForm } from '../ContactForm.jsx';
+
+// 문의 — 메일 주소 노출 없이 받는 연락 창구 (Web3Forms)
+export function ContactPage() {
+  return (
+    <div className="max-w-2xl mx-auto space-y-5">
+      <header>
+        <h1 className="text-3xl font-extrabold text-ink-900 dark:text-slate-100">문의하기</h1>
+        <p className="text-base text-ink-700 dark:text-slate-300 mt-3 leading-relaxed">
+          궁금한 점, 오류 제보, 제휴·연구 협력 제안을 보내주세요.
+          가입 없이 바로 보낼 수 있고, 메일 주소를 입력하지 않아도 됩니다.
+        </p>
+      </header>
+      <ContactForm />
+      <p className="text-xs text-ink-500 dark:text-slate-400 leading-relaxed">
+        의학적 응급 상황은 이 창구로 처리되지 않습니다. 심한 복통·지속 구토·탈수 등 경고 증상은 즉시 의료기관을 방문하세요.
+      </p>
+    </div>
+  );
+}
 
 export function AboutPage() {
   return (

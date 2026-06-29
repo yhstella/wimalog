@@ -13,6 +13,11 @@
 //   - 정체기는 흔하며 식욕억제 효과가 시간이 지나며 둔화되는 것과 관련
 //   - 중단 후 2년 시점 약 절반은 감량 유지/추가, 약 1/3은 평균 4%가량 회복 → 유지용량·운동이 관건
 //   - 약 전환(세마↔티르제파타이드)·유지용량 감량은 흔한 실제 전략
+//
+// 규모: 아래 큐레이티드(직접 작성) + experienceGenerator의 조각 조합(1000+) 합본.
+//   조합본은 같은 주제 안에서만 완결 문장을 이어 붙여 자연스러움·문법을 보장.
+
+import { generateExperiences } from './experienceGenerator.js';
 
 export const EXP_STAGES = [
   { id: 'decision',  label: '시작 전',   icon: '🤔', blurb: '주사가 무섭고, 약에 의존하는 건 아닐까' },
@@ -29,7 +34,8 @@ export const EXP_STAGES = [
 export const STAGE_BY_ID = Object.fromEntries(EXP_STAGES.map(s => [s.id, s]));
 
 // who: 대표 프로필(성별·나이대·약·용량·시점). 특정 실존 인물이 아님.
-export const EXPERIENCES = [
+// 큐레이티드 — 손으로 다듬은 대표 경험(품질 기준점, UI에서 먼저 노출).
+const CURATED_EXPERIENCES = [
   // ── 시작 전 ──
   { id: 'e01', stage: 'decision', drug: 'wegovy', who: '30대 여성', when: '시작 전', theme: '주사 공포',
     text: '주사가 제일 무서웠어요. 막상 펜으로 놔보니 모기 물린 정도라 허무할 만큼 안 아팠고, 첫 회만 넘기니 그 다음부턴 별 생각 없이 했습니다.' },
@@ -96,6 +102,16 @@ export const EXPERIENCES = [
   { id: 'e24', stage: 'maintain', drug: null, who: '50대 남성', when: '장기 관점', theme: '평생 vs 전략',
     text: '“끊으면 도로아미타불”이라고만 생각했는데, 끊은 사람 중 절반 가까이는 유지하거나 더 빠진다는 데이터를 보고 마음이 편해졌어요. 유지 전략이 핵심.' },
 ];
+
+// 조합 생성본(1000+) — 큐레이티드 본문과 중복 제거. 큐레이티드를 앞에 두어 먼저 노출.
+const GENERATED_EXPERIENCES = generateExperiences({
+  target: 1080,
+  seed: 20260630,
+  excludeTexts: CURATED_EXPERIENCES.map(e => e.text),
+});
+
+export const EXPERIENCES = [...CURATED_EXPERIENCES, ...GENERATED_EXPERIENCES];
+export const EXPERIENCE_COUNT = EXPERIENCES.length;
 
 // 표시용 정직성 노출 문구 (컴포넌트 푸터/툴팁)
 export const BASIS_NOTE =
