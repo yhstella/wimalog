@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Supabase에서 실제 가입자 데이터를 JSON으로 export → Dropbox/wimalog 폴더에 timestamped 백업
-// 실행: node scripts/export-supabase.js
-// 또는: SUPABASE_EXPORT_DIR=C:\Users\R\Dropbox\wimalog\exports node scripts/export-supabase.js
+// Supabase에서 실제 가입자 데이터를 JSON으로 export → repo의 exports/ 폴더에 timestamped 백업
+// 실행: node scripts/export-supabase.js  (repo 루트에서)
+// 또는: SUPABASE_EXPORT_DIR=E:\wimalog\exports node scripts/export-supabase.js
 //
 // 시드 데이터는 제외 (seed=true) — 코드(seed-supabase.js)에 이미 있음.
 // 실제 가입자(seed=false)만 백업.
@@ -9,7 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join } from 'node:path';
 import { homedir } from 'node:os';
 
 config({ path: '.env.local' });
@@ -23,11 +23,10 @@ if (!URL || !KEY) {
   process.exit(1);
 }
 
-// 기본 export 위치: Dropbox/wimalog/exports/. 없으면 ~/wimalog-backup/
-const DEFAULT_DIR = join(homedir(), 'Dropbox', 'wimalog', 'exports');
+// 기본 export 위치: repo의 exports/ (이동에 안전 — repo 따라 이동). 없으면 ~/wimalog-backup/
+const DEFAULT_DIR = join(process.cwd(), 'exports');
 const FALLBACK_DIR = join(homedir(), 'wimalog-backup');
-const EXPORT_DIR = process.env.SUPABASE_EXPORT_DIR
-  || (existsSync(dirname(DEFAULT_DIR)) ? DEFAULT_DIR : FALLBACK_DIR);
+const EXPORT_DIR = process.env.SUPABASE_EXPORT_DIR || DEFAULT_DIR || FALLBACK_DIR;
 
 const sb = createClient(URL, KEY, { auth: { persistSession: false } });
 

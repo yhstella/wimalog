@@ -25,3 +25,9 @@ Thumbs.db
 # misc
 *.log
 *.tmp
+
+# supabase 실데이터 export 백업 (PII — 절대 커밋 금지)
+exports/
+
+# vite 임시 설정파일
+vite.config.js.timestamp-*.mjs
