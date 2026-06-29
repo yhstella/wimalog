@@ -6,6 +6,7 @@ import { CohortLive } from './CohortLive.jsx';
 import { RecentPagesRow } from './RecentPages.jsx';
 import { SafetyChecklist } from './SafetyChecklist.jsx';
 import { EncouragementWall } from './EncouragementWall.jsx';
+import { RealExperiences } from './RealExperiences.jsx';
 
 const SIM_PREFILL_KEY = 'wimalog_sim_prefill';
 
@@ -127,6 +128,11 @@ export function Landing({ navigate, onSignup, user }) {
           </div>
         </section>
       )}
+
+      {/* 실사용 경험 — 신규 진입자 낯섬 제거 (시작 전 두려움→식욕→부작용→결과) */}
+      <section className="max-w-2xl mx-auto">
+        <RealExperiences variant="landing" navigate={navigate} />
+      </section>
 
       {/* 위마로그 코호트 LIVE — 우리 데이터 강조 (가짜 사이트 느낌 방지) */}
       <CohortLive navigate={navigate} onSignup={handleSignup} user={user} />

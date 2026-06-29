@@ -175,8 +175,8 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
       {/* 사용자 적응형 후기 — 실제 사용 코호트의 짧은 경험담 */}
       {content.testimonials?.length > 0 && (
         <section className="card">
-          <h2 className="section-title">실제 사용자 경험 — {content.label} 어떻게 견뎠나</h2>
-          <p className="section-subtitle">위마로그 코호트의 짧은 후기 — "끊을까 했는데 적응됐다"는 패턴이 가장 흔합니다</p>
+          <h2 className="section-title">실제 사용 경험 — {content.label} 어떻게 견뎠나</h2>
+          <p className="section-subtitle">공개 후기·임상 보고에서 자주 보이는 대표 경험 — "끊을까 했는데 적응됐다"는 패턴이 가장 흔합니다</p>
           <div className="mt-3 space-y-2.5">
             {content.testimonials.map((t, i) => {
               const vibeColor = {
@@ -207,7 +207,7 @@ export function SideEffectPage({ effectId, navigate, user, onSignup }) {
             })}
           </div>
           <p className="helptext mt-3">
-            ※ 익명 후기 모음. 개인차가 크므로 본인 상황에 그대로 적용하지 마세요.
+            ※ 특정 개인의 검증된 후기가 아닌, 공개 후기·임상 보고 기반 대표 경험입니다. 개인차가 크므로 본인 상황에 그대로 적용하지 마세요.
             본인 후기는 가입 후 기록 + 메모로 남길 수 있습니다.
           </p>
         </section>

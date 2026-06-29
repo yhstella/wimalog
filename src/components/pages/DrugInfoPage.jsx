@@ -11,6 +11,7 @@ import { MedicalDisclaimer, RedFlagBanner } from '../SafetyBanner.jsx';
 import { ShareButtons } from '../Share.jsx';
 // InterestButton 제거 — '관심 있어요' 1탭 수집은 비즈니스 핵심 X
 import { TestimonialBox } from '../TestimonialBox.jsx';
+import { RealExperiences } from '../RealExperiences.jsx';
 import { SimulatorCTA } from '../SimulatorCTA.jsx';
 
 // 약별 상세 페이지 — SEO 랜딩 + 실시간 통계 + 가입 CTA
@@ -306,6 +307,9 @@ export function DrugInfoPage({ medId, navigate, user, onSignup }) {
           📋 5개 약 전체 비교 표 →
         </button>
       </section>
+
+      {/* 실사용 경험 — 이 약 + 일반 여정 (낯섬 제거) */}
+      <RealExperiences variant="drug" drug={drug.id} navigate={navigate} />
 
       {/* 한 줄 후기 (가입자 작성 + 익명 노출) */}
       <TestimonialBox topicId={`drug:${drug.id}`} user={user} />

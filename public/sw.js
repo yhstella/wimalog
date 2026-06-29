@@ -4,7 +4,7 @@
 //   - Supabase RPC: network-first (실시간 데이터 우선, 실패 시 캐시)
 //   - 이미지/폰트: cache-first
 
-const VERSION = 'v44';  // bumped 2026-06-29: 정확도 카피 정합(50~90% 일관)·DoctorReport '12주'→'12회'·코호트→비슷한 사용자(in-flow)·StopProjector 제거
+const VERSION = 'v45';  // bumped 2026-06-30: 실사용 경험(RealExperiences) 레이어 — 신규 진입자 낯섬 제거. Landing/DrugInfo/EmptyDashboard 배치 + 후기 프레이밍 정직화
 const STATIC_CACHE = `wimalog-static-${VERSION}`;
 const RUNTIME_CACHE = `wimalog-runtime-${VERSION}`;
 

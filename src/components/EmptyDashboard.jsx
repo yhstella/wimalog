@@ -1,4 +1,13 @@
 import React from 'react';
+import { RealExperiences } from './RealExperiences.jsx';
+
+// visitPurpose → 가장 공감되는 경험 단계 (가입 직후 낯섬 완화)
+const PURPOSE_STAGE = {
+  using: 'foodnoise',
+  planning: 'decision',
+  stopped: 'maintain',
+  sideeffect: 'sideeffect',
+};
 
 // 데이터 0인 신규 가입자 dashboard 첫 화면.
 // PurposeCard 다음에 배치 — 가입 직후 무엇부터 입력하면 좋은지 1탭 진입 카드 3개.
@@ -36,6 +45,7 @@ export function EmptyDashboard({ user, navigate }) {
   };
 
   return (
+    <div className="space-y-5">
     <div className="card border-2 border-dashed border-brand-300 dark:border-brand-700/50 bg-gradient-to-br from-brand-50/30 to-white dark:from-brand-900/15 dark:to-slate-900">
       <div className="flex items-start gap-3 mb-4">
         <div className="text-3xl">🚀</div>
@@ -62,6 +72,10 @@ export function EmptyDashboard({ user, navigate }) {
       <p className="mt-4 text-[11px] text-ink-500 dark:text-slate-500 leading-relaxed text-center">
         💡 1주 기록만으로도 본인 추세선이 그려지고, 비슷한 사용자 N명과 자동 비교돼요.
       </p>
+    </div>
+
+    {/* 같은 단계 사람들의 실제 경험 — 가입 직후 낯섬 완화 */}
+    <RealExperiences variant="landing" defaultStage={PURPOSE_STAGE[visitPurpose] || 'foodnoise'} navigate={navigate} />
     </div>
   );
 }

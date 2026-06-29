@@ -68,8 +68,8 @@ export function TestimonialBox({ topicId, user }) {
     <section className="card">
       <div className="flex justify-between items-end mb-3">
         <div>
-          <h2 className="section-title">실제 사용자 한 줄 후기</h2>
-          <p className="section-subtitle">위마로그 사용자가 직접 남긴 메모 ({filtered.length})</p>
+          <h2 className="section-title">한 줄 후기</h2>
+          <p className="section-subtitle">가입자가 남기는 익명 메모. 처음엔 공개 후기 기반 <b>예시</b>로 채워둡니다 ({filtered.length})</p>
         </div>
       </div>
 
@@ -93,8 +93,11 @@ export function TestimonialBox({ topicId, user }) {
           {filtered.map(t => (
             <div key={t.id} className="rounded-xl bg-ink-100/40 dark:bg-slate-800/40 p-3">
               <p className="text-sm text-ink-700 dark:text-slate-300">"{t.text}"</p>
-              <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-1.5">
-                {t.gender === 'F' ? '여성' : t.gender === 'M' ? '남성' : '익명'} {t.ageGroup} · {t.date}
+              <div className="text-[10px] text-ink-500 dark:text-slate-500 mt-1.5 flex items-center gap-1.5 flex-wrap">
+                <span>{t.gender === 'F' ? '여성' : t.gender === 'M' ? '남성' : '익명'} {t.ageGroup}</span>
+                {t._seeded
+                  ? <span className="inline-flex items-center rounded-full bg-ink-200/70 dark:bg-slate-700 px-1.5 py-0.5 text-[9px] font-semibold text-ink-600 dark:text-slate-300">공개 후기 기반 예시</span>
+                  : <span>· {t.date}</span>}
               </div>
             </div>
           ))}
